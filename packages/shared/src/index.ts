@@ -65,6 +65,56 @@ export interface BusinessDto {
   createdAt: string;
 }
 
+// ── Catálogo ─────────────────────────────────────────────
+
+export interface CategoryDto {
+  id: string;
+  name: string;
+  slug: string;
+  children: CategoryDto[];
+}
+
+export interface ProductVariantDto {
+  id: string;
+  sku: string | null;
+  attributes: Record<string, string>;
+  priceCents: number;
+  currency: Currency;
+  stock: number;
+  isDefault: boolean;
+}
+
+export interface ProductImageDto {
+  id: string;
+  url: string;
+  position: number;
+}
+
+export interface ProductDetailDto {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  status: ProductStatus;
+  category: { id: string; name: string; slug: string };
+  business: { id: string; name: string; slug: string; logoUrl: string | null };
+  variants: ProductVariantDto[];
+  images: ProductImageDto[];
+  createdAt: string;
+}
+
+// Para listados (búsqueda, home, página de negocio)
+export interface ProductSummaryDto {
+  id: string;
+  title: string;
+  slug: string;
+  priceCents: number;
+  currency: Currency;
+  imageUrl: string | null;
+  businessName: string;
+  businessSlug: string;
+}
+
 // ── Convenciones de la API ───────────────────────────────
 
 export interface ApiError {
