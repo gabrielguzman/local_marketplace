@@ -25,12 +25,28 @@ model User {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  business  Business?
-  addresses Address[]
-  cart      Cart?
-  orders    Order[]
+  business      Business?
+  addresses     Address[]
+  cart          Cart?
+  orders        Order[]
+  refreshTokens RefreshToken[]
 
   @@map("users")
+}
+
+// Refresh tokens opacos, rotativos y de un solo uso.
+// Se guarda solo el hash SHA-256; el token va al cliente en cookie httpOnly.
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
 }
 
 enum BusinessStatus {

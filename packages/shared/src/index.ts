@@ -35,6 +35,23 @@ export const SUB_ORDER_STATUSES = [
 ] as const;
 export type SubOrderStatus = (typeof SUB_ORDER_STATUSES)[number];
 
+// ── Auth y usuarios ──────────────────────────────────────
+
+export interface UserDto {
+  id: string;
+  email: string;
+  name: string;
+  phone: string | null;
+  avatarUrl: string | null;
+  createdAt: string;
+}
+
+// El refresh token viaja aparte, en cookie httpOnly
+export interface AuthResponse {
+  accessToken: string;
+  user: UserDto;
+}
+
 // ── Convenciones de la API ───────────────────────────────
 
 export interface ApiError {
