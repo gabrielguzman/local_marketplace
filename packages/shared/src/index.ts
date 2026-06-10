@@ -52,6 +52,19 @@ export interface AuthResponse {
   user: UserDto;
 }
 
+// ── Negocios ─────────────────────────────────────────────
+
+export interface BusinessDto {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  logoUrl: string | null;
+  bannerUrl: string | null;
+  status: BusinessStatus;
+  createdAt: string;
+}
+
 // ── Convenciones de la API ───────────────────────────────
 
 export interface ApiError {
