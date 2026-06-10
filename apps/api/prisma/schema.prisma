@@ -1,0 +1,288 @@
+// Marketplace — schema de datos
+// Ver docs/DISENO.md para el razonamiento de cada decisión.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// Usuarios y negocios
+// ─────────────────────────────────────────────
+
+model User {
+  id              String    @id @default(uuid())
+  email           String    @unique
+  passwordHash    String? // null si solo entra por OAuth
+  name            String
+  phone           String?
+  avatarUrl       String?
+  emailVerifiedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  business  Business?
+  addresses Address[]
+  cart      Cart?
+  orders    Order[]
+
+  @@map("users")
+}
+
+enum BusinessStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+model Business {
+  id          String         @id @default(uuid())
+  ownerId     String         @unique // MVP: 1 negocio por usuario
+  name        String
+  slug        String         @unique
+  description String         @default("")
+  logoUrl     String?
+  bannerUrl   String?
+  status      BusinessStatus @default(PENDING)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  owner     User       @relation(fields: [ownerId], references: [id])
+  products  Product[]
+  subOrders SubOrder[]
+
+  @@map("businesses")
+}
+
+model Address {
+  id        String  @id @default(uuid())
+  userId    String
+  street    String
+  number    String
+  city      String
+  province  String
+  zipCode   String
+  isDefault Boolean @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("addresses")
+}
+
+// ─────────────────────────────────────────────
+// Catálogo
+// ─────────────────────────────────────────────
+
+model Category {
+  id       String  @id @default(uuid())
+  parentId String?
+  name     String
+  slug     String  @unique
+
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryTree")
+  products Product[]
+
+  @@index([parentId])
+  @@map("categories")
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  DELETED // soft delete: las órdenes históricas lo referencian vía snapshot
+}
+
+model Product {
+  id          String        @id @default(uuid())
+  businessId  String
+  categoryId  String
+  title       String
+  slug        String        @unique
+  description String        @default("")
+  status      ProductStatus @default(DRAFT)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Columna generada por migración SQL manual:
+  // GENERATED ALWAYS AS (to_tsvector('spanish', title || ' ' || description)) STORED
+  searchVector Unsupported("tsvector")? @default(dbgenerated("to_tsvector('spanish'::regconfig, ((COALESCE(title, ''::text) || ' '::text) || COALESCE(description, ''::text)))"))
+
+  business Business         @relation(fields: [businessId], references: [id])
+  category Category         @relation(fields: [categoryId], references: [id])
+  variants ProductVariant[]
+  images   ProductImage[]
+
+  @@index([businessId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([searchVector], type: Gin)
+  @@map("products")
+}
+
+model ProductVariant {
+  id         String  @id @default(uuid())
+  productId  String
+  sku        String?
+  // {"color": "rojo", "talle": "M"} — todo producto tiene al menos la variante default
+  attributes Json    @default("{}")
+  priceCents Int // dinero SIEMPRE en centavos, nunca floats
+  currency   String  @default("ARS")
+  stock      Int     @default(0)
+  isDefault  Boolean @default(false)
+
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+
+  @@index([productId])
+  @@map("product_variants")
+}
+
+model ProductImage {
+  id        String @id @default(uuid())
+  productId String
+  url       String
+  position  Int    @default(0)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_images")
+}
+
+// ─────────────────────────────────────────────
+// Carrito
+// ─────────────────────────────────────────────
+
+model Cart {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  updatedAt DateTime @updatedAt
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        String @id @default(uuid())
+  cartId    String
+  variantId String
+  quantity  Int
+
+  cart    Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, variantId])
+  @@map("cart_items")
+}
+
+// ─────────────────────────────────────────────
+// Órdenes y pagos
+// ─────────────────────────────────────────────
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  CANCELLED
+  REFUNDED
+}
+
+enum SubOrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model Order {
+  id     String      @id @default(uuid())
+  buyerId String
+  status OrderStatus @default(PENDING_PAYMENT)
+
+  totalCents Int
+  currency   String @default("ARS")
+
+  // Snapshot de la dirección al momento de la compra
+  shippingAddress Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  buyer     User       @relation(fields: [buyerId], references: [id])
+  subOrders SubOrder[]
+  payment   Payment?
+
+  @@index([buyerId])
+  @@map("orders")
+}
+
+model SubOrder {
+  id            String         @id @default(uuid())
+  orderId       String
+  businessId    String
+  status        SubOrderStatus @default(PENDING)
+  subtotalCents Int
+
+  order    Order       @relation(fields: [orderId], references: [id])
+  business Business    @relation(fields: [businessId], references: [id])
+  items    OrderItem[]
+
+  @@index([orderId])
+  @@index([businessId])
+  @@map("sub_orders")
+}
+
+model OrderItem {
+  id         String @id @default(uuid())
+  subOrderId String
+  variantId  String
+  quantity   Int
+
+  // Snapshots al momento de compra: la orden no cambia si editan el producto
+  unitPriceCents     Int
+  titleSnapshot      String
+  attributesSnapshot Json   @default("{}")
+
+  subOrder SubOrder       @relation(fields: [subOrderId], references: [id])
+  variant  ProductVariant @relation(fields: [variantId], references: [id])
+
+  @@index([subOrderId])
+  @@map("order_items")
+}
+
+enum PaymentProvider {
+  MERCADOPAGO
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  REFUNDED
+}
+
+model Payment {
+  id                String          @id @default(uuid())
+  orderId           String          @unique
+  provider          PaymentProvider @default(MERCADOPAGO)
+  providerPaymentId String?         @unique // clave de idempotencia del webhook
+  status            PaymentStatus   @default(PENDING)
+  amountCents       Int
+  rawWebhookPayload Json?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@map("payments")
+}

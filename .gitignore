@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+
+# builds
+dist/
+.next/
+out/
+build/
+
+# env
+.env
+.env.local
+.env.*.local
+
+# prisma
+apps/api/generated/
+
+# logs & misc
+*.log
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp
+
+# coverage
+coverage/
