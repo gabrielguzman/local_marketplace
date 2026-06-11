@@ -72,9 +72,14 @@ export default async function SellerPage() {
             Ver mi tienda pública →
           </Link>
         </div>
-        <Link href="/vender/productos/nuevo" className="btn-primary">
-          + Nuevo producto
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/vender/ventas" className="btn-secondary">
+            Mis ventas
+          </Link>
+          <Link href="/vender/productos/nuevo" className="btn-primary">
+            + Nuevo producto
+          </Link>
+        </div>
       </div>
 
       {/* Métricas rápidas */}

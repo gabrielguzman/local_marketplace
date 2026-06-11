@@ -1,0 +1,191 @@
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import type { Metadata } from 'next';
+import type { CartDto, CartItemDto } from '@marketplace/shared';
+import { authFetch } from '@/lib/api';
+import {
+  removeCartItemAction,
+  updateCartItemAction,
+} from '@/lib/cart-actions';
+import { formatPrice } from '@/lib/format';
+import { getAccessToken } from '@/lib/session';
+
+export const metadata: Metadata = { title: 'Carrito' };
+export const dynamic = 'force-dynamic';
+
+function groupByBusiness(items: CartItemDto[]) {
+  const groups = new Map<string, { name: string; slug: string; items: CartItemDto[] }>();
+  for (const item of items) {
+    const group = groups.get(item.business.id) ?? {
+      name: item.business.name,
+      slug: item.business.slug,
+      items: [],
+    };
+    group.items.push(item);
+    groups.set(item.business.id, group);
+  }
+  return [...groups.values()];
+}
+
+export default async function CartPage() {
+  const token = await getAccessToken();
+  if (!token) redirect('/login');
+
+  const cart = await authFetch<CartDto>(token, '/cart').catch(
+    (): CartDto => ({ items: [], totalCents: 0, currency: 'ARS' }),
+  );
+
+  if (cart.items.length === 0) {
+    return (
+      <div className="mx-auto max-w-md py-16 text-center">
+        <p className="text-5xl">🛒</p>
+        <h1 className="mt-4 text-xl font-bold tracking-tight">
+          Tu carrito está vacío
+        </h1>
+        <p className="mt-1 text-sm text-zinc-500">
+          Cuando agregues productos van a aparecer acá.
+        </p>
+        <Link href="/buscar" className="btn-primary mt-6">
+          Explorar productos
+        </Link>
+      </div>
+    );
+  }
+
+  const groups = groupByBusiness(cart.items);
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold tracking-tight">Tu carrito</h1>
+
+      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+        <div className="space-y-4">
+          {groups.map((group) => (
+            <section key={group.slug} className="surface-card overflow-hidden">
+              <Link
+                href={`/tienda/${group.slug}`}
+                className="flex items-center gap-2 border-b border-zinc-100 px-5 py-3 text-sm font-semibold text-zinc-700 hover:text-brand-600"
+              >
+                🏪 {group.name}
+              </Link>
+              <ul className="divide-y divide-zinc-50">
+                {group.items.map((item) => (
+                  <li key={item.id} className="flex gap-4 px-5 py-4">
+                    <Link
+                      href={`/p/${item.product.slug}`}
+                      className="block h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-zinc-100"
+                    >
+                      {item.product.imageUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element -- dominio de imagen arbitrario en MVP
+                        <img
+                          src={item.product.imageUrl}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      )}
+                    </Link>
+
+                    <div className="min-w-0 flex-1">
+                      <Link
+                        href={`/p/${item.product.slug}`}
+                        className="line-clamp-2 text-sm font-medium text-zinc-800 hover:text-brand-600"
+                      >
+                        {item.product.title}
+                      </Link>
+                      {Object.values(item.variant.attributes).length > 0 && (
+                        <p className="mt-0.5 text-xs text-zinc-400">
+                          {Object.values(item.variant.attributes).join(' · ')}
+                        </p>
+                      )}
+
+                      <div className="mt-2 flex items-center gap-3">
+                        <div className="flex items-center rounded-lg border border-zinc-200">
+                          <form action={updateCartItemAction}>
+                            <input type="hidden" name="itemId" value={item.id} />
+                            <input
+                              type="hidden"
+                              name="quantity"
+                              value={item.quantity - 1}
+                            />
+                            <button
+                              type="submit"
+                              aria-label="Restar uno"
+                              className="px-2.5 py-1 text-zinc-500 hover:text-zinc-900"
+                            >
+                              −
+                            </button>
+                          </form>
+                          <span className="min-w-8 text-center text-sm font-medium">
+                            {item.quantity}
+                          </span>
+                          <form action={updateCartItemAction}>
+                            <input type="hidden" name="itemId" value={item.id} />
+                            <input
+                              type="hidden"
+                              name="quantity"
+                              value={item.quantity + 1}
+                            />
+                            <button
+                              type="submit"
+                              aria-label="Sumar uno"
+                              disabled={item.quantity >= item.variant.stock}
+                              className="px-2.5 py-1 text-zinc-500 hover:text-zinc-900 disabled:opacity-30"
+                            >
+                              +
+                            </button>
+                          </form>
+                        </div>
+                        <form action={removeCartItemAction}>
+                          <input type="hidden" name="itemId" value={item.id} />
+                          <button
+                            type="submit"
+                            className="text-xs text-zinc-400 hover:text-red-600 hover:underline"
+                          >
+                            Eliminar
+                          </button>
+                        </form>
+                      </div>
+                    </div>
+
+                    <p className="shrink-0 text-sm font-bold">
+                      {formatPrice(
+                        item.variant.priceCents * item.quantity,
+                        item.variant.currency,
+                      )}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+
+        <aside>
+          <div className="surface-card sticky top-32 p-6">
+            <h2 className="text-base font-bold tracking-tight">Resumen</h2>
+            <dl className="mt-4 space-y-2 text-sm">
+              <div className="flex justify-between text-zinc-500">
+                <dt>
+                  Productos (
+                  {cart.items.reduce((sum, i) => sum + i.quantity, 0)})
+                </dt>
+                <dd>{formatPrice(cart.totalCents, cart.currency)}</dd>
+              </div>
+              <div className="flex justify-between text-zinc-500">
+                <dt>Envío</dt>
+                <dd className="text-green-600">A coordinar</dd>
+              </div>
+              <div className="flex justify-between border-t border-zinc-100 pt-3 text-base font-bold text-zinc-900">
+                <dt>Total</dt>
+                <dd>{formatPrice(cart.totalCents, cart.currency)}</dd>
+              </div>
+            </dl>
+            <Link href="/checkout" className="btn-primary mt-5 w-full">
+              Continuar compra
+            </Link>
+          </div>
+        </aside>
+      </div>
+    </div>
+  );
+}

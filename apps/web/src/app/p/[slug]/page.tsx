@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import type { ProductDetailDto } from '@marketplace/shared';
+import { AddToCart } from '@/components/add-to-cart';
 import { apiFetch } from '@/lib/api';
 import { formatPrice } from '@/lib/format';
 
@@ -163,17 +164,12 @@ export default async function ProductPage({
               </div>
             )}
 
-            <button
-              type="button"
-              disabled
-              title="El carrito llega en la próxima fase"
-              className="btn-primary mt-6 w-full opacity-60"
-            >
-              Comprar ahora
-            </button>
-            <p className="mt-2 text-center text-xs text-zinc-400">
-              Checkout disponible próximamente
-            </p>
+            <div className="mt-6">
+              <AddToCart
+                variantId={defaultVariant.id}
+                disabled={totalStock === 0}
+              />
+            </div>
 
             <div className="mt-5 space-y-2 border-t border-zinc-100 pt-4 text-xs text-zinc-500">
               <p className="flex items-center gap-2">

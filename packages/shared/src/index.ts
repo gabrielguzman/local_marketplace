@@ -35,6 +35,14 @@ export const SUB_ORDER_STATUSES = [
 ] as const;
 export type SubOrderStatus = (typeof SUB_ORDER_STATUSES)[number];
 
+export const PAYMENT_STATUSES = [
+  'PENDING',
+  'APPROVED',
+  'REJECTED',
+  'REFUNDED',
+] as const;
+export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
+
 // ── Auth y usuarios ──────────────────────────────────────
 
 export interface UserDto {
@@ -113,6 +121,79 @@ export interface ProductSummaryDto {
   imageUrl: string | null;
   businessName: string;
   businessSlug: string;
+}
+
+// ── Carrito ──────────────────────────────────────────────
+
+export interface CartItemDto {
+  id: string;
+  quantity: number;
+  variant: {
+    id: string;
+    priceCents: number;
+    currency: Currency;
+    attributes: Record<string, string>;
+    stock: number;
+  };
+  product: {
+    id: string;
+    title: string;
+    slug: string;
+    status: ProductStatus;
+    imageUrl: string | null;
+  };
+  business: { id: string; name: string; slug: string };
+}
+
+export interface CartDto {
+  items: CartItemDto[];
+  totalCents: number;
+  currency: Currency;
+}
+
+// ── Órdenes ──────────────────────────────────────────────
+
+export interface ShippingAddress {
+  street: string;
+  number: string;
+  city: string;
+  province: string;
+  zipCode: string;
+}
+
+export interface OrderItemDto {
+  id: string;
+  title: string;
+  attributes: Record<string, string>;
+  quantity: number;
+  unitPriceCents: number;
+}
+
+export interface SubOrderDto {
+  id: string;
+  status: SubOrderStatus;
+  subtotalCents: number;
+  business: { id: string; name: string; slug: string };
+  items: OrderItemDto[];
+}
+
+export interface OrderDto {
+  id: string;
+  status: OrderStatus;
+  totalCents: number;
+  currency: Currency;
+  shippingAddress: ShippingAddress;
+  paymentStatus: PaymentStatus | null;
+  createdAt: string;
+  subOrders: SubOrderDto[];
+}
+
+// Vista del vendedor: una sub-orden con contexto de la orden madre
+export interface SellerSubOrderDto extends SubOrderDto {
+  orderId: string;
+  createdAt: string;
+  buyerName: string;
+  shippingAddress: ShippingAddress;
 }
 
 // ── Convenciones de la API ───────────────────────────────
