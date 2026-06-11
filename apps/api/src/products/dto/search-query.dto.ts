@@ -22,6 +22,12 @@ export class SearchQueryDto {
   @MaxLength(80)
   category?: string;
 
+  // slug de negocio (para la página de tienda)
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  business?: string;
+
   @IsOptional()
   @Type(() => Number)
   @IsInt()

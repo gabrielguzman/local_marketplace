@@ -134,6 +134,10 @@ export class ProductsService {
       where.id = { in: matches.map((m) => m.id) };
     }
 
+    if (query.business) {
+      where.business = { slug: query.business };
+    }
+
     if (query.category) {
       const category = await this.prisma.category.findUnique({
         where: { slug: query.category },
