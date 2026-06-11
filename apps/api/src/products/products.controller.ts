@@ -15,7 +15,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { AccessTokenPayload } from '../auth/auth.types';
 import { CreateProductDto } from './dto/create-product.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
+import { UpdateProductDto, UpdateVariantDto } from './dto/update-product.dto';
 import { toProductDetailDto } from './product.mapper';
 import { ProductsService } from './products.service';
 
@@ -55,6 +55,19 @@ export class ProductsController {
     @Body() dto: UpdateProductDto,
   ): Promise<ProductDetailDto> {
     return toProductDetailDto(await this.products.update(user.sub, id, dto));
+  }
+
+  @Patch(':id/variants/:variantId')
+  @UseGuards(JwtAuthGuard)
+  async updateVariant(
+    @CurrentUser() user: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('variantId', ParseUUIDPipe) variantId: string,
+    @Body() dto: UpdateVariantDto,
+  ): Promise<ProductDetailDto> {
+    return toProductDetailDto(
+      await this.products.updateVariant(user.sub, id, variantId, dto),
+    );
   }
 
   @Delete(':id')

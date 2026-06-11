@@ -2,7 +2,6 @@
 
 import { useActionState } from 'react';
 import type { ActionState } from '@/lib/auth-actions';
-import { createProductAction } from '@/lib/seller-actions';
 
 const initialState: ActionState = { error: null };
 
@@ -11,14 +10,38 @@ export interface CategoryOption {
   label: string;
 }
 
-export function ProductForm({ categories }: { categories: CategoryOption[] }) {
-  const [state, formAction, pending] = useActionState(
-    createProductAction,
-    initialState,
-  );
+export interface ProductFormInitial {
+  title: string;
+  categoryId: string;
+  price: string; // en pesos, como texto del input
+  stock: number;
+  description: string;
+  imageUrl: string;
+}
+
+export function ProductForm({
+  categories,
+  action,
+  submitLabel,
+  pendingLabel,
+  initial,
+  hidden = {},
+}: {
+  categories: CategoryOption[];
+  action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
+  submitLabel: string;
+  pendingLabel: string;
+  initial?: ProductFormInitial;
+  hidden?: Record<string, string>;
+}) {
+  const [state, formAction, pending] = useActionState(action, initialState);
 
   return (
     <form action={formAction} className="space-y-4">
+      {Object.entries(hidden).map(([name, value]) => (
+        <input key={name} type="hidden" name={name} value={value} />
+      ))}
+
       <label className="block">
         <span className="field-label">Título</span>
         <input
@@ -27,6 +50,7 @@ export function ProductForm({ categories }: { categories: CategoryOption[] }) {
           required
           minLength={3}
           maxLength={120}
+          defaultValue={initial?.title}
           placeholder="Ej: Taladro percutor inalámbrico 20V"
           className="field-input"
         />
@@ -34,7 +58,12 @@ export function ProductForm({ categories }: { categories: CategoryOption[] }) {
 
       <label className="block">
         <span className="field-label">Categoría</span>
-        <select name="categoryId" required className="field-input">
+        <select
+          name="categoryId"
+          required
+          defaultValue={initial?.categoryId ?? ''}
+          className="field-input"
+        >
           <option value="">Elegí una categoría…</option>
           {categories.map((cat) => (
             <option key={cat.id} value={cat.id}>
@@ -53,6 +82,7 @@ export function ProductForm({ categories }: { categories: CategoryOption[] }) {
             required
             min={1}
             step="0.01"
+            defaultValue={initial?.price}
             placeholder="85000"
             className="field-input"
           />
@@ -65,7 +95,7 @@ export function ProductForm({ categories }: { categories: CategoryOption[] }) {
             required
             min={0}
             step={1}
-            defaultValue={1}
+            defaultValue={initial?.stock ?? 1}
             className="field-input"
           />
         </label>
@@ -75,7 +105,13 @@ export function ProductForm({ categories }: { categories: CategoryOption[] }) {
         <span className="field-label">
           Descripción <span className="font-normal text-zinc-400">(opcional)</span>
         </span>
-        <textarea name="description" rows={5} maxLength={8000} className="field-input" />
+        <textarea
+          name="description"
+          rows={5}
+          maxLength={8000}
+          defaultValue={initial?.description}
+          className="field-input"
+        />
       </label>
 
       <label className="block">
@@ -85,6 +121,7 @@ export function ProductForm({ categories }: { categories: CategoryOption[] }) {
         <input
           name="imageUrl"
           type="url"
+          defaultValue={initial?.imageUrl}
           placeholder="https://…"
           className="field-input"
         />
@@ -97,7 +134,7 @@ export function ProductForm({ categories }: { categories: CategoryOption[] }) {
       )}
 
       <button type="submit" disabled={pending} className="btn-primary w-full">
-        {pending ? 'Publicando…' : 'Publicar producto'}
+        {pending ? pendingLabel : submitLabel}
       </button>
     </form>
   );

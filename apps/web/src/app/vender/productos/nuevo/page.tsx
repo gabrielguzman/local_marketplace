@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import type { BusinessDto, CategoryDto } from '@marketplace/shared';
 import { ProductForm, type CategoryOption } from '@/components/product-form';
 import { apiFetch, authFetch } from '@/lib/api';
+import { createProductAction } from '@/lib/seller-actions';
 import { getAccessToken } from '@/lib/session';
 
 export const metadata: Metadata = { title: 'Nuevo producto' };
@@ -37,7 +38,12 @@ export default async function NewProductPage() {
         <p className="mb-6 mt-1 text-sm text-zinc-500">
           Se publica en {business.name} apenas lo guardes.
         </p>
-        <ProductForm categories={categories} />
+        <ProductForm
+          categories={categories}
+          action={createProductAction}
+          submitLabel="Publicar producto"
+          pendingLabel="Publicando…"
+        />
       </div>
     </div>
   );

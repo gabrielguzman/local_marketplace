@@ -11,7 +11,7 @@ import { slugify } from '../common/slug';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { SearchQueryDto } from './dto/search-query.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
+import { UpdateProductDto, UpdateVariantDto } from './dto/update-product.dto';
 import {
   toProductSummaryDto,
   type ProductForSummary,
@@ -106,9 +106,45 @@ export class ProductsService {
     if (dto.categoryId) {
       await this.categories.ensureExists(dto.categoryId);
     }
+    const { images, ...fields } = dto;
     return this.prisma.product.update({
       where: { id: productId },
+      data: {
+        ...fields,
+        ...(images && {
+          images: {
+            deleteMany: {},
+            create: images.map((url, i) => ({ url, position: i })),
+          },
+        }),
+      },
+      include: DETAIL_INCLUDE,
+    });
+  }
+
+  async updateVariant(
+    userId: string,
+    productId: string,
+    variantId: string,
+    dto: UpdateVariantDto,
+  ): Promise<ProductWithRelations> {
+    await this.assertOwnership(userId, productId);
+    const variant = await this.prisma.productVariant.findUnique({
+      where: { id: variantId },
+      select: { productId: true },
+    });
+    if (!variant || variant.productId !== productId) {
+      throw new NotFoundException({
+        code: 'VARIANT_NOT_FOUND',
+        message: 'La variante no pertenece a este producto',
+      });
+    }
+    await this.prisma.productVariant.update({
+      where: { id: variantId },
       data: dto,
+    });
+    return this.prisma.product.findUniqueOrThrow({
+      where: { id: productId },
       include: DETAIL_INCLUDE,
     });
   }

@@ -158,6 +158,42 @@ describe('Products (e2e)', () => {
     });
   });
 
+  it('el dueño edita precio y stock de una variante', async () => {
+    const detail = await request(app.getHttpServer())
+      .get(`/products/${productSlug}`)
+      .expect(200);
+    const variantId = (detail.body as ProductDetailDto).variants[0].id;
+
+    const res = await request(app.getHttpServer())
+      .patch(`/products/${productId}/variants/${variantId}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ priceCents: 9990000, stock: 42 })
+      .expect(200);
+
+    const updated = (res.body as ProductDetailDto).variants.find(
+      (v) => v.id === variantId,
+    );
+    expect(updated?.priceCents).toBe(9990000);
+    expect(updated?.stock).toBe(42);
+  });
+
+  it('PATCH con images reemplaza la galería completa', async () => {
+    const res = await request(app.getHttpServer())
+      .patch(`/products/${productId}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        images: [
+          'https://example.com/nueva-1.jpg',
+          'https://example.com/nueva-2.jpg',
+        ],
+      })
+      .expect(200);
+
+    const product = res.body as ProductDetailDto;
+    expect(product.images).toHaveLength(2);
+    expect(product.images[0].url).toBe('https://example.com/nueva-1.jpg');
+  });
+
   it('pausar el producto lo saca del público', async () => {
     await request(app.getHttpServer())
       .patch(`/products/${productId}`)

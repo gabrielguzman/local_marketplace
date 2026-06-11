@@ -3,8 +3,10 @@ import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import type { BusinessDto, ProductDetailDto } from '@marketplace/shared';
 import { BusinessForm } from '@/components/business-form';
+import { DeleteProductButton } from '@/components/delete-product-button';
 import { authFetch } from '@/lib/api';
 import { formatPrice } from '@/lib/format';
+import { setProductStatusAction } from '@/lib/seller-actions';
 import { getAccessToken } from '@/lib/session';
 
 export const metadata: Metadata = { title: 'Vender' };
@@ -72,7 +74,10 @@ export default async function SellerPage() {
             Ver mi tienda pública →
           </Link>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Link href="/vender/negocio" className="btn-secondary">
+            Editar negocio
+          </Link>
           <Link href="/vender/ventas" className="btn-secondary">
             Mis ventas
           </Link>
@@ -120,6 +125,7 @@ export default async function SellerPage() {
                 <th className="px-5 py-3.5">Precio</th>
                 <th className="px-5 py-3.5">Stock</th>
                 <th className="px-5 py-3.5">Estado</th>
+                <th className="px-5 py-3.5">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -155,6 +161,44 @@ export default async function SellerPage() {
                       >
                         {badge.label}
                       </span>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center gap-3">
+                        <Link
+                          href={`/vender/productos/${product.id}/editar`}
+                          className="text-xs font-medium text-brand-600 hover:underline"
+                        >
+                          Editar
+                        </Link>
+                        {(product.status === 'ACTIVE' ||
+                          product.status === 'PAUSED') && (
+                          <form action={setProductStatusAction}>
+                            <input
+                              type="hidden"
+                              name="productId"
+                              value={product.id}
+                            />
+                            <input
+                              type="hidden"
+                              name="status"
+                              value={
+                                product.status === 'ACTIVE'
+                                  ? 'PAUSED'
+                                  : 'ACTIVE'
+                              }
+                            />
+                            <button
+                              type="submit"
+                              className="text-xs text-zinc-500 hover:text-zinc-900 hover:underline"
+                            >
+                              {product.status === 'ACTIVE'
+                                ? 'Pausar'
+                                : 'Publicar'}
+                            </button>
+                          </form>
+                        )}
+                        <DeleteProductButton productId={product.id} />
+                      </div>
                     </td>
                   </tr>
                 );
