@@ -10,7 +10,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import type { OrderDto, SellerSubOrderDto } from '@marketplace/shared';
+import type {
+  OrderDto,
+  SellerDashboard,
+  SellerSubOrderDto,
+} from '@marketplace/shared';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { AccessTokenPayload } from '../auth/auth.types';
@@ -56,6 +60,11 @@ export class OrdersController {
   @Get('businesses/me/suborders')
   sales(@CurrentUser() user: AccessTokenPayload): Promise<SellerSubOrderDto[]> {
     return this.orders.listMySales(user.sub);
+  }
+
+  @Get('businesses/me/dashboard')
+  dashboard(@CurrentUser() user: AccessTokenPayload): Promise<SellerDashboard> {
+    return this.orders.sellerDashboard(user.sub);
   }
 
   @Patch('suborders/:id/status')

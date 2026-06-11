@@ -48,6 +48,9 @@ export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 export const USER_ROLES = ['USER', 'ADMIN'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
+export const USER_STATUSES = ['ACTIVE', 'SUSPENDED'] as const;
+export type UserStatus = (typeof USER_STATUSES)[number];
+
 export interface UserDto {
   id: string;
   email: string;
@@ -264,6 +267,59 @@ export interface AdminStats {
   activeProducts: number;
   paidOrders: number;
   pendingReports: number;
+  gmvCents: number; // facturación total de órdenes pagadas
+}
+
+export interface AdminUserDto {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  status: UserStatus;
+  emailVerified: boolean;
+  businessName: string | null;
+  createdAt: string;
+}
+
+export interface AdminBusinessDto {
+  id: string;
+  name: string;
+  slug: string;
+  status: BusinessStatus;
+  ownerEmail: string;
+  productCount: number;
+  createdAt: string;
+}
+
+export interface AdminProductDto {
+  id: string;
+  title: string;
+  slug: string;
+  status: ProductStatus;
+  businessName: string;
+  priceCents: number;
+  createdAt: string;
+}
+
+export interface AdminOrderDto {
+  id: string;
+  buyerEmail: string;
+  totalCents: number;
+  currency: Currency;
+  status: OrderStatus;
+  subOrderCount: number;
+  createdAt: string;
+}
+
+// ── Dashboard del vendedor ───────────────────────────────
+
+export interface SellerDashboard {
+  revenueCents: number; // suma de sub-órdenes de órdenes pagadas
+  salesCount: number;
+  pendingSalesCount: number; // ventas esperando confirmación/envío
+  activeProducts: number;
+  lowStockVariants: number; // variantes con stock <= 3
+  recentSales: SellerSubOrderDto[];
 }
 
 // ── Convenciones de la API ───────────────────────────────

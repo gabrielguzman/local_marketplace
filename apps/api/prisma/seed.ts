@@ -107,11 +107,8 @@ async function seedCategories() {
 }
 
 async function seedDemoData() {
-  if ((await prisma.product.count()) > 0) {
-    console.log('Ya hay productos, salteo los datos de demo.');
-    return;
-  }
-
+  // el upsert del usuario demo corre SIEMPRE (aunque ya haya productos),
+  // para que quede verificado
   const owner = await prisma.user.upsert({
     where: { email: 'demo@marketplace.local' },
     update: { emailVerifiedAt: new Date() },
@@ -122,6 +119,11 @@ async function seedDemoData() {
       emailVerifiedAt: new Date(),
     },
   });
+
+  if ((await prisma.product.count()) > 0) {
+    console.log('Ya hay productos, salteo los datos de demo.');
+    return;
+  }
 
   const business = await prisma.business.upsert({
     where: { ownerId: owner.id },

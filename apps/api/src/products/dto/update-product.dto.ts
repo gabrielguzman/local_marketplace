@@ -3,6 +3,7 @@ import {
   IsArray,
   IsIn,
   IsInt,
+  IsObject,
   IsOptional,
   IsString,
   IsUUID,
@@ -18,6 +19,11 @@ export class UpdateVariantDto {
   @IsString()
   @MaxLength(60)
   sku?: string;
+
+  // {"color": "rojo", "talle": "M"}
+  @IsOptional()
+  @IsObject()
+  attributes?: Record<string, string>;
 
   @IsOptional()
   @IsInt()

@@ -9,10 +9,19 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import type { AdminStats, ReportDto } from '@marketplace/shared';
-import { IsIn, IsOptional } from 'class-validator';
+import type {
+  AdminBusinessDto,
+  AdminOrderDto,
+  AdminProductDto,
+  AdminStats,
+  AdminUserDto,
+  ReportDto,
+} from '@marketplace/shared';
+import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
 import { AdminGuard } from '../auth/admin.guard';
+import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import type { AccessTokenPayload } from '../auth/auth.types';
 import { AdminService } from './admin.service';
 
 class ResolveReportDto {
@@ -34,6 +43,23 @@ class ListReportsQuery {
   @IsOptional()
   @IsIn(['PENDING', 'RESOLVED', 'DISMISSED'])
   status?: 'PENDING' | 'RESOLVED' | 'DISMISSED';
+}
+
+class SearchQuery {
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  q?: string;
+}
+
+class SetRoleDto {
+  @IsIn(['USER', 'ADMIN'])
+  role!: 'USER' | 'ADMIN';
+}
+
+class SetUserStatusDto {
+  @IsIn(['ACTIVE', 'SUSPENDED'])
+  status!: 'ACTIVE' | 'SUSPENDED';
 }
 
 @Controller('admin')
@@ -75,5 +101,45 @@ export class AdminController {
     @Body() dto: ModerateBusinessDto,
   ): Promise<void> {
     await this.admin.setBusinessStatus(id, dto.status);
+  }
+
+  @Get('users')
+  users(@Query() query: SearchQuery): Promise<AdminUserDto[]> {
+    return this.admin.listUsers(query.q);
+  }
+
+  @Patch('users/:id/role')
+  @HttpCode(204)
+  async setRole(
+    @CurrentUser() admin: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SetRoleDto,
+  ): Promise<void> {
+    await this.admin.setUserRole(admin.sub, id, dto.role);
+  }
+
+  @Patch('users/:id/status')
+  @HttpCode(204)
+  async setUserStatus(
+    @CurrentUser() admin: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SetUserStatusDto,
+  ): Promise<void> {
+    await this.admin.setUserStatus(admin.sub, id, dto.status);
+  }
+
+  @Get('businesses')
+  businesses(@Query() query: SearchQuery): Promise<AdminBusinessDto[]> {
+    return this.admin.listBusinesses(query.q);
+  }
+
+  @Get('products')
+  products(@Query() query: SearchQuery): Promise<AdminProductDto[]> {
+    return this.admin.listProducts(query.q);
+  }
+
+  @Get('orders')
+  orders(): Promise<AdminOrderDto[]> {
+    return this.admin.listOrders();
   }
 }

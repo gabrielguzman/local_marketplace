@@ -5,7 +5,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import type { OrderDto, SellerSubOrderDto } from '@marketplace/shared';
+import type {
+  OrderDto,
+  SellerDashboard,
+  SellerSubOrderDto,
+} from '@marketplace/shared';
 import type { SubOrderStatus } from '@prisma/client';
 import { BusinessesService } from '../businesses/businesses.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -209,6 +213,55 @@ export class OrdersService {
       });
     }
     return toOrderDto(order);
+  }
+
+  async sellerDashboard(userId: string): Promise<SellerDashboard> {
+    const business = await this.businesses.findMine(userId);
+    const paidSales = {
+      businessId: business.id,
+      order: { status: 'PAID' as const },
+    };
+
+    const [
+      revenue,
+      pendingSalesCount,
+      activeProducts,
+      lowStockVariants,
+      recent,
+    ] = await this.prisma.$transaction([
+      this.prisma.subOrder.aggregate({
+        where: { ...paidSales, status: { not: 'CANCELLED' } },
+        _sum: { subtotalCents: true },
+        _count: true,
+      }),
+      this.prisma.subOrder.count({
+        where: { ...paidSales, status: { in: ['PENDING', 'CONFIRMED'] } },
+      }),
+      this.prisma.product.count({
+        where: { businessId: business.id, status: 'ACTIVE' },
+      }),
+      this.prisma.productVariant.count({
+        where: {
+          stock: { lte: 3 },
+          product: { businessId: business.id, status: 'ACTIVE' },
+        },
+      }),
+      this.prisma.subOrder.findMany({
+        where: paidSales,
+        include: SELLER_SUB_ORDER_INCLUDE,
+        orderBy: { order: { createdAt: 'desc' } },
+        take: 5,
+      }),
+    ]);
+
+    return {
+      revenueCents: revenue._sum.subtotalCents ?? 0,
+      salesCount: revenue._count,
+      pendingSalesCount,
+      activeProducts,
+      lowStockVariants,
+      recentSales: recent.map(toSellerSubOrderDto),
+    };
   }
 
   // El vendedor ve sus ventas recién cuando la orden está pagada

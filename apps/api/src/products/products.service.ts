@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -13,7 +14,7 @@ import { BusinessesService } from '../businesses/businesses.service';
 import { CategoriesService } from '../categories/categories.service';
 import { slugify } from '../common/slug';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateProductDto } from './dto/create-product.dto';
+import { CreateProductDto, CreateVariantDto } from './dto/create-product.dto';
 import { SearchQueryDto } from './dto/search-query.dto';
 import { UpdateProductDto, UpdateVariantDto } from './dto/update-product.dto';
 import {
@@ -122,6 +123,78 @@ export class ProductsService {
           },
         }),
       },
+      include: DETAIL_INCLUDE,
+    });
+  }
+
+  async addVariant(
+    userId: string,
+    productId: string,
+    dto: CreateVariantDto,
+  ): Promise<ProductWithRelations> {
+    await this.assertOwnership(userId, productId);
+    await this.prisma.productVariant.create({
+      data: {
+        productId,
+        sku: dto.sku,
+        attributes: dto.attributes ?? {},
+        priceCents: dto.priceCents,
+        stock: dto.stock,
+      },
+    });
+    return this.prisma.product.findUniqueOrThrow({
+      where: { id: productId },
+      include: DETAIL_INCLUDE,
+    });
+  }
+
+  async deleteVariant(
+    userId: string,
+    productId: string,
+    variantId: string,
+  ): Promise<ProductWithRelations> {
+    await this.assertOwnership(userId, productId);
+    const variants = await this.prisma.productVariant.findMany({
+      where: { productId },
+      select: { id: true, isDefault: true },
+    });
+    const target = variants.find((v) => v.id === variantId);
+    if (!target) {
+      throw new NotFoundException({
+        code: 'VARIANT_NOT_FOUND',
+        message: 'La variante no pertenece a este producto',
+      });
+    }
+    if (variants.length === 1) {
+      throw new ConflictException({
+        code: 'LAST_VARIANT',
+        message: 'El producto necesita al menos una variante',
+      });
+    }
+
+    try {
+      await this.prisma.productVariant.delete({ where: { id: variantId } });
+    } catch {
+      // FK restrict: la variante tiene ventas históricas
+      throw new ConflictException({
+        code: 'VARIANT_HAS_ORDERS',
+        message:
+          'Esta variante tiene ventas y no se puede borrar. Dejala con stock 0 para que no se venda más.',
+      });
+    }
+
+    if (target.isDefault) {
+      const next = variants.find((v) => v.id !== variantId);
+      if (next) {
+        await this.prisma.productVariant.update({
+          where: { id: next.id },
+          data: { isDefault: true },
+        });
+      }
+    }
+
+    return this.prisma.product.findUniqueOrThrow({
+      where: { id: productId },
       include: DETAIL_INCLUDE,
     });
   }

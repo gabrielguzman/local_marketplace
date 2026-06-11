@@ -16,7 +16,7 @@ export interface ProductFormInitial {
   price: string; // en pesos, como texto del input
   stock: number;
   description: string;
-  imageUrl: string;
+  images: string; // una URL por línea
 }
 
 export function ProductForm({
@@ -116,14 +116,14 @@ export function ProductForm({
 
       <label className="block">
         <span className="field-label">
-          URL de imagen <span className="font-normal text-zinc-400">(opcional)</span>
+          Imágenes <span className="font-normal text-zinc-400">(una URL por línea, hasta 8)</span>
         </span>
-        <input
-          name="imageUrl"
-          type="url"
-          defaultValue={initial?.imageUrl}
-          placeholder="https://…"
-          className="field-input"
+        <textarea
+          name="images"
+          rows={3}
+          defaultValue={initial?.images}
+          placeholder={'https://…/foto-1.jpg\nhttps://…/foto-2.jpg'}
+          className="field-input font-mono text-xs"
         />
       </label>
 

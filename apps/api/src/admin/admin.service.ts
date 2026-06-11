@@ -1,10 +1,24 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import type { AdminStats, ReportDto } from '@marketplace/shared';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import type {
+  AdminBusinessDto,
+  AdminOrderDto,
+  AdminProductDto,
+  AdminStats,
+  AdminUserDto,
+  Currency,
+  ReportDto,
+} from '@marketplace/shared';
 import type {
   BusinessStatus,
   Prisma,
   ProductStatus,
   ReportStatus,
+  UserRole,
+  UserStatus,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -49,15 +63,172 @@ export class AdminService {
   constructor(private readonly prisma: PrismaService) {}
 
   async stats(): Promise<AdminStats> {
-    const [users, businesses, activeProducts, paidOrders, pendingReports] =
+    const [users, businesses, activeProducts, paidOrders, pendingReports, gmv] =
       await this.prisma.$transaction([
         this.prisma.user.count(),
         this.prisma.business.count(),
         this.prisma.product.count({ where: { status: 'ACTIVE' } }),
         this.prisma.order.count({ where: { status: 'PAID' } }),
         this.prisma.report.count({ where: { status: 'PENDING' } }),
+        this.prisma.order.aggregate({
+          where: { status: 'PAID' },
+          _sum: { totalCents: true },
+        }),
       ]);
-    return { users, businesses, activeProducts, paidOrders, pendingReports };
+    return {
+      users,
+      businesses,
+      activeProducts,
+      paidOrders,
+      pendingReports,
+      gmvCents: gmv._sum.totalCents ?? 0,
+    };
+  }
+
+  // ── Usuarios ─────────────────────────────────────────────
+
+  async listUsers(q?: string): Promise<AdminUserDto[]> {
+    const users = await this.prisma.user.findMany({
+      where: q
+        ? {
+            OR: [
+              { email: { contains: q, mode: 'insensitive' } },
+              { name: { contains: q, mode: 'insensitive' } },
+            ],
+          }
+        : undefined,
+      include: { business: { select: { name: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+    return users.map((user) => ({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      status: user.status,
+      emailVerified: user.emailVerifiedAt !== null,
+      businessName: user.business?.name ?? null,
+      createdAt: user.createdAt.toISOString(),
+    }));
+  }
+
+  async setUserRole(
+    adminId: string,
+    userId: string,
+    role: UserRole,
+  ): Promise<void> {
+    if (adminId === userId) {
+      throw new ConflictException({
+        code: 'SELF_DEMOTE',
+        message: 'No podés cambiar tu propio rol',
+      });
+    }
+    await this.ensureUser(userId);
+    await this.prisma.user.update({ where: { id: userId }, data: { role } });
+  }
+
+  async setUserStatus(
+    adminId: string,
+    userId: string,
+    status: UserStatus,
+  ): Promise<void> {
+    if (adminId === userId) {
+      throw new ConflictException({
+        code: 'SELF_SUSPEND',
+        message: 'No podés suspender tu propia cuenta',
+      });
+    }
+    await this.ensureUser(userId);
+    await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: userId }, data: { status } }),
+      // matar las sesiones activas del usuario suspendido
+      ...(status === 'SUSPENDED'
+        ? [this.prisma.refreshToken.deleteMany({ where: { userId } })]
+        : []),
+    ]);
+  }
+
+  // ── Listados de moderación ───────────────────────────────
+
+  async listBusinesses(q?: string): Promise<AdminBusinessDto[]> {
+    const businesses = await this.prisma.business.findMany({
+      where: q ? { name: { contains: q, mode: 'insensitive' } } : undefined,
+      include: {
+        owner: { select: { email: true } },
+        _count: {
+          select: { products: { where: { status: { not: 'DELETED' } } } },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+    return businesses.map((business) => ({
+      id: business.id,
+      name: business.name,
+      slug: business.slug,
+      status: business.status,
+      ownerEmail: business.owner.email,
+      productCount: business._count.products,
+      createdAt: business.createdAt.toISOString(),
+    }));
+  }
+
+  async listProducts(q?: string): Promise<AdminProductDto[]> {
+    const products = await this.prisma.product.findMany({
+      where: {
+        status: { not: 'DELETED' },
+        ...(q && { title: { contains: q, mode: 'insensitive' } }),
+      },
+      include: {
+        business: { select: { name: true } },
+        variants: { where: { isDefault: true }, take: 1 },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+    return products.map((product) => ({
+      id: product.id,
+      title: product.title,
+      slug: product.slug,
+      status: product.status,
+      businessName: product.business.name,
+      priceCents: product.variants[0]?.priceCents ?? 0,
+      createdAt: product.createdAt.toISOString(),
+    }));
+  }
+
+  async listOrders(): Promise<AdminOrderDto[]> {
+    const orders = await this.prisma.order.findMany({
+      include: {
+        buyer: { select: { email: true } },
+        _count: { select: { subOrders: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+    return orders.map((order) => ({
+      id: order.id,
+      buyerEmail: order.buyer.email,
+      totalCents: order.totalCents,
+      currency: order.currency as Currency,
+      status: order.status,
+      subOrderCount: order._count.subOrders,
+      createdAt: order.createdAt.toISOString(),
+    }));
+  }
+
+  private async ensureUser(userId: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+    if (!user) {
+      throw new NotFoundException({
+        code: 'USER_NOT_FOUND',
+        message: 'Usuario no encontrado',
+      });
+    }
   }
 
   async listReports(status?: ReportStatus): Promise<ReportDto[]> {

@@ -1,26 +1,15 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import type { BusinessDto, ProductDetailDto } from '@marketplace/shared';
+import type { BusinessDto, SellerDashboard } from '@marketplace/shared';
 import { BusinessForm } from '@/components/business-form';
-import { DeleteProductButton } from '@/components/delete-product-button';
 import { authFetch } from '@/lib/api';
 import { formatPrice } from '@/lib/format';
-import { setProductStatusAction } from '@/lib/seller-actions';
+import { SUB_ORDER_STATUS_LABEL } from '@/lib/labels';
 import { getAccessToken } from '@/lib/session';
 
 export const metadata: Metadata = { title: 'Vender' };
 export const dynamic = 'force-dynamic';
-
-const STATUS_BADGE: Record<
-  ProductDetailDto['status'],
-  { label: string; className: string }
-> = {
-  ACTIVE: { label: 'Publicado', className: 'bg-green-50 text-green-700' },
-  PAUSED: { label: 'Pausado', className: 'bg-amber-50 text-amber-700' },
-  DRAFT: { label: 'Borrador', className: 'bg-zinc-100 text-zinc-600' },
-  DELETED: { label: 'Eliminado', className: 'bg-red-50 text-red-600' },
-};
 
 export default async function SellerPage() {
   const token = await getAccessToken();
@@ -48,16 +37,10 @@ export default async function SellerPage() {
     );
   }
 
-  const products = await authFetch<ProductDetailDto[]>(
+  const dashboard = await authFetch<SellerDashboard>(
     token,
-    '/products/mine',
-  ).catch(() => []);
-
-  const activeCount = products.filter((p) => p.status === 'ACTIVE').length;
-  const totalStock = products.reduce(
-    (sum, p) => sum + p.variants.reduce((s, v) => s + v.stock, 0),
-    0,
-  );
+    '/businesses/me/dashboard',
+  ).catch(() => null);
 
   return (
     <div className="space-y-6">
@@ -74,138 +57,103 @@ export default async function SellerPage() {
             Ver mi tienda pública →
           </Link>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/vender/negocio" className="btn-secondary">
-            Editar negocio
-          </Link>
-          <Link href="/vender/ventas" className="btn-secondary">
-            Mis ventas
-          </Link>
-          <Link href="/vender/productos/nuevo" className="btn-primary">
-            + Nuevo producto
-          </Link>
-        </div>
+        <Link href="/vender/productos/nuevo" className="btn-primary">
+          + Nuevo producto
+        </Link>
       </div>
 
-      {/* Métricas rápidas */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        {[
-          { label: 'Publicaciones activas', value: activeCount },
-          { label: 'Productos totales', value: products.length },
-          { label: 'Unidades en stock', value: totalStock },
-        ].map((stat) => (
-          <div key={stat.label} className="surface-card p-5">
-            <p className="text-2xl font-extrabold tracking-tight">
-              {stat.value}
-            </p>
-            <p className="mt-0.5 text-sm text-zinc-500">{stat.label}</p>
+      {dashboard && (
+        <>
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <div className="surface-card p-5">
+              <p className="text-2xl font-extrabold tracking-tight">
+                {formatPrice(dashboard.revenueCents)}
+              </p>
+              <p className="mt-0.5 text-sm text-zinc-500">
+                Facturado ({dashboard.salesCount}{' '}
+                {dashboard.salesCount === 1 ? 'venta' : 'ventas'})
+              </p>
+            </div>
+            <Link href="/vender/ventas" className="surface-card p-5 transition hover:border-brand-300">
+              <p className="text-2xl font-extrabold tracking-tight">
+                {dashboard.pendingSalesCount}
+              </p>
+              <p className="mt-0.5 text-sm text-zinc-500">
+                Ventas por despachar →
+              </p>
+            </Link>
+            <Link href="/vender/productos" className="surface-card p-5 transition hover:border-brand-300">
+              <p className="text-2xl font-extrabold tracking-tight">
+                {dashboard.activeProducts}
+              </p>
+              <p className="mt-0.5 text-sm text-zinc-500">
+                Publicaciones activas →
+              </p>
+            </Link>
+            <div
+              className={`surface-card p-5 ${dashboard.lowStockVariants > 0 ? 'border-amber-300 bg-amber-50/40' : ''}`}
+            >
+              <p className="text-2xl font-extrabold tracking-tight">
+                {dashboard.lowStockVariants}
+              </p>
+              <p className="mt-0.5 text-sm text-zinc-500">
+                {dashboard.lowStockVariants > 0 ? '⚠️ ' : ''}Variantes con
+                stock bajo
+              </p>
+            </div>
           </div>
-        ))}
-      </div>
 
-      {products.length === 0 ? (
-        <div className="surface-card border-dashed p-14 text-center">
-          <p className="text-4xl">📦</p>
-          <p className="mt-3 font-medium text-zinc-700">
-            Todavía no publicaste productos
-          </p>
-          <p className="mt-1 text-sm text-zinc-500">
-            Tu primer producto puede estar online en dos minutos.
-          </p>
-          <Link href="/vender/productos/nuevo" className="btn-primary mt-5">
-            Publicar mi primer producto
-          </Link>
-        </div>
-      ) : (
-        <div className="surface-card overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-zinc-100 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                <th className="px-5 py-3.5">Producto</th>
-                <th className="px-5 py-3.5">Precio</th>
-                <th className="px-5 py-3.5">Stock</th>
-                <th className="px-5 py-3.5">Estado</th>
-                <th className="px-5 py-3.5">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map((product) => {
-                const variant =
-                  product.variants.find((v) => v.isDefault) ??
-                  product.variants[0];
-                const badge = STATUS_BADGE[product.status];
-                return (
-                  <tr
-                    key={product.id}
-                    className="border-b border-zinc-50 transition last:border-0 hover:bg-zinc-50/60"
-                  >
-                    <td className="px-5 py-3.5">
-                      <Link
-                        href={`/p/${product.slug}`}
-                        className="font-medium text-zinc-800 hover:text-brand-600"
-                      >
-                        {product.title}
-                      </Link>
-                    </td>
-                    <td className="px-5 py-3.5 font-medium">
-                      {variant
-                        ? formatPrice(variant.priceCents, variant.currency)
-                        : '—'}
-                    </td>
-                    <td className="px-5 py-3.5 text-zinc-600">
-                      {product.variants.reduce((sum, v) => sum + v.stock, 0)}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <span
-                        className={`rounded-full px-2.5 py-1 text-xs font-medium ${badge.className}`}
-                      >
-                        {badge.label}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <Link
-                          href={`/vender/productos/${product.id}/editar`}
-                          className="text-xs font-medium text-brand-600 hover:underline"
-                        >
-                          Editar
-                        </Link>
-                        {(product.status === 'ACTIVE' ||
-                          product.status === 'PAUSED') && (
-                          <form action={setProductStatusAction}>
-                            <input
-                              type="hidden"
-                              name="productId"
-                              value={product.id}
-                            />
-                            <input
-                              type="hidden"
-                              name="status"
-                              value={
-                                product.status === 'ACTIVE'
-                                  ? 'PAUSED'
-                                  : 'ACTIVE'
-                              }
-                            />
-                            <button
-                              type="submit"
-                              className="text-xs text-zinc-500 hover:text-zinc-900 hover:underline"
-                            >
-                              {product.status === 'ACTIVE'
-                                ? 'Pausar'
-                                : 'Publicar'}
-                            </button>
-                          </form>
-                        )}
-                        <DeleteProductButton productId={product.id} />
+          <section>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-base font-bold tracking-tight">
+                Últimas ventas
+              </h2>
+              <Link
+                href="/vender/ventas"
+                className="text-sm font-medium text-brand-600 hover:underline"
+              >
+                Ver todas →
+              </Link>
+            </div>
+            {dashboard.recentSales.length === 0 ? (
+              <div className="surface-card border-dashed p-10 text-center text-sm text-zinc-500">
+                Cuando alguien compre en tu tienda, lo vas a ver acá.
+              </div>
+            ) : (
+              <div className="surface-card divide-y divide-zinc-50">
+                {dashboard.recentSales.map((sale) => {
+                  const badge = SUB_ORDER_STATUS_LABEL[sale.status];
+                  return (
+                    <div
+                      key={sale.id}
+                      className="flex flex-wrap items-center justify-between gap-2 px-5 py-3.5 text-sm"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-medium text-zinc-800">
+                          {sale.items.map((i) => i.title).join(', ')}
+                        </p>
+                        <p className="text-xs text-zinc-400">
+                          {sale.buyerName} ·{' '}
+                          {new Date(sale.createdAt).toLocaleDateString('es-AR')}
+                        </p>
                       </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-xs font-medium ${badge.className}`}
+                        >
+                          {badge.label}
+                        </span>
+                        <span className="font-semibold">
+                          {formatPrice(sale.subtotalCents)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        </>
       )}
     </div>
   );

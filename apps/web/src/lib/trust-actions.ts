@@ -106,6 +106,41 @@ export async function adminProductStatusAction(
     },
   ).catch(() => undefined);
   revalidatePath('/admin');
+  revalidatePath('/admin/productos');
+}
+
+export async function adminUserStatusAction(
+  formData: FormData,
+): Promise<void> {
+  const token = await getAccessToken();
+  if (!token) redirect('/login');
+
+  await authFetch(
+    token,
+    `/admin/users/${String(formData.get('userId'))}/status`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: String(formData.get('status')) }),
+    },
+  ).catch(() => undefined);
+  revalidatePath('/admin/usuarios');
+}
+
+export async function adminUserRoleAction(formData: FormData): Promise<void> {
+  const token = await getAccessToken();
+  if (!token) redirect('/login');
+
+  await authFetch(
+    token,
+    `/admin/users/${String(formData.get('userId'))}/role`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role: String(formData.get('role')) }),
+    },
+  ).catch(() => undefined);
+  revalidatePath('/admin/usuarios');
 }
 
 export async function adminBusinessStatusAction(
@@ -124,4 +159,5 @@ export async function adminBusinessStatusAction(
     },
   ).catch(() => undefined);
   revalidatePath('/admin');
+  revalidatePath('/admin/negocios');
 }

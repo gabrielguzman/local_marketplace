@@ -75,7 +75,7 @@ export async function createProductAction(
     return { error: 'El precio tiene que ser un número mayor a cero' };
   }
 
-  const imageUrl = String(formData.get('imageUrl') ?? '').trim();
+  const images = parseImageList(String(formData.get('images') ?? ''));
 
   try {
     await authFetch(token, '/products', {
@@ -85,7 +85,7 @@ export async function createProductAction(
         title: String(formData.get('title') ?? ''),
         description: String(formData.get('description') ?? '') || undefined,
         categoryId: String(formData.get('categoryId') ?? ''),
-        images: imageUrl ? [imageUrl] : undefined,
+        images: images.length > 0 ? images : undefined,
         variants: [
           {
             priceCents,
@@ -97,7 +97,16 @@ export async function createProductAction(
   } catch (err) {
     return toActionError(err);
   }
-  redirect('/vender');
+  redirect('/vender/productos');
+}
+
+// una URL por línea, máximo 8
+function parseImageList(input: string): string[] {
+  return input
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(0, 8);
 }
 
 export async function updateProductAction(
@@ -117,8 +126,6 @@ export async function updateProductAction(
     return { error: 'El precio tiene que ser un número mayor a cero' };
   }
 
-  const imageUrl = String(formData.get('imageUrl') ?? '').trim();
-
   try {
     await authFetch(token, `/products/${productId}`, {
       method: 'PATCH',
@@ -127,7 +134,7 @@ export async function updateProductAction(
         title: String(formData.get('title') ?? ''),
         description: String(formData.get('description') ?? ''),
         categoryId: String(formData.get('categoryId') ?? ''),
-        images: imageUrl ? [imageUrl] : [],
+        images: parseImageList(String(formData.get('images') ?? '')),
       }),
     });
     await authFetch(token, `/products/${productId}/variants/${variantId}`, {
@@ -141,7 +148,7 @@ export async function updateProductAction(
   } catch (err) {
     return toActionError(err);
   }
-  redirect('/vender');
+  redirect('/vender/productos');
 }
 
 export async function setProductStatusAction(
@@ -155,6 +162,7 @@ export async function setProductStatusAction(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status: String(formData.get('status')) }),
   }).catch(() => undefined);
+  revalidatePath('/vender/productos');
   revalidatePath('/vender');
 }
 
@@ -165,5 +173,109 @@ export async function deleteProductAction(formData: FormData): Promise<void> {
   await authFetch(token, `/products/${String(formData.get('productId'))}`, {
     method: 'DELETE',
   }).catch(() => undefined);
+  revalidatePath('/vender/productos');
   revalidatePath('/vender');
+}
+
+// ── Variantes ──────────────────────────────────────────────
+
+// "color=rojo, talle=M" → {color: "rojo", talle: "M"}
+function parseAttributes(input: string): Record<string, string> {
+  const attributes: Record<string, string> = {};
+  for (const pair of input.split(',')) {
+    const [key, ...rest] = pair.split('=');
+    if (key?.trim() && rest.length > 0) {
+      attributes[key.trim()] = rest.join('=').trim();
+    }
+  }
+  return attributes;
+}
+
+function parsePriceCents(raw: string): number | null {
+  const cents = Math.round(Number(raw.replace(',', '.')) * 100);
+  return Number.isInteger(cents) && cents > 0 ? cents : null;
+}
+
+export async function addVariantAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const token = await getAccessToken();
+  if (!token) redirect('/login');
+
+  const priceCents = parsePriceCents(String(formData.get('price') ?? ''));
+  if (!priceCents) {
+    return { error: 'El precio tiene que ser un número mayor a cero' };
+  }
+
+  const productId = String(formData.get('productId') ?? '');
+  try {
+    await authFetch(token, `/products/${productId}/variants`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        attributes: parseAttributes(String(formData.get('attributes') ?? '')),
+        priceCents,
+        stock: Number(formData.get('stock') ?? 0),
+      }),
+    });
+  } catch (err) {
+    return toActionError(err);
+  }
+  revalidatePath(`/vender/productos/${productId}/editar`);
+  return { error: null };
+}
+
+export async function updateVariantInlineAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const token = await getAccessToken();
+  if (!token) redirect('/login');
+
+  const priceCents = parsePriceCents(String(formData.get('price') ?? ''));
+  if (!priceCents) {
+    return { error: 'Precio inválido' };
+  }
+
+  const productId = String(formData.get('productId') ?? '');
+  try {
+    await authFetch(
+      token,
+      `/products/${productId}/variants/${String(formData.get('variantId'))}`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          priceCents,
+          stock: Number(formData.get('stock') ?? 0),
+        }),
+      },
+    );
+  } catch (err) {
+    return toActionError(err);
+  }
+  revalidatePath(`/vender/productos/${productId}/editar`);
+  return { error: null };
+}
+
+export async function deleteVariantAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const token = await getAccessToken();
+  if (!token) redirect('/login');
+
+  const productId = String(formData.get('productId') ?? '');
+  try {
+    await authFetch(
+      token,
+      `/products/${productId}/variants/${String(formData.get('variantId'))}`,
+      { method: 'DELETE' },
+    );
+  } catch (err) {
+    return toActionError(err);
+  }
+  revalidatePath(`/vender/productos/${productId}/editar`);
+  return { error: null };
 }

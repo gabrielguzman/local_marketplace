@@ -120,6 +120,7 @@ export class AuthService {
         message: 'Email o contraseña incorrectos',
       });
     }
+    this.assertNotSuspended(user);
     return { user, ...(await this.issueTokens(user)) };
   }
 
@@ -143,7 +144,17 @@ export class AuthService {
     }
 
     await this.prisma.refreshToken.delete({ where: { id: stored.id } });
+    this.assertNotSuspended(stored.user);
     return { user: stored.user, ...(await this.issueTokens(stored.user)) };
+  }
+
+  private assertNotSuspended(user: User): void {
+    if (user.status === 'SUSPENDED') {
+      throw new UnauthorizedException({
+        code: 'ACCOUNT_SUSPENDED',
+        message: 'Tu cuenta fue suspendida. Contactá a soporte.',
+      });
+    }
   }
 
   async logout(refreshToken: string): Promise<void> {
