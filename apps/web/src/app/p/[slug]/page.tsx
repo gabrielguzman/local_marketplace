@@ -40,114 +40,180 @@ export default async function ProductPage({
   const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
-      <div className="space-y-6">
-        <nav className="text-xs text-zinc-500">
-          <Link href="/" className="hover:underline">
-            Inicio
-          </Link>{' '}
-          ›{' '}
-          <Link
-            href={`/buscar?category=${product.category.slug}`}
-            className="hover:underline"
-          >
-            {product.category.name}
-          </Link>
-        </nav>
-
-        <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white">
-          {product.images.length > 0 ? (
-            // eslint-disable-next-line @next/next/no-img-element -- dominio de imagen arbitrario en MVP
-            <img
-              src={product.images[0].url}
-              alt={product.title}
-              className="mx-auto max-h-[480px] object-contain"
-            />
-          ) : (
-            <div className="flex h-72 items-center justify-center text-6xl text-zinc-200">
-              🛍️
-            </div>
-          )}
-        </div>
-
-        {product.description && (
-          <section className="rounded-lg border border-zinc-200 bg-white p-5">
-            <h2 className="mb-2 font-semibold">Descripción</h2>
-            <p className="whitespace-pre-line text-sm leading-6 text-zinc-700">
-              {product.description}
-            </p>
-          </section>
-        )}
-      </div>
-
-      <aside className="space-y-4">
-        <div className="rounded-lg border border-zinc-200 bg-white p-5">
-          <h1 className="text-xl font-semibold leading-snug">
-            {product.title}
-          </h1>
-          <p className="mt-3 text-3xl font-bold">
-            {formatPrice(defaultVariant.priceCents, defaultVariant.currency)}
-          </p>
-          <p className="mt-1 text-sm text-zinc-500">
-            {totalStock > 0 ? `Stock disponible: ${totalStock}` : 'Sin stock'}
-          </p>
-
-          {hasVariantOptions && (
-            <div className="mt-4">
-              <h2 className="mb-2 text-sm font-medium text-zinc-600">
-                Variantes
-              </h2>
-              <ul className="space-y-1 text-sm">
-                {product.variants.map((variant) => (
-                  <li
-                    key={variant.id}
-                    className="flex items-center justify-between rounded border border-zinc-200 px-3 py-1.5"
-                  >
-                    <span className="text-zinc-700">
-                      {Object.values(variant.attributes).join(' · ') ||
-                        'Estándar'}
-                    </span>
-                    <span className="font-medium">
-                      {formatPrice(variant.priceCents, variant.currency)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <button
-            type="button"
-            disabled
-            title="El carrito llega en la próxima fase"
-            className="mt-5 w-full cursor-not-allowed rounded-md bg-amber-400/60 py-2.5 font-medium text-zinc-600"
-          >
-            Comprar (próximamente)
-          </button>
-        </div>
-
-        <Link
-          href={`/tienda/${product.business.slug}`}
-          className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-white p-4 hover:border-zinc-400"
-        >
-          {product.business.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- dominio de imagen arbitrario en MVP
-            <img
-              src={product.business.logoUrl}
-              alt=""
-              className="h-10 w-10 rounded-full object-cover"
-            />
-          ) : (
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 text-lg">
-              🏪
-            </span>
-          )}
-          <div>
-            <p className="text-sm font-medium">{product.business.name}</p>
-            <p className="text-xs text-zinc-500">Ver tienda →</p>
-          </div>
+    <div className="space-y-6">
+      <nav className="flex items-center gap-1.5 text-xs text-zinc-400">
+        <Link href="/" className="hover:text-brand-600">
+          Inicio
         </Link>
-      </aside>
+        <span>›</span>
+        <Link
+          href={`/buscar?category=${product.category.slug}`}
+          className="hover:text-brand-600"
+        >
+          {product.category.name}
+        </Link>
+        <span>›</span>
+        <span className="truncate text-zinc-500">{product.title}</span>
+      </nav>
+
+      <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
+        <div className="space-y-6">
+          {/* Galería */}
+          <div className="surface-card overflow-hidden">
+            <div className="flex aspect-[4/3] items-center justify-center bg-white">
+              {product.images.length > 0 ? (
+                // eslint-disable-next-line @next/next/no-img-element -- dominio de imagen arbitrario en MVP
+                <img
+                  src={product.images[0].url}
+                  alt={product.title}
+                  className="h-full w-full object-contain"
+                />
+              ) : (
+                <svg
+                  className="h-20 w-20 text-zinc-200"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.5" />
+                  <circle cx="9" cy="9" r="2" stroke="currentColor" strokeWidth="1.5" />
+                  <path d="m4 17 5-5 4 4 3-3 4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </div>
+            {product.images.length > 1 && (
+              <div className="flex gap-2 border-t border-zinc-100 p-3">
+                {product.images.map((image) => (
+                  // eslint-disable-next-line @next/next/no-img-element -- dominio de imagen arbitrario en MVP
+                  <img
+                    key={image.id}
+                    src={image.url}
+                    alt=""
+                    className="h-16 w-16 rounded-lg border border-zinc-200 object-cover"
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Descripción */}
+          {product.description && (
+            <section className="surface-card p-6">
+              <h2 className="mb-3 text-base font-bold tracking-tight">
+                Descripción
+              </h2>
+              <p className="whitespace-pre-line text-sm leading-7 text-zinc-600">
+                {product.description}
+              </p>
+            </section>
+          )}
+        </div>
+
+        {/* Caja de compra */}
+        <aside className="space-y-4">
+          <div className="surface-card p-6 lg:sticky lg:top-32">
+            <p className="text-xs font-medium uppercase tracking-wider text-zinc-400">
+              {product.category.name}
+            </p>
+            <h1 className="mt-1 text-xl font-bold leading-snug tracking-tight">
+              {product.title}
+            </h1>
+
+            <p className="mt-4 text-3xl font-extrabold tracking-tight">
+              {formatPrice(defaultVariant.priceCents, defaultVariant.currency)}
+            </p>
+
+            <p className="mt-2 inline-flex items-center gap-1.5 text-sm">
+              {totalStock > 0 ? (
+                <>
+                  <span className="h-2 w-2 rounded-full bg-green-500" />
+                  <span className="text-green-700">
+                    Stock disponible ({totalStock})
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="h-2 w-2 rounded-full bg-red-400" />
+                  <span className="text-red-600">Sin stock</span>
+                </>
+              )}
+            </p>
+
+            {hasVariantOptions && (
+              <div className="mt-5">
+                <h2 className="mb-2 text-sm font-semibold text-zinc-700">
+                  Variantes
+                </h2>
+                <ul className="space-y-1.5 text-sm">
+                  {product.variants.map((variant) => (
+                    <li
+                      key={variant.id}
+                      className="flex items-center justify-between rounded-lg border border-zinc-200 px-3.5 py-2 transition hover:border-brand-300"
+                    >
+                      <span className="text-zinc-600">
+                        {Object.values(variant.attributes).join(' · ') ||
+                          'Estándar'}
+                      </span>
+                      <span className="font-semibold">
+                        {formatPrice(variant.priceCents, variant.currency)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <button
+              type="button"
+              disabled
+              title="El carrito llega en la próxima fase"
+              className="btn-primary mt-6 w-full opacity-60"
+            >
+              Comprar ahora
+            </button>
+            <p className="mt-2 text-center text-xs text-zinc-400">
+              Checkout disponible próximamente
+            </p>
+
+            <div className="mt-5 space-y-2 border-t border-zinc-100 pt-4 text-xs text-zinc-500">
+              <p className="flex items-center gap-2">
+                <span>🔒</span> Compra protegida: tu dinero está seguro
+              </p>
+              <p className="flex items-center gap-2">
+                <span>↩️</span> Devolución gratis dentro de los 30 días
+              </p>
+            </div>
+          </div>
+
+          {/* Card del negocio */}
+          <Link
+            href={`/tienda/${product.business.slug}`}
+            className="surface-card flex items-center gap-3.5 p-5 transition hover:border-brand-300"
+          >
+            {product.business.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- dominio de imagen arbitrario en MVP
+              <img
+                src={product.business.logoUrl}
+                alt=""
+                className="h-12 w-12 rounded-full border border-zinc-200 object-cover"
+              />
+            ) : (
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-xl">
+                🏪
+              </span>
+            )}
+            <div className="min-w-0">
+              <p className="text-xs text-zinc-400">Vendido por</p>
+              <p className="truncate text-sm font-semibold text-zinc-800">
+                {product.business.name}
+              </p>
+              <p className="text-xs font-medium text-brand-600">
+                Visitar tienda →
+              </p>
+            </div>
+          </Link>
+        </aside>
+      </div>
     </div>
   );
 }

@@ -28,31 +28,25 @@ export function AuthForm({
     <form action={formAction} className="space-y-4">
       {fields.map((field) => (
         <label key={field.name} className="block">
-          <span className="mb-1 block text-sm font-medium text-zinc-700">
-            {field.label}
-          </span>
+          <span className="field-label">{field.label}</span>
           <input
             name={field.name}
             type={field.type}
             required
             minLength={field.minLength}
             placeholder={field.placeholder}
-            className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-500"
+            className="field-input"
           />
         </label>
       ))}
 
       {state.error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-          {state.error}
+        <p className="flex items-start gap-2 rounded-lg bg-red-50 px-3.5 py-2.5 text-sm text-red-700">
+          <span aria-hidden="true">⚠️</span> {state.error}
         </p>
       )}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="w-full rounded-md bg-zinc-900 py-2.5 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
-      >
+      <button type="submit" disabled={pending} className="btn-primary w-full">
         {pending ? 'Un momento…' : submitLabel}
       </button>
     </form>

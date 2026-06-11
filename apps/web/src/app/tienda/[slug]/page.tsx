@@ -42,46 +42,61 @@ export default async function BusinessPage({
   ).catch(() => ({ items: [], nextCursor: null }));
 
   return (
-    <div className="space-y-6">
-      <section className="overflow-hidden rounded-lg border border-zinc-200 bg-white">
-        {business.bannerUrl && (
+    <div className="space-y-8">
+      <section className="surface-card overflow-hidden">
+        {business.bannerUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- dominio de imagen arbitrario en MVP
           <img
             src={business.bannerUrl}
             alt=""
-            className="h-40 w-full object-cover"
+            className="h-44 w-full object-cover"
           />
+        ) : (
+          <div className="h-28 bg-gradient-to-r from-brand-700 via-brand-600 to-brand-400" />
         )}
-        <div className="flex items-center gap-4 p-5">
-          {business.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- dominio de imagen arbitrario en MVP
-            <img
-              src={business.logoUrl}
-              alt=""
-              className="h-16 w-16 rounded-full border border-zinc-200 object-cover"
-            />
-          ) : (
-            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-3xl">
-              🏪
-            </span>
-          )}
-          <div>
-            <h1 className="text-xl font-semibold">{business.name}</h1>
+        <div className="flex flex-wrap items-end gap-4 px-6 pb-6">
+          <div className="-mt-9">
+            {business.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- dominio de imagen arbitrario en MVP
+              <img
+                src={business.logoUrl}
+                alt=""
+                className="h-20 w-20 rounded-2xl border-4 border-white bg-white object-cover shadow-md"
+              />
+            ) : (
+              <span className="flex h-20 w-20 items-center justify-center rounded-2xl border-4 border-white bg-brand-50 text-4xl shadow-md">
+                🏪
+              </span>
+            )}
+          </div>
+          <div className="min-w-0 flex-1 pt-3">
+            <h1 className="text-2xl font-bold tracking-tight">
+              {business.name}
+            </h1>
             {business.description && (
-              <p className="mt-1 max-w-2xl text-sm text-zinc-600">
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-zinc-500">
                 {business.description}
               </p>
             )}
           </div>
+          <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
+            ● Tienda activa
+          </span>
         </div>
       </section>
 
       <section>
-        <h2 className="mb-4 text-lg font-semibold">Productos</h2>
+        <h2 className="mb-4 text-lg font-bold tracking-tight">
+          Productos{' '}
+          <span className="text-sm font-normal text-zinc-400">
+            ({products.items.length}
+            {products.nextCursor ? '+' : ''})
+          </span>
+        </h2>
         {products.items.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-zinc-300 bg-white p-10 text-center text-zinc-500">
+          <div className="surface-card border-dashed p-12 text-center text-zinc-500">
             Esta tienda todavía no tiene publicaciones.
-          </p>
+          </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {products.items.map((product) => (

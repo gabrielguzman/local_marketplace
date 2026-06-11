@@ -29,9 +29,16 @@ export default async function NewProductPage() {
   );
 
   return (
-    <div className="mx-auto max-w-lg py-6">
-      <h1 className="mb-6 text-xl font-semibold">Publicar un producto</h1>
-      <ProductForm categories={categories} />
+    <div className="mx-auto max-w-lg py-8">
+      <div className="surface-card p-8">
+        <h1 className="text-xl font-bold tracking-tight">
+          Publicar un producto
+        </h1>
+        <p className="mb-6 mt-1 text-sm text-zinc-500">
+          Se publica en {business.name} apenas lo guardes.
+        </p>
+        <ProductForm categories={categories} />
+      </div>
     </div>
   );
 }

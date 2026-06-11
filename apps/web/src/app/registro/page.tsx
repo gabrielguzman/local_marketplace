@@ -12,26 +12,34 @@ export default async function RegisterPage() {
   if (await getCurrentUser()) redirect('/');
 
   return (
-    <div className="mx-auto max-w-sm py-10">
-      <h1 className="mb-6 text-xl font-semibold">Creá tu cuenta</h1>
-      <AuthForm
-        action={registerAction}
-        submitLabel="Crear cuenta"
-        fields={[
-          { name: 'name', label: 'Nombre', type: 'text', minLength: 2 },
-          { name: 'email', label: 'Email', type: 'email' },
-          {
-            name: 'password',
-            label: 'Contraseña',
-            type: 'password',
-            minLength: 8,
-            placeholder: 'Mínimo 8 caracteres',
-          },
-        ]}
-      />
-      <p className="mt-4 text-sm text-zinc-600">
+    <div className="mx-auto max-w-sm py-12">
+      <div className="surface-card p-8">
+        <h1 className="text-xl font-bold tracking-tight">Creá tu cuenta</h1>
+        <p className="mb-6 mt-1 text-sm text-zinc-500">
+          Gratis, en menos de un minuto.
+        </p>
+        <AuthForm
+          action={registerAction}
+          submitLabel="Crear cuenta"
+          fields={[
+            { name: 'name', label: 'Nombre', type: 'text', minLength: 2 },
+            { name: 'email', label: 'Email', type: 'email' },
+            {
+              name: 'password',
+              label: 'Contraseña',
+              type: 'password',
+              minLength: 8,
+              placeholder: 'Mínimo 8 caracteres',
+            },
+          ]}
+        />
+      </div>
+      <p className="mt-5 text-center text-sm text-zinc-500">
         ¿Ya tenés cuenta?{' '}
-        <Link href="/login" className="font-medium underline">
+        <Link
+          href="/login"
+          className="font-semibold text-brand-600 hover:underline"
+        >
           Ingresá
         </Link>
       </p>

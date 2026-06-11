@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import "./globals.css";
 
@@ -15,10 +16,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Marketplace",
-    template: "%s | Marketplace",
+    default: "Mercato — comprá y vendé en tiendas de tu zona",
+    template: "%s | Mercato",
   },
-  description: "Comprá y vendé en tiendas de tu zona",
+  description:
+    "El marketplace de los negocios de tu zona. Comprá directo, vendé fácil.",
 };
 
 export default function RootLayout({
@@ -33,12 +35,10 @@ export default function RootLayout({
     >
       <body className="flex min-h-full flex-col bg-zinc-50 font-sans text-zinc-900">
         <Header />
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
           {children}
         </main>
-        <footer className="border-t border-zinc-200 bg-white py-4 text-center text-xs text-zinc-400">
-          Marketplace — proyecto en desarrollo
-        </footer>
+        <Footer />
       </body>
     </html>
   );

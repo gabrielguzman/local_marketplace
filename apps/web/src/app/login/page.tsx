@@ -12,20 +12,30 @@ export default async function LoginPage() {
   if (await getCurrentUser()) redirect('/');
 
   return (
-    <div className="mx-auto max-w-sm py-10">
-      <h1 className="mb-6 text-xl font-semibold">Ingresá a tu cuenta</h1>
-      <AuthForm
-        action={loginAction}
-        submitLabel="Ingresar"
-        fields={[
-          { name: 'email', label: 'Email', type: 'email' },
-          { name: 'password', label: 'Contraseña', type: 'password' },
-        ]}
-      />
-      <p className="mt-4 text-sm text-zinc-600">
+    <div className="mx-auto max-w-sm py-12">
+      <div className="surface-card p-8">
+        <h1 className="text-xl font-bold tracking-tight">
+          Ingresá a tu cuenta
+        </h1>
+        <p className="mb-6 mt-1 text-sm text-zinc-500">
+          Qué bueno verte de nuevo 👋
+        </p>
+        <AuthForm
+          action={loginAction}
+          submitLabel="Ingresar"
+          fields={[
+            { name: 'email', label: 'Email', type: 'email' },
+            { name: 'password', label: 'Contraseña', type: 'password' },
+          ]}
+        />
+      </div>
+      <p className="mt-5 text-center text-sm text-zinc-500">
         ¿No tenés cuenta?{' '}
-        <Link href="/registro" className="font-medium underline">
-          Creá una
+        <Link
+          href="/registro"
+          className="font-semibold text-brand-600 hover:underline"
+        >
+          Creá una gratis
         </Link>
       </p>
     </div>

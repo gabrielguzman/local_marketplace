@@ -54,73 +54,108 @@ export default async function SearchPage({
     })),
   ]);
 
+  const activeCategory = categories.find((c) => c.slug === params.category);
+  const hasFilters = Boolean(params.q || params.category || params.min || params.max);
+
   return (
-    <div className="flex flex-col gap-6 md:flex-row">
-      <aside className="w-full shrink-0 space-y-6 md:w-56">
-        <div>
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-zinc-500">
-            Categorías
-          </h2>
-          <ul className="space-y-1 text-sm">
-            {categories.map((cat) => (
-              <li key={cat.id}>
+    <div className="flex flex-col gap-8 md:flex-row">
+      <aside className="w-full shrink-0 md:w-60">
+        <div className="surface-card space-y-6 p-5 md:sticky md:top-32">
+          <div>
+            <h2 className="mb-3 text-xs font-bold uppercase tracking-wider text-zinc-400">
+              Categorías
+            </h2>
+            <ul className="space-y-0.5 text-sm">
+              <li>
                 <Link
-                  href={`/buscar?${buildQuery(params, { category: cat.slug, cursor: undefined })}`}
-                  className={
-                    params.category === cat.slug
-                      ? 'font-semibold text-zinc-900'
-                      : 'text-zinc-600 hover:underline'
-                  }
+                  href={`/buscar?${buildQuery(params, { category: undefined, cursor: undefined })}`}
+                  className={`block rounded-md px-2.5 py-1.5 transition ${
+                    !params.category
+                      ? 'bg-brand-50 font-semibold text-brand-700'
+                      : 'text-zinc-600 hover:bg-zinc-50'
+                  }`}
                 >
-                  {cat.name}
+                  Todas
                 </Link>
               </li>
-            ))}
-          </ul>
-        </div>
-
-        <form className="space-y-2" action="/buscar">
-          {params.q && <input type="hidden" name="q" value={params.q} />}
-          {params.category && (
-            <input type="hidden" name="category" value={params.category} />
-          )}
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
-            Precio
-          </h2>
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              name="min"
-              placeholder="Mín"
-              defaultValue={params.min}
-              className="w-full rounded border border-zinc-300 bg-white px-2 py-1 text-sm"
-            />
-            <span className="text-zinc-400">–</span>
-            <input
-              type="number"
-              name="max"
-              placeholder="Máx"
-              defaultValue={params.max}
-              className="w-full rounded border border-zinc-300 bg-white px-2 py-1 text-sm"
-            />
+              {categories.map((cat) => (
+                <li key={cat.id}>
+                  <Link
+                    href={`/buscar?${buildQuery(params, { category: cat.slug, cursor: undefined })}`}
+                    className={`block rounded-md px-2.5 py-1.5 transition ${
+                      params.category === cat.slug
+                        ? 'bg-brand-50 font-semibold text-brand-700'
+                        : 'text-zinc-600 hover:bg-zinc-50'
+                    }`}
+                  >
+                    {cat.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
-          <button
-            type="submit"
-            className="w-full rounded bg-zinc-900 py-1.5 text-sm text-white hover:bg-zinc-700"
-          >
-            Filtrar
-          </button>
-        </form>
+
+          <form className="space-y-3" action="/buscar">
+            {params.q && <input type="hidden" name="q" value={params.q} />}
+            {params.category && (
+              <input type="hidden" name="category" value={params.category} />
+            )}
+            <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+              Precio
+            </h2>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                name="min"
+                placeholder="Mín"
+                defaultValue={params.min}
+                className="field-input !px-2.5 !py-1.5"
+              />
+              <span className="text-zinc-300">–</span>
+              <input
+                type="number"
+                name="max"
+                placeholder="Máx"
+                defaultValue={params.max}
+                className="field-input !px-2.5 !py-1.5"
+              />
+            </div>
+            <button type="submit" className="btn-secondary w-full !py-1.5 text-xs">
+              Aplicar
+            </button>
+          </form>
+        </div>
       </aside>
 
-      <section className="flex-1">
-        <h1 className="mb-4 text-lg font-semibold">
-          {params.q ? `Resultados para “${params.q}”` : 'Todos los productos'}
-        </h1>
-        {results.items.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-zinc-300 bg-white p-10 text-center text-zinc-500">
-            No encontramos productos con esos filtros.
+      <section className="min-w-0 flex-1">
+        <div className="mb-5 flex flex-wrap items-baseline justify-between gap-2">
+          <h1 className="text-xl font-bold tracking-tight">
+            {params.q
+              ? `Resultados para “${params.q}”`
+              : (activeCategory?.name ?? 'Todos los productos')}
+          </h1>
+          <p className="text-sm text-zinc-400">
+            {results.items.length}
+            {results.nextCursor ? '+' : ''} productos
           </p>
+        </div>
+
+        {results.items.length === 0 ? (
+          <div className="surface-card border-dashed p-14 text-center">
+            <p className="text-4xl">🔍</p>
+            <p className="mt-3 font-medium text-zinc-700">
+              No encontramos productos
+              {params.q ? ` para “${params.q}”` : ' con esos filtros'}.
+            </p>
+            <p className="mt-1 text-sm text-zinc-500">
+              Probá con otras palabras o quitá algún filtro.
+            </p>
+            {hasFilters && (
+              <Link href="/buscar" className="btn-secondary mt-5">
+                Quitar filtros
+              </Link>
+            )}
+          </div>
         ) : (
           <>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
@@ -129,12 +164,12 @@ export default async function SearchPage({
               ))}
             </div>
             {results.nextCursor && (
-              <div className="mt-6 text-center">
+              <div className="mt-8 text-center">
                 <Link
                   href={`/buscar?${buildQuery(params, { cursor: results.nextCursor })}`}
-                  className="inline-block rounded-md border border-zinc-300 bg-white px-6 py-2 text-sm hover:bg-zinc-100"
+                  className="btn-secondary"
                 >
-                  Ver más
+                  Ver más productos
                 </Link>
               </div>
             )}

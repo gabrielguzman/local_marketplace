@@ -15,9 +15,7 @@ export function BusinessForm() {
   return (
     <form action={formAction} className="space-y-4">
       <label className="block">
-        <span className="mb-1 block text-sm font-medium text-zinc-700">
-          Nombre del negocio
-        </span>
+        <span className="field-label">Nombre del negocio</span>
         <input
           name="name"
           type="text"
@@ -25,34 +23,30 @@ export function BusinessForm() {
           minLength={2}
           maxLength={60}
           placeholder="Ej: Almacén Doña Rosa"
-          className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-500"
+          className="field-input"
         />
       </label>
 
       <label className="block">
-        <span className="mb-1 block text-sm font-medium text-zinc-700">
-          Descripción <span className="text-zinc-400">(opcional)</span>
+        <span className="field-label">
+          Descripción <span className="font-normal text-zinc-400">(opcional)</span>
         </span>
         <textarea
           name="description"
           rows={3}
           maxLength={2000}
           placeholder="Contale a tus clientes qué vendés"
-          className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-500"
+          className="field-input"
         />
       </label>
 
       {state.error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-          {state.error}
+        <p className="flex items-start gap-2 rounded-lg bg-red-50 px-3.5 py-2.5 text-sm text-red-700">
+          <span aria-hidden="true">⚠️</span> {state.error}
         </p>
       )}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="w-full rounded-md bg-zinc-900 py-2.5 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
-      >
+      <button type="submit" disabled={pending} className="btn-primary w-full">
         {pending ? 'Creando…' : 'Crear mi negocio'}
       </button>
     </form>
