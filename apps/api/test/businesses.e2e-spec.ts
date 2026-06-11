@@ -36,6 +36,11 @@ describe('Businesses (e2e)', () => {
       .send({ email, password: 'super-secreta-123', name: 'Dueño E2E' })
       .expect(201);
     accessToken = (res.body as AuthResponse).accessToken;
+    // crear negocio requiere email verificado
+    await prisma.user.update({
+      where: { email },
+      data: { emailVerifiedAt: new Date() },
+    });
   });
 
   afterAll(async () => {

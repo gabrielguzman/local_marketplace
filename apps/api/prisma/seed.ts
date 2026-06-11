@@ -114,11 +114,12 @@ async function seedDemoData() {
 
   const owner = await prisma.user.upsert({
     where: { email: 'demo@marketplace.local' },
-    update: {},
+    update: { emailVerifiedAt: new Date() },
     create: {
       email: 'demo@marketplace.local',
       name: 'Tienda Demo',
       passwordHash: await argon2.hash('demo-marketplace-123'),
+      emailVerifiedAt: new Date(),
     },
   });
 
@@ -168,8 +169,24 @@ async function seedDemoData() {
   console.log(`Datos de demo sembrados (${DEMO_PRODUCTS.length} productos).`);
 }
 
+async function seedAdmin() {
+  await prisma.user.upsert({
+    where: { email: 'admin@marketplace.local' },
+    update: { role: 'ADMIN', emailVerifiedAt: new Date() },
+    create: {
+      email: 'admin@marketplace.local',
+      name: 'Admin',
+      passwordHash: await argon2.hash('admin-marketplace-123'),
+      role: 'ADMIN',
+      emailVerifiedAt: new Date(),
+    },
+  });
+  console.log('Usuario admin listo (admin@marketplace.local).');
+}
+
 async function main() {
   await seedCategories();
+  await seedAdmin();
   await seedDemoData();
 }
 

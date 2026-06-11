@@ -45,12 +45,17 @@ export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 
 // ── Auth y usuarios ──────────────────────────────────────
 
+export const USER_ROLES = ['USER', 'ADMIN'] as const;
+export type UserRole = (typeof USER_ROLES)[number];
+
 export interface UserDto {
   id: string;
   email: string;
   name: string;
   phone: string | null;
   avatarUrl: string | null;
+  role: UserRole;
+  emailVerified: boolean;
   createdAt: string;
 }
 
@@ -70,6 +75,7 @@ export interface BusinessDto {
   logoUrl: string | null;
   bannerUrl: string | null;
   status: BusinessStatus;
+  rating: RatingSummary;
   createdAt: string;
 }
 
@@ -108,6 +114,7 @@ export interface ProductDetailDto {
   business: { id: string; name: string; slug: string; logoUrl: string | null };
   variants: ProductVariantDto[];
   images: ProductImageDto[];
+  rating: RatingSummary;
   createdAt: string;
 }
 
@@ -163,6 +170,7 @@ export interface ShippingAddress {
 
 export interface OrderItemDto {
   id: string;
+  productId: string;
   title: string;
   attributes: Record<string, string>;
   quantity: number;
@@ -194,6 +202,68 @@ export interface SellerSubOrderDto extends SubOrderDto {
   createdAt: string;
   buyerName: string;
   shippingAddress: ShippingAddress;
+}
+
+// ── Confianza: reseñas y denuncias ───────────────────────
+
+export interface RatingSummary {
+  avg: number | null; // null si no hay reseñas
+  count: number;
+}
+
+export interface ReviewDto {
+  id: string;
+  rating: number; // 1..5
+  comment: string;
+  authorName: string;
+  createdAt: string;
+}
+
+export const REPORT_REASONS = [
+  'SPAM',
+  'PROHIBITED',
+  'COUNTERFEIT',
+  'OFFENSIVE',
+  'OTHER',
+] as const;
+export type ReportReason = (typeof REPORT_REASONS)[number];
+
+export const REPORT_REASON_LABELS: Record<ReportReason, string> = {
+  SPAM: 'Spam o publicidad engañosa',
+  PROHIBITED: 'Producto prohibido',
+  COUNTERFEIT: 'Falsificación',
+  OFFENSIVE: 'Contenido ofensivo',
+  OTHER: 'Otro motivo',
+};
+
+export const REPORT_STATUSES = ['PENDING', 'RESOLVED', 'DISMISSED'] as const;
+export type ReportStatus = (typeof REPORT_STATUSES)[number];
+
+export interface ReportDto {
+  id: string;
+  reason: ReportReason;
+  details: string;
+  status: ReportStatus;
+  createdAt: string;
+  reporterName: string;
+  product: {
+    id: string;
+    title: string;
+    slug: string;
+    status: ProductStatus;
+    businessName: string;
+    businessId: string;
+  };
+}
+
+// ── Admin ────────────────────────────────────────────────
+
+export interface AdminStats {
+  users: number;
+  businesses: number;
+  activeProducts: number;
+  paidOrders: number;
+  pendingReports: number;
 }
 
 // ── Convenciones de la API ───────────────────────────────

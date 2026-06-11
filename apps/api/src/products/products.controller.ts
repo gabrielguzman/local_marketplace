@@ -39,12 +39,16 @@ export class ProductsController {
     @CurrentUser() user: AccessTokenPayload,
   ): Promise<ProductDetailDto[]> {
     const products = await this.products.listMine(user.sub);
-    return products.map(toProductDetailDto);
+    return products.map((p) => toProductDetailDto(p));
   }
 
   @Get(':slug')
   async bySlug(@Param('slug') slug: string): Promise<ProductDetailDto> {
-    return toProductDetailDto(await this.products.findPublicBySlug(slug));
+    const product = await this.products.findPublicBySlug(slug);
+    return toProductDetailDto(
+      product,
+      await this.products.ratingFor(product.id),
+    );
   }
 
   @Patch(':id')

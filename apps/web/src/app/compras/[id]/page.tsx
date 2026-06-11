@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import type { OrderDto } from '@marketplace/shared';
+import { ReviewForm } from '@/components/review-form';
 import { authFetch } from '@/lib/api';
 import { payOrderAction } from '@/lib/cart-actions';
 import { formatPrice } from '@/lib/format';
@@ -97,22 +98,32 @@ export default async function OrderDetailPage({
               </div>
               <ul className="divide-y divide-zinc-50">
                 {subOrder.items.map((item) => (
-                  <li
-                    key={item.id}
-                    className="flex items-center justify-between gap-4 px-5 py-3.5 text-sm"
-                  >
-                    <div className="min-w-0">
-                      <p className="font-medium text-zinc-800">{item.title}</p>
-                      {Object.values(item.attributes).length > 0 && (
-                        <p className="text-xs text-zinc-400">
-                          {Object.values(item.attributes).join(' · ')}
+                  <li key={item.id} className="px-5 py-3.5 text-sm">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="min-w-0">
+                        <p className="font-medium text-zinc-800">
+                          {item.title}
                         </p>
-                      )}
+                        {Object.values(item.attributes).length > 0 && (
+                          <p className="text-xs text-zinc-400">
+                            {Object.values(item.attributes).join(' · ')}
+                          </p>
+                        )}
+                      </div>
+                      <p className="shrink-0 text-zinc-500">
+                        {item.quantity} ×{' '}
+                        {formatPrice(item.unitPriceCents, order.currency)}
+                      </p>
                     </div>
-                    <p className="shrink-0 text-zinc-500">
-                      {item.quantity} ×{' '}
-                      {formatPrice(item.unitPriceCents, order.currency)}
-                    </p>
+                    {subOrder.status === 'DELIVERED' && (
+                      <div className="mt-1.5">
+                        <ReviewForm
+                          productId={item.productId}
+                          orderId={order.id}
+                          productTitle={item.title}
+                        />
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>

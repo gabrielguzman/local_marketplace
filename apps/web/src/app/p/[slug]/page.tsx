@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import type { ProductDetailDto } from '@marketplace/shared';
+import type { ProductDetailDto, ReviewDto } from '@marketplace/shared';
 import { AddToCart } from '@/components/add-to-cart';
+import { ReportButton } from '@/components/report-button';
+import { Stars } from '@/components/stars';
 import { apiFetch } from '@/lib/api';
 import { formatPrice } from '@/lib/format';
 
@@ -34,6 +36,10 @@ export default async function ProductPage({
   const { slug } = await params;
   const product = await getProduct(slug);
   if (!product) notFound();
+
+  const reviews = await apiFetch<ReviewDto[]>(
+    `/products/${product.id}/reviews`,
+  ).catch(() => []);
 
   const defaultVariant =
     product.variants.find((v) => v.isDefault) ?? product.variants[0];
@@ -108,6 +114,50 @@ export default async function ProductPage({
               </p>
             </section>
           )}
+
+          {/* Reseñas */}
+          <section className="surface-card p-6">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-base font-bold tracking-tight">Reseñas</h2>
+              <Stars rating={product.rating} />
+            </div>
+            {reviews.length === 0 ? (
+              <p className="text-sm text-zinc-500">
+                Este producto todavía no tiene reseñas. Comprálo y sé el
+                primero en opinar.
+              </p>
+            ) : (
+              <ul className="divide-y divide-zinc-100">
+                {reviews.map((review) => (
+                  <li key={review.id} className="py-4 first:pt-0 last:pb-0">
+                    <div className="flex items-center gap-2">
+                      <span aria-hidden="true" className="text-sm text-amber-500">
+                        {'★'.repeat(review.rating)}
+                        <span className="text-zinc-200">
+                          {'★'.repeat(5 - review.rating)}
+                        </span>
+                      </span>
+                      <span className="text-xs font-medium text-zinc-600">
+                        {review.authorName}
+                      </span>
+                      <span className="text-xs text-zinc-400">
+                        ·{' '}
+                        {new Date(review.createdAt).toLocaleDateString('es-AR', {
+                          day: 'numeric',
+                          month: 'long',
+                        })}
+                      </span>
+                    </div>
+                    {review.comment && (
+                      <p className="mt-1.5 text-sm leading-6 text-zinc-600">
+                        {review.comment}
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         </div>
 
         {/* Caja de compra */}
@@ -119,6 +169,9 @@ export default async function ProductPage({
             <h1 className="mt-1 text-xl font-bold leading-snug tracking-tight">
               {product.title}
             </h1>
+            <div className="mt-1.5">
+              <Stars rating={product.rating} />
+            </div>
 
             <p className="mt-4 text-3xl font-extrabold tracking-tight">
               {formatPrice(defaultVariant.priceCents, defaultVariant.currency)}
@@ -208,6 +261,8 @@ export default async function ProductPage({
               </p>
             </div>
           </Link>
+
+          <ReportButton productId={product.id} />
         </aside>
       </div>
     </div>

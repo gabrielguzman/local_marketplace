@@ -8,12 +8,16 @@ import type {
 } from '@marketplace/shared';
 import type { Prisma } from '@prisma/client';
 
+const ITEMS_INCLUDE = {
+  include: { variant: { select: { productId: true } } },
+} as const;
+
 export const ORDER_INCLUDE = {
   payment: { select: { status: true } },
   subOrders: {
     include: {
       business: { select: { id: true, name: true, slug: true } },
-      items: true,
+      items: ITEMS_INCLUDE,
     },
   },
 } satisfies Prisma.OrderInclude;
@@ -24,7 +28,7 @@ export type OrderWithRelations = Prisma.OrderGetPayload<{
 
 export const SELLER_SUB_ORDER_INCLUDE = {
   business: { select: { id: true, name: true, slug: true } },
-  items: true,
+  items: ITEMS_INCLUDE,
   order: {
     select: {
       id: true,
@@ -44,6 +48,7 @@ type ItemRow = OrderWithRelations['subOrders'][number]['items'][number];
 function toOrderItemDto(item: ItemRow): OrderItemDto {
   return {
     id: item.id,
+    productId: item.variant.productId,
     title: item.titleSnapshot,
     attributes: (item.attributesSnapshot ?? {}) as Record<string, string>,
     quantity: item.quantity,

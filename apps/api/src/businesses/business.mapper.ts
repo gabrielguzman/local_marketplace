@@ -1,7 +1,10 @@
-import type { BusinessDto } from '@marketplace/shared';
+import type { BusinessDto, RatingSummary } from '@marketplace/shared';
 import type { Business } from '@prisma/client';
 
-export function toBusinessDto(business: Business): BusinessDto {
+export function toBusinessDto(
+  business: Business,
+  rating: RatingSummary = { avg: null, count: 0 },
+): BusinessDto {
   return {
     id: business.id,
     name: business.name,
@@ -10,6 +13,7 @@ export function toBusinessDto(business: Business): BusinessDto {
     logoUrl: business.logoUrl,
     bannerUrl: business.bannerUrl,
     status: business.status,
+    rating,
     createdAt: business.createdAt.toISOString(),
   };
 }

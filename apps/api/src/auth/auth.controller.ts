@@ -6,18 +6,32 @@ import {
   Req,
   Res,
   UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Throttle } from '@nestjs/throttler';
 import type { AuthResponse } from '@marketplace/shared';
 import type { User } from '@prisma/client';
+import { IsString, MaxLength } from 'class-validator';
 import type { Request, Response } from 'express';
 import { AuthService, REFRESH_TTL_DAYS } from './auth.service';
+import type { AccessTokenPayload } from './auth.types';
+import { CurrentUser } from './current-user.decorator';
+import { JwtAuthGuard } from './jwt-auth.guard';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { toUserDto } from '../users/user.mapper';
 
 const REFRESH_COOKIE = 'refresh_token';
 
+class VerifyEmailDto {
+  @IsString()
+  @MaxLength(128)
+  token!: string;
+}
+
+// Endpoints sensibles: máximo 10 requests por minuto por IP
+@Throttle({ default: { limit: 10, ttl: 60_000 } })
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -72,6 +86,23 @@ export class AuthController {
       await this.auth.logout(token);
     }
     res.clearCookie(REFRESH_COOKIE, { path: '/api/v1/auth' });
+  }
+
+  @Post('verify-email')
+  @HttpCode(200)
+  async verifyEmail(@Body() dto: VerifyEmailDto): Promise<{ ok: true }> {
+    await this.auth.verifyEmail(dto.token);
+    return { ok: true };
+  }
+
+  @Post('resend-verification')
+  @HttpCode(202)
+  @UseGuards(JwtAuthGuard)
+  async resendVerification(
+    @CurrentUser() user: AccessTokenPayload,
+  ): Promise<{ ok: true }> {
+    await this.auth.resendVerification(user.sub);
+    return { ok: true };
   }
 
   private refreshCookie(req: Request): string | undefined {

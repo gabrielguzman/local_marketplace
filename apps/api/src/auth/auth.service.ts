@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   UnauthorizedException,
@@ -7,12 +8,14 @@ import { JwtService } from '@nestjs/jwt';
 import type { User } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { createHash, randomBytes } from 'node:crypto';
+import { EmailService } from '../email/email.service';
 import { PrismaService } from '../prisma/prisma.service';
 import type { AccessTokenPayload } from './auth.types';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
 export const REFRESH_TTL_DAYS = 30;
+const EMAIL_VERIFY_TTL_HOURS = 48;
 
 export interface TokenPair {
   accessToken: string;
@@ -24,6 +27,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
+    private readonly email: EmailService,
   ) {}
 
   async register(dto: RegisterDto): Promise<{ user: User } & TokenPair> {
@@ -44,7 +48,63 @@ export class AuthService {
         passwordHash: await argon2.hash(dto.password),
       },
     });
+    await this.sendVerificationEmail(user);
     return { user, ...(await this.issueTokens(user)) };
+  }
+
+  // ── Verificación de email ──────────────────────────────
+
+  async resendVerification(userId: string): Promise<void> {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+    });
+    if (user.emailVerifiedAt) {
+      throw new BadRequestException({
+        code: 'ALREADY_VERIFIED',
+        message: 'Tu email ya está verificado',
+      });
+    }
+    await this.sendVerificationEmail(user);
+  }
+
+  async verifyEmail(token: string): Promise<void> {
+    const stored = await this.prisma.verificationToken.findUnique({
+      where: { tokenHash: this.hashToken(token) },
+    });
+    if (
+      !stored ||
+      stored.type !== 'EMAIL_VERIFY' ||
+      stored.expiresAt < new Date()
+    ) {
+      throw new BadRequestException({
+        code: 'INVALID_VERIFICATION_TOKEN',
+        message: 'El enlace de verificación es inválido o venció',
+      });
+    }
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: stored.userId },
+        data: { emailVerifiedAt: new Date() },
+      }),
+      this.prisma.verificationToken.deleteMany({
+        where: { userId: stored.userId, type: 'EMAIL_VERIFY' },
+      }),
+    ]);
+  }
+
+  private async sendVerificationEmail(user: User): Promise<void> {
+    const token = randomBytes(32).toString('base64url');
+    await this.prisma.verificationToken.create({
+      data: {
+        userId: user.id,
+        type: 'EMAIL_VERIFY',
+        tokenHash: this.hashToken(token),
+        expiresAt: new Date(
+          Date.now() + EMAIL_VERIFY_TTL_HOURS * 60 * 60 * 1000,
+        ),
+      },
+    });
+    await this.email.sendEmailVerification(user.email, token);
   }
 
   async login(dto: LoginDto): Promise<{ user: User } & TokenPair> {
@@ -93,7 +153,11 @@ export class AuthService {
   }
 
   private async issueTokens(user: User): Promise<TokenPair> {
-    const payload: AccessTokenPayload = { sub: user.id, email: user.email };
+    const payload: AccessTokenPayload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    };
     const accessToken = await this.jwt.signAsync(payload);
 
     const refreshToken = randomBytes(48).toString('base64url');

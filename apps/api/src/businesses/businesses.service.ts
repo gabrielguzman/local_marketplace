@@ -1,8 +1,10 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import type { RatingSummary } from '@marketplace/shared';
 import type { Business } from '@prisma/client';
 import { slugify } from '../common/slug';
 import { PrismaService } from '../prisma/prisma.service';
@@ -17,6 +19,17 @@ export class BusinessesService {
     userId: string,
     dto: CreateBusinessDto,
   ): Promise<Business> {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { emailVerifiedAt: true },
+    });
+    if (!user.emailVerifiedAt) {
+      throw new ForbiddenException({
+        code: 'EMAIL_NOT_VERIFIED',
+        message: 'Verificá tu email antes de crear un negocio',
+      });
+    }
+
     const existing = await this.prisma.business.findUnique({
       where: { ownerId: userId },
     });
@@ -71,6 +84,18 @@ export class BusinessesService {
       where: { id: business.id },
       data: dto,
     });
+  }
+
+  async ratingFor(businessId: string): Promise<RatingSummary> {
+    const agg = await this.prisma.review.aggregate({
+      where: { businessId },
+      _avg: { rating: true },
+      _count: true,
+    });
+    return {
+      avg: agg._avg.rating === null ? null : Number(agg._avg.rating.toFixed(1)),
+      count: agg._count,
+    };
   }
 
   private async uniqueSlug(name: string): Promise<string> {

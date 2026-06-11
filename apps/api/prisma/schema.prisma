@@ -14,6 +14,11 @@ datasource db {
 // Usuarios y negocios
 // ─────────────────────────────────────────────
 
+enum UserRole {
+  USER
+  ADMIN
+}
+
 model User {
   id              String    @id @default(uuid())
   email           String    @unique
@@ -21,17 +26,42 @@ model User {
   name            String
   phone           String?
   avatarUrl       String?
+  role            UserRole  @default(USER)
   emailVerifiedAt DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  business      Business?
-  addresses     Address[]
-  cart          Cart?
-  orders        Order[]
-  refreshTokens RefreshToken[]
+  business           Business?
+  addresses          Address[]
+  cart               Cart?
+  orders             Order[]
+  refreshTokens      RefreshToken[]
+  verificationTokens VerificationToken[]
+  reviews            Review[]
+  reports            Report[]
 
   @@map("users")
+}
+
+enum VerificationTokenType {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+}
+
+// Tokens de un solo uso para verificar email / resetear password.
+// Igual que los refresh: solo se guarda el hash SHA-256.
+model VerificationToken {
+  id        String                @id @default(uuid())
+  userId    String
+  type      VerificationTokenType
+  tokenHash String                @unique
+  expiresAt DateTime
+  createdAt DateTime              @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("verification_tokens")
 }
 
 // Refresh tokens opacos, rotativos y de un solo uso.
@@ -70,6 +100,7 @@ model Business {
   owner     User       @relation(fields: [ownerId], references: [id])
   products  Product[]
   subOrders SubOrder[]
+  reviews   Review[]
 
   @@map("businesses")
 }
@@ -134,6 +165,8 @@ model Product {
   category Category         @relation(fields: [categoryId], references: [id])
   variants ProductVariant[]
   images   ProductImage[]
+  reviews  Review[]
+  reports  Report[]
 
   @@index([businessId])
   @@index([categoryId])
@@ -274,6 +307,59 @@ model OrderItem {
 
   @@index([subOrderId])
   @@map("order_items")
+}
+
+// ─────────────────────────────────────────────
+// Confianza: reseñas y denuncias
+// ─────────────────────────────────────────────
+
+model Review {
+  id         String   @id @default(uuid())
+  productId  String
+  businessId String // denormalizado para calcular reputación de la tienda
+  authorId   String
+  rating     Int // 1..5, validado en la API
+  comment    String   @default("")
+  createdAt  DateTime @default(now())
+
+  product  Product  @relation(fields: [productId], references: [id])
+  business Business @relation(fields: [businessId], references: [id])
+  author   User     @relation(fields: [authorId], references: [id])
+
+  @@unique([productId, authorId]) // una reseña por usuario y producto
+  @@index([businessId])
+  @@map("reviews")
+}
+
+enum ReportReason {
+  SPAM
+  PROHIBITED
+  COUNTERFEIT
+  OFFENSIVE
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
+}
+
+model Report {
+  id         String       @id @default(uuid())
+  productId  String
+  reporterId String
+  reason     ReportReason
+  details    String       @default("")
+  status     ReportStatus @default(PENDING)
+  createdAt  DateTime     @default(now())
+
+  product  Product @relation(fields: [productId], references: [id])
+  reporter User    @relation(fields: [reporterId], references: [id])
+
+  @@unique([productId, reporterId]) // una denuncia por usuario y producto
+  @@index([status])
+  @@map("reports")
 }
 
 enum PaymentProvider {

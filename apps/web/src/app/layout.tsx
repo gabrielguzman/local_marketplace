@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
+import { VerifyBanner } from "@/components/verify-banner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -35,6 +36,7 @@ export default function RootLayout({
     >
       <body className="flex min-h-full flex-col bg-zinc-50 font-sans text-zinc-900">
         <Header />
+        <VerifyBanner />
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
           {children}
         </main>

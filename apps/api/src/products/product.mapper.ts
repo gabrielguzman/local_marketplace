@@ -2,6 +2,7 @@ import type {
   Currency,
   ProductDetailDto,
   ProductSummaryDto,
+  RatingSummary,
 } from '@marketplace/shared';
 import type { Prisma } from '@prisma/client';
 
@@ -22,8 +23,12 @@ export type ProductForSummary = Prisma.ProductGetPayload<{
   };
 }>;
 
-export function toProductDetailDto(p: ProductWithRelations): ProductDetailDto {
+export function toProductDetailDto(
+  p: ProductWithRelations,
+  rating: RatingSummary = { avg: null, count: 0 },
+): ProductDetailDto {
   return {
+    rating,
     id: p.id,
     title: p.title,
     slug: p.slug,

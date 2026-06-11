@@ -8,6 +8,8 @@ export function toUserDto(user: User): UserDto {
     name: user.name,
     phone: user.phone,
     avatarUrl: user.avatarUrl,
+    role: user.role,
+    emailVerified: user.emailVerifiedAt !== null,
     createdAt: user.createdAt.toISOString(),
   };
 }

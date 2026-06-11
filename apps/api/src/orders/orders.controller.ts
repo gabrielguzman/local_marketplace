@@ -9,6 +9,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type { OrderDto, SellerSubOrderDto } from '@marketplace/shared';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -22,6 +23,7 @@ export class OrdersController {
   constructor(private readonly orders: OrdersService) {}
 
   @Post('checkout')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   checkout(
     @CurrentUser() user: AccessTokenPayload,
     @Body() dto: CheckoutDto,

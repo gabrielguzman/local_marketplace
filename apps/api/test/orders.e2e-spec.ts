@@ -43,6 +43,10 @@ describe('Cart & Orders (e2e)', () => {
       .post('/auth/register')
       .send({ email, password: 'super-secreta-123', name: 'E2E' })
       .expect(201);
+    await prisma.user.update({
+      where: { email },
+      data: { emailVerifiedAt: new Date() },
+    });
     return (res.body as AuthResponse).accessToken;
   }
 

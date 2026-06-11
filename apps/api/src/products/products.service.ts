@@ -3,7 +3,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import type { Paginated, ProductSummaryDto } from '@marketplace/shared';
+import type {
+  Paginated,
+  ProductSummaryDto,
+  RatingSummary,
+} from '@marketplace/shared';
 import type { Prisma } from '@prisma/client';
 import { BusinessesService } from '../businesses/businesses.service';
 import { CategoriesService } from '../categories/categories.service';
@@ -155,6 +159,18 @@ export class ProductsService {
       where: { id: productId },
       data: { status: 'DELETED' },
     });
+  }
+
+  async ratingFor(productId: string): Promise<RatingSummary> {
+    const agg = await this.prisma.review.aggregate({
+      where: { productId },
+      _avg: { rating: true },
+      _count: true,
+    });
+    return {
+      avg: agg._avg.rating === null ? null : Number(agg._avg.rating.toFixed(1)),
+      count: agg._count,
+    };
   }
 
   async search(query: SearchQueryDto): Promise<Paginated<ProductSummaryDto>> {

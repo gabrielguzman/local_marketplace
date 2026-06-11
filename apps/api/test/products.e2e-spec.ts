@@ -46,6 +46,10 @@ describe('Products (e2e)', () => {
       .send({ email, password: 'super-secreta-123', name: 'Vendedor E2E' })
       .expect(201);
     accessToken = (auth.body as AuthResponse).accessToken;
+    await prisma.user.update({
+      where: { email },
+      data: { emailVerifiedAt: new Date() },
+    });
 
     await request(app.getHttpServer())
       .post('/businesses')
