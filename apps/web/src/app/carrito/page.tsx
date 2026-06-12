@@ -2,11 +2,9 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import type { CartDto, CartItemDto } from '@marketplace/shared';
+import { CartQuantity } from '@/components/cart-quantity';
 import { authFetch } from '@/lib/api';
-import {
-  removeCartItemAction,
-  updateCartItemAction,
-} from '@/lib/cart-actions';
+import { removeCartItemAction } from '@/lib/cart-actions';
 import { formatPrice } from '@/lib/format';
 import { getAccessToken } from '@/lib/session';
 
@@ -98,44 +96,13 @@ export default async function CartPage() {
                         </p>
                       )}
 
-                      <div className="mt-2 flex items-center gap-3">
-                        <div className="flex items-center rounded-lg border border-zinc-200">
-                          <form action={updateCartItemAction}>
-                            <input type="hidden" name="itemId" value={item.id} />
-                            <input
-                              type="hidden"
-                              name="quantity"
-                              value={item.quantity - 1}
-                            />
-                            <button
-                              type="submit"
-                              aria-label="Restar uno"
-                              className="px-2.5 py-1 text-zinc-500 hover:text-zinc-900"
-                            >
-                              −
-                            </button>
-                          </form>
-                          <span className="min-w-8 text-center text-sm font-medium">
-                            {item.quantity}
-                          </span>
-                          <form action={updateCartItemAction}>
-                            <input type="hidden" name="itemId" value={item.id} />
-                            <input
-                              type="hidden"
-                              name="quantity"
-                              value={item.quantity + 1}
-                            />
-                            <button
-                              type="submit"
-                              aria-label="Sumar uno"
-                              disabled={item.quantity >= item.variant.stock}
-                              className="px-2.5 py-1 text-zinc-500 hover:text-zinc-900 disabled:opacity-30"
-                            >
-                              +
-                            </button>
-                          </form>
-                        </div>
-                        <form action={removeCartItemAction}>
+                      <div className="mt-2 flex items-start gap-3">
+                        <CartQuantity
+                          itemId={item.id}
+                          quantity={item.quantity}
+                          stock={item.variant.stock}
+                        />
+                        <form action={removeCartItemAction} className="py-1">
                           <input type="hidden" name="itemId" value={item.id} />
                           <button
                             type="submit"

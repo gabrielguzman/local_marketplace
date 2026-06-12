@@ -131,7 +131,17 @@ export interface ProductSummaryDto {
   imageUrl: string | null;
   businessName: string;
   businessSlug: string;
+  rating: RatingSummary;
 }
+
+// Ordenamientos de /search ('relevance' requiere `q`)
+export const SEARCH_SORTS = [
+  'recent',
+  'price_asc',
+  'price_desc',
+  'relevance',
+] as const;
+export type SearchSort = (typeof SEARCH_SORTS)[number];
 
 // ── Carrito ──────────────────────────────────────────────
 

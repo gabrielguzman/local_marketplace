@@ -52,7 +52,10 @@ export function toProductDetailDto(
   };
 }
 
-export function toProductSummaryDto(p: ProductForSummary): ProductSummaryDto {
+export function toProductSummaryDto(
+  p: ProductForSummary,
+  rating: RatingSummary = { avg: null, count: 0 },
+): ProductSummaryDto {
   const variant =
     p.variants.find((v) => v.isDefault) ??
     [...p.variants].sort((a, b) => a.priceCents - b.priceCents)[0];
@@ -66,5 +69,6 @@ export function toProductSummaryDto(p: ProductForSummary): ProductSummaryDto {
     imageUrl: image?.url ?? null,
     businessName: p.business.name,
     businessSlug: p.business.slug,
+    rating,
   };
 }

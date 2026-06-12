@@ -1,3 +1,4 @@
+import { SEARCH_SORTS, type SearchSort } from '@marketplace/shared';
 import { Type } from 'class-transformer';
 import {
   IsIn,
@@ -41,8 +42,8 @@ export class SearchQueryDto {
   maxPriceCents?: number;
 
   @IsOptional()
-  @IsIn(['recent'])
-  sort?: 'recent';
+  @IsIn(SEARCH_SORTS)
+  sort?: SearchSort;
 
   @IsOptional()
   @IsUUID()

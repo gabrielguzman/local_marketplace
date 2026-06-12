@@ -34,7 +34,10 @@ export async function addToCartAction(
   redirect('/carrito');
 }
 
-export async function updateCartItemAction(formData: FormData): Promise<void> {
+export async function updateCartItemAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
   const token = await getAccessToken();
   if (!token) redirect('/login');
 
@@ -51,11 +54,13 @@ export async function updateCartItemAction(formData: FormData): Promise<void> {
         body: JSON.stringify({ quantity }),
       });
     }
-  } catch {
-    // p.ej. stock insuficiente al subir cantidad: la página re-renderiza
-    // con los datos reales del carrito
+  } catch (err) {
+    // p.ej. stock insuficiente al subir cantidad
+    revalidatePath('/carrito');
+    return toActionError(err);
   }
   revalidatePath('/carrito');
+  return { error: null };
 }
 
 export async function removeCartItemAction(formData: FormData): Promise<void> {

@@ -2,11 +2,10 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import type { ProductDetailDto, ReviewDto } from '@marketplace/shared';
-import { AddToCart } from '@/components/add-to-cart';
+import { BuyBox } from '@/components/add-to-cart';
 import { ReportButton } from '@/components/report-button';
 import { Stars } from '@/components/stars';
 import { apiFetch } from '@/lib/api';
-import { formatPrice } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +24,21 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const product = await getProduct(slug);
-  return { title: product?.title ?? 'Producto no encontrado' };
+  if (!product) return { title: 'Producto no encontrado' };
+
+  const description =
+    product.description.slice(0, 160) ||
+    `Comprá ${product.title} en ${product.business.name}.`;
+  return {
+    title: product.title,
+    description,
+    openGraph: {
+      title: product.title,
+      description,
+      type: 'website',
+      ...(product.images[0] && { images: [product.images[0].url] }),
+    },
+  };
 }
 
 export default async function ProductPage({
@@ -40,11 +53,6 @@ export default async function ProductPage({
   const reviews = await apiFetch<ReviewDto[]>(
     `/products/${product.id}/reviews`,
   ).catch(() => []);
-
-  const defaultVariant =
-    product.variants.find((v) => v.isDefault) ?? product.variants[0];
-  const hasVariantOptions = product.variants.length > 1;
-  const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
 
   return (
     <div className="space-y-6">
@@ -173,56 +181,7 @@ export default async function ProductPage({
               <Stars rating={product.rating} />
             </div>
 
-            <p className="mt-4 text-3xl font-extrabold tracking-tight">
-              {formatPrice(defaultVariant.priceCents, defaultVariant.currency)}
-            </p>
-
-            <p className="mt-2 inline-flex items-center gap-1.5 text-sm">
-              {totalStock > 0 ? (
-                <>
-                  <span className="h-2 w-2 rounded-full bg-green-500" />
-                  <span className="text-green-700">
-                    Stock disponible ({totalStock})
-                  </span>
-                </>
-              ) : (
-                <>
-                  <span className="h-2 w-2 rounded-full bg-red-400" />
-                  <span className="text-red-600">Sin stock</span>
-                </>
-              )}
-            </p>
-
-            {hasVariantOptions && (
-              <div className="mt-5">
-                <h2 className="mb-2 text-sm font-semibold text-zinc-700">
-                  Variantes
-                </h2>
-                <ul className="space-y-1.5 text-sm">
-                  {product.variants.map((variant) => (
-                    <li
-                      key={variant.id}
-                      className="flex items-center justify-between rounded-lg border border-zinc-200 px-3.5 py-2 transition hover:border-brand-300"
-                    >
-                      <span className="text-zinc-600">
-                        {Object.values(variant.attributes).join(' · ') ||
-                          'Estándar'}
-                      </span>
-                      <span className="font-semibold">
-                        {formatPrice(variant.priceCents, variant.currency)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            <div className="mt-6">
-              <AddToCart
-                variantId={defaultVariant.id}
-                disabled={totalStock === 0}
-              />
-            </div>
+            <BuyBox variants={product.variants} />
 
             <div className="mt-5 space-y-2 border-t border-zinc-100 pt-4 text-xs text-zinc-500">
               <p className="flex items-center gap-2">

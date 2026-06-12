@@ -1,6 +1,6 @@
 # Backlog por módulo
 
-> Actualizado: 2026-06-11 (commit 495f2d4, 48 tests e2e).
+> Actualizado: 2026-06-11 (49 tests e2e).
 > Marcas: 🔴 bloquea monetizar · 🟠 afecta la experiencia de compra/venta · 🟢 mejora/crecimiento
 
 ## 1. Autenticación
@@ -37,11 +37,10 @@ página pública con reputación, suspensión por admin.
 ## 4. Catálogo y productos
 
 **Hecho:** CRUD completo, variantes con alta/edición/baja protegida, hasta 8 imágenes
-por URL, pausar/soft-delete, panel con alertas de stock.
+por URL, pausar/soft-delete, panel con alertas de stock, selector de variante y
+cantidad en la página pública.
 
 - 🟠 **Subida real de imágenes (Cloudinary)** — pegar URLs a mano es inviable para un vendedor real. El mayor irritante de UX actual.
-- 🟠 **Selector de variante en la página pública** — se muestran todas pero el botón compra siempre la principal. Si vendés talles, no se puede elegir.
-- 🟠 **Selector de cantidad** al agregar al carrito (hoy agrega de a 1).
 - 🟢 Página de categoría `/c/[slug]` con subcategorías navegables (las hijas solo filtran).
 - 🟢 ABM de categorías para el admin (hoy solo viven en el seed).
 - 🟢 Publicar como borrador desde la UI (el estado DRAFT existe, el form siempre publica).
@@ -50,9 +49,9 @@ por URL, pausar/soft-delete, panel con alertas de stock.
 ## 5. Búsqueda
 
 **Hecho:** full-text en español con índice GIN, filtros por categoría (incluye hijas),
-precio y negocio, paginación por cursor.
+precio y negocio, paginación por cursor, ordenamiento por recientes / precio
+asc-desc / relevancia (`ts_rank`).
 
-- 🟠 **Ordenamiento** — solo "recientes". Faltan precio asc/desc y relevancia (`ts_rank`).
 - 🟢 Filtro por calificación.
 - 🟢 Autocompletado / sugerencias en el buscador.
 - 🟢 Tolerancia a typos y sinónimos (la puerta a Meilisearch si el negocio lo pide).
@@ -61,10 +60,9 @@ precio y negocio, paginación por cursor.
 ## 6. Carrito
 
 **Hecho:** multi-negocio agrupado por tienda, cantidades validadas contra stock,
-badge con contador en el header.
+badge con contador en el header, errores de stock visibles al cambiar cantidades.
 
 - 🟠 **Carrito anónimo** — hoy pide login para agregar; lo estándar es localStorage + merge al loguear. Pérdida de conversión directa.
-- 🟠 Mostrar el error al usuario cuando sumar cantidad falla por stock (hoy la action lo silencia y la página solo re-renderiza).
 - 🟢 Favoritos / guardar para después.
 
 ## 7. Checkout y órdenes
@@ -97,9 +95,9 @@ con transiciones validadas, vistas comprador/vendedor.
 ## 10. Reseñas y confianza
 
 **Hecho:** reseñas solo post-entrega (1 por producto/usuario), promedio en producto
-y tienda, denuncias tipificadas, verificación de email para vender.
+y tienda, estrellas en las cards de listado, denuncias tipificadas, verificación
+de email para vender.
 
-- 🟠 Mostrar estrellas en las **cards de listado** (hoy solo en detalle y tienda) — el rating vende.
 - 🟢 Respuesta del vendedor a una reseña.
 - 🟢 Editar/borrar la propia reseña; reportar reseñas ofensivas.
 - 🟢 Preguntas y respuestas en la publicación (la "mensajería" de fase 2 — gran feature de conversión en ML).
@@ -127,8 +125,10 @@ email de verificación.
 
 ## 13. Frontend general
 
-- 🟠 `loading.tsx` (skeletons) y `error.tsx` amigables — hoy una API caída muestra páginas vacías sin explicación.
-- 🟠 SEO técnico: sitemap.xml, robots.txt, Open Graph + JSON-LD en productos. Barato y trae tráfico (el SSR ya está).
+**Hecho:** loading skeleton, error boundary y 404 globales; robots.txt, sitemap.xml
+y Open Graph en productos.
+
+- 🟢 JSON-LD (`schema.org/Product`) en el detalle de producto.
 - 🟢 `next/image` con remotePatterns (cuando las imágenes vengan de Cloudinary).
 - 🟢 Auditoría de accesibilidad (labels, foco, contraste).
 - 🟢 Pulido mobile (el responsive básico está, falta afinarlo).

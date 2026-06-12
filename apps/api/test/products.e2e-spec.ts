@@ -138,6 +138,47 @@ describe('Products (e2e)', () => {
     ).toHaveLength(0);
   });
 
+  it('ordena por precio y por relevancia, y expone el rating', async () => {
+    // segundo producto más barato en la misma categoría
+    await request(app.getHttpServer())
+      .post('/products')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        title: `Destornillador Manual ${stamp}`,
+        description: 'Destornillador plano de acero templado',
+        categoryId,
+        variants: [{ priceCents: 1500000, stock: 8 }],
+      })
+      .expect(201);
+
+    const asc = await request(app.getHttpServer())
+      .get('/search')
+      .query({ category: categorySlug, sort: 'price_asc' })
+      .expect(200);
+    const ascItems = (asc.body as Paginated<ProductSummaryDto>).items;
+    expect(ascItems.map((p) => p.priceCents)).toEqual(
+      [...ascItems.map((p) => p.priceCents)].sort((a, b) => a - b),
+    );
+    expect(ascItems[0].title).toContain('Destornillador');
+
+    const desc = await request(app.getHttpServer())
+      .get('/search')
+      .query({ category: categorySlug, sort: 'price_desc' })
+      .expect(200);
+    expect((desc.body as Paginated<ProductSummaryDto>).items[0].id).toBe(
+      productId,
+    );
+
+    const relevance = await request(app.getHttpServer())
+      .get('/search')
+      .query({ q: `taladro ${stamp}`, sort: 'relevance' })
+      .expect(200);
+    const relItems = (relevance.body as Paginated<ProductSummaryDto>).items;
+    expect(relItems.some((p) => p.id === productId)).toBe(true);
+    // los listados exponen el rating (sin reseñas todavía)
+    expect(relItems[0].rating).toEqual({ avg: null, count: 0 });
+  });
+
   it('otro usuario no puede editar mi producto', async () => {
     const other = await request(app.getHttpServer())
       .post('/auth/register')

@@ -248,15 +248,25 @@ export class ProductsService {
 
   async search(query: SearchQueryDto): Promise<Paginated<ProductSummaryDto>> {
     const limit = query.limit ?? 20;
+    // 'relevance' solo tiene sentido con texto de búsqueda
+    const sort =
+      query.sort === 'relevance' && !query.q
+        ? 'recent'
+        : (query.sort ?? 'recent');
     const where: Prisma.ProductWhereInput = { status: 'ACTIVE' };
 
+    // ids ordenados por ts_rank, para cuando sort === 'relevance'
+    let rankedIds: string[] = [];
     if (query.q) {
       const matches = await this.prisma.$queryRaw<{ id: string }[]>`
         SELECT id FROM products
         WHERE "searchVector" @@ websearch_to_tsquery('spanish', ${query.q})
           AND status = 'ACTIVE'
+        ORDER BY ts_rank("searchVector", websearch_to_tsquery('spanish', ${query.q})) DESC,
+          id DESC
       `;
-      where.id = { in: matches.map((m) => m.id) };
+      rankedIds = matches.map((m) => m.id);
+      where.id = { in: rankedIds };
     }
 
     if (query.business) {
@@ -294,20 +304,91 @@ export class ProductsService {
       };
     }
 
-    const products: ProductForSummary[] = await this.prisma.product.findMany({
+    if (sort === 'recent') {
+      const products: ProductForSummary[] = await this.prisma.product.findMany({
+        where,
+        include: SUMMARY_INCLUDE,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: limit + 1,
+        ...(query.cursor && { cursor: { id: query.cursor }, skip: 1 }),
+      });
+
+      const hasMore = products.length > limit;
+      const page = hasMore ? products.slice(0, limit) : products;
+      return {
+        items: await this.toSummaries(page),
+        nextCursor: hasMore ? page[page.length - 1].id : null,
+      };
+    }
+
+    // precio/relevancia: el orden no se puede expresar con el cursor nativo
+    // de Prisma (vive en la variante default / en ts_rank), así que se ordena
+    // el conjunto filtrado de ids y se pagina por posición.
+    const filtered = await this.prisma.product.findMany({
       where,
-      include: SUMMARY_INCLUDE,
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-      take: limit + 1,
-      ...(query.cursor && { cursor: { id: query.cursor }, skip: 1 }),
+      select: { id: true },
     });
 
-    const hasMore = products.length > limit;
-    const page = hasMore ? products.slice(0, limit) : products;
+    let ordered: string[];
+    if (sort === 'relevance') {
+      const surviving = new Set(filtered.map((f) => f.id));
+      ordered = rankedIds.filter((id) => surviving.has(id));
+    } else {
+      const defaults = await this.prisma.productVariant.findMany({
+        where: {
+          productId: { in: filtered.map((f) => f.id) },
+          isDefault: true,
+        },
+        select: { productId: true, priceCents: true },
+      });
+      const priceOf = new Map(defaults.map((v) => [v.productId, v.priceCents]));
+      const dir = sort === 'price_desc' ? -1 : 1;
+      ordered = filtered
+        .map((f) => f.id)
+        .sort(
+          (a, b) =>
+            dir * ((priceOf.get(a) ?? 0) - (priceOf.get(b) ?? 0)) ||
+            a.localeCompare(b),
+        );
+    }
+
+    const start = query.cursor ? ordered.indexOf(query.cursor) + 1 : 0;
+    const pageIds = ordered.slice(start, start + limit);
+    const products = await this.prisma.product.findMany({
+      where: { id: { in: pageIds } },
+      include: SUMMARY_INCLUDE,
+    });
+    const byId = new Map(products.map((p) => [p.id, p]));
+    const page = pageIds.flatMap((id) => byId.get(id) ?? []);
+
     return {
-      items: page.map(toProductSummaryDto),
-      nextCursor: hasMore ? page[page.length - 1].id : null,
+      items: await this.toSummaries(page),
+      nextCursor:
+        start + limit < ordered.length ? pageIds[pageIds.length - 1] : null,
     };
+  }
+
+  // Resuelve los ratings de la página en una sola consulta agrupada
+  private async toSummaries(
+    products: ProductForSummary[],
+  ): Promise<ProductSummaryDto[]> {
+    if (products.length === 0) return [];
+    const grouped = await this.prisma.review.groupBy({
+      by: ['productId'],
+      where: { productId: { in: products.map((p) => p.id) } },
+      _avg: { rating: true },
+      _count: true,
+    });
+    const ratings = new Map<string, RatingSummary>(
+      grouped.map((g) => [
+        g.productId,
+        {
+          avg: g._avg.rating === null ? null : Number(g._avg.rating.toFixed(1)),
+          count: g._count,
+        },
+      ]),
+    );
+    return products.map((p) => toProductSummaryDto(p, ratings.get(p.id)));
   }
 
   private async assertOwnership(

@@ -14,6 +14,7 @@ interface SearchParams {
   category?: string;
   min?: string; // pesos
   max?: string;
+  sort?: string;
   cursor?: string;
 }
 
@@ -24,6 +25,7 @@ function buildQuery(params: SearchParams, overrides: Partial<SearchParams> = {})
   if (merged.category) query.set('category', merged.category);
   if (merged.min) query.set('min', merged.min);
   if (merged.max) query.set('max', merged.max);
+  if (merged.sort) query.set('sort', merged.sort);
   if (merged.cursor) query.set('cursor', merged.cursor);
   return query.toString();
 }
@@ -44,6 +46,7 @@ export default async function SearchPage({
   if (params.max) {
     apiQuery.set('maxPriceCents', String(Math.round(Number(params.max) * 100)));
   }
+  if (params.sort) apiQuery.set('sort', params.sort);
   if (params.cursor) apiQuery.set('cursor', params.cursor);
 
   const [categories, results] = await Promise.all([
@@ -100,6 +103,9 @@ export default async function SearchPage({
             {params.category && (
               <input type="hidden" name="category" value={params.category} />
             )}
+            {params.sort && (
+              <input type="hidden" name="sort" value={params.sort} />
+            )}
             <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
               Precio
             </h2>
@@ -138,6 +144,32 @@ export default async function SearchPage({
             {results.items.length}
             {results.nextCursor ? '+' : ''} productos
           </p>
+        </div>
+
+        <div className="mb-5 flex flex-wrap items-center gap-1.5 text-xs">
+          <span className="mr-1 font-medium uppercase tracking-wider text-zinc-400">
+            Ordenar
+          </span>
+          {[
+            { value: undefined, label: 'Más recientes' },
+            ...(params.q
+              ? [{ value: 'relevance', label: 'Más relevantes' }]
+              : []),
+            { value: 'price_asc', label: 'Menor precio' },
+            { value: 'price_desc', label: 'Mayor precio' },
+          ].map((option) => (
+            <Link
+              key={option.label}
+              href={`/buscar?${buildQuery(params, { sort: option.value, cursor: undefined })}`}
+              className={`rounded-full border px-3 py-1 transition ${
+                (params.sort ?? undefined) === option.value
+                  ? 'border-brand-500 bg-brand-50 font-semibold text-brand-700'
+                  : 'border-zinc-200 text-zinc-600 hover:border-brand-300'
+              }`}
+            >
+              {option.label}
+            </Link>
+          ))}
         </div>
 
         {results.items.length === 0 ? (

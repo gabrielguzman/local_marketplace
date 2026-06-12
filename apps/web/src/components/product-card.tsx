@@ -50,6 +50,17 @@ export function ProductCard({ product }: { product: ProductSummaryDto }) {
         <p className="text-lg font-bold tracking-tight text-zinc-900">
           {formatPrice(product.priceCents, product.currency)}
         </p>
+        {product.rating.count > 0 && (
+          <p className="flex items-center gap-1 text-xs">
+            <span aria-hidden="true" className="text-amber-500">
+              ★
+            </span>
+            <span className="font-medium text-zinc-700">
+              {product.rating.avg}
+            </span>
+            <span className="text-zinc-400">({product.rating.count})</span>
+          </p>
+        )}
         <p className="line-clamp-2 min-h-10 text-sm leading-5 text-zinc-600">
           {product.title}
         </p>
