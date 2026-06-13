@@ -3,10 +3,12 @@ import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import {
   REPORT_REASON_LABELS,
+  type AdminMetricPoint,
   type AdminStats,
   type ReportDto,
   type ReportStatus,
 } from '@marketplace/shared';
+import { MetricsChart } from '@/components/metrics-chart';
 import { authFetch } from '@/lib/api';
 import { formatPrice } from '@/lib/format';
 import { getAccessToken } from '@/lib/session';
@@ -38,8 +40,11 @@ export default async function AdminPage({
     ? (estado as ReportStatus)
     : 'PENDING';
 
-  const [stats, reports] = await Promise.all([
+  const [stats, metrics, reports] = await Promise.all([
     authFetch<AdminStats>(token, '/admin/stats').catch(() => null),
+    authFetch<AdminMetricPoint[]>(token, '/admin/metrics').catch(
+      () => [] as AdminMetricPoint[],
+    ),
     authFetch<ReportDto[]>(token, `/admin/reports?status=${reportStatus}`).catch(
       () => [],
     ),
@@ -70,6 +75,8 @@ export default async function AdminPage({
           ))}
         </div>
       )}
+
+      {metrics.length > 0 && <MetricsChart points={metrics} />}
 
       <section>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">

@@ -20,6 +20,7 @@ export default async function AdminLayout({
           { href: '/admin/negocios', label: 'Negocios' },
           { href: '/admin/productos', label: 'Productos' },
           { href: '/admin/ordenes', label: 'Órdenes' },
+          { href: '/admin/auditoria', label: 'Auditoría' },
         ]}
       />
       {children}

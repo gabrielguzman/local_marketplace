@@ -5,11 +5,13 @@ import {
 } from '@nestjs/common';
 import type {
   AdminBusinessDto,
+  AdminMetricPoint,
   AdminOrderDetailDto,
   AdminOrderDto,
   AdminProductDto,
   AdminStats,
   AdminUserDto,
+  AuditLogDto,
   Currency,
   Page,
   ReportDto,
@@ -72,6 +74,19 @@ function paging(page?: number): { page: number; skip: number; take: number } {
 @Injectable()
 export class AdminService {
   constructor(private readonly prisma: PrismaService) {}
+
+  // Registra una acción de moderación (fire-and-forget, no rompe la acción)
+  private async audit(
+    actorId: string,
+    action: string,
+    targetType: string,
+    targetId: string,
+    summary: string,
+  ): Promise<void> {
+    await this.prisma.auditLog
+      .create({ data: { actorId, action, targetType, targetId, summary } })
+      .catch(() => undefined);
+  }
 
   async stats(): Promise<AdminStats> {
     const [users, businesses, activeProducts, paidOrders, pendingReports, gmv] =
@@ -148,6 +163,13 @@ export class AdminService {
     }
     await this.ensureUser(userId);
     await this.prisma.user.update({ where: { id: userId }, data: { role } });
+    await this.audit(
+      adminId,
+      'USER_ROLE',
+      'USER',
+      userId,
+      role === 'ADMIN' ? 'Dio acceso de admin' : 'Quitó acceso de admin',
+    );
   }
 
   async setUserStatus(
@@ -169,6 +191,13 @@ export class AdminService {
         ? [this.prisma.refreshToken.deleteMany({ where: { userId } })]
         : []),
     ]);
+    await this.audit(
+      adminId,
+      'USER_STATUS',
+      'USER',
+      userId,
+      status === 'SUSPENDED' ? 'Suspendió la cuenta' : 'Reactivó la cuenta',
+    );
   }
 
   // ── Listados de moderación ───────────────────────────────
@@ -325,6 +354,7 @@ export class AdminService {
   }
 
   async resolveReport(
+    adminId: string,
     reportId: string,
     status: 'RESOLVED' | 'DISMISSED',
   ): Promise<ReportDto> {
@@ -342,17 +372,27 @@ export class AdminService {
       data: { status },
       include: REPORT_INCLUDE,
     });
+    await this.audit(
+      adminId,
+      'REPORT_RESOLVE',
+      'REPORT',
+      reportId,
+      status === 'RESOLVED'
+        ? 'Resolvió una denuncia'
+        : 'Desestimó una denuncia',
+    );
     return toReportDto(updated);
   }
 
   // Moderación: el admin puede pausar/eliminar cualquier producto
   async setProductStatus(
+    adminId: string,
     productId: string,
     status: ProductStatus,
   ): Promise<void> {
     const product = await this.prisma.product.findUnique({
       where: { id: productId },
-      select: { id: true },
+      select: { title: true },
     });
     if (!product) {
       throw new NotFoundException({
@@ -364,15 +404,23 @@ export class AdminService {
       where: { id: productId },
       data: { status },
     });
+    await this.audit(
+      adminId,
+      'PRODUCT_STATUS',
+      'PRODUCT',
+      productId,
+      `Cambió "${product.title}" a ${status}`,
+    );
   }
 
   async setBusinessStatus(
+    adminId: string,
     businessId: string,
     status: BusinessStatus,
   ): Promise<void> {
     const business = await this.prisma.business.findUnique({
       where: { id: businessId },
-      select: { id: true },
+      select: { name: true },
     });
     if (!business) {
       throw new NotFoundException({
@@ -384,5 +432,76 @@ export class AdminService {
       where: { id: businessId },
       data: { status },
     });
+    await this.audit(
+      adminId,
+      'BUSINESS_STATUS',
+      'BUSINESS',
+      businessId,
+      `Cambió "${business.name}" a ${status}`,
+    );
+  }
+
+  async listAudit(page?: number): Promise<Page<AuditLogDto>> {
+    const { page: current, skip, take } = paging(page);
+    const [total, logs] = await this.prisma.$transaction([
+      this.prisma.auditLog.count(),
+      this.prisma.auditLog.findMany({
+        include: { actor: { select: { name: true } } },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+      }),
+    ]);
+    return {
+      total,
+      page: current,
+      pageSize: PAGE_SIZE,
+      items: logs.map((log) => ({
+        id: log.id,
+        actorName: log.actor.name,
+        action: log.action,
+        targetType: log.targetType,
+        targetId: log.targetId,
+        summary: log.summary,
+        createdAt: log.createdAt.toISOString(),
+      })),
+    };
+  }
+
+  // Serie diaria de los últimos 14 días (órdenes pagadas y facturación)
+  async metrics(): Promise<AdminMetricPoint[]> {
+    const rows = await this.prisma.$queryRaw<
+      { date: string; orders: bigint; revenue: bigint }[]
+    >`
+      SELECT to_char(date_trunc('day', "createdAt"), 'YYYY-MM-DD') AS date,
+             count(*) AS orders,
+             coalesce(sum("totalCents"), 0) AS revenue
+      FROM orders
+      WHERE status = 'PAID'
+        AND "createdAt" >= (now() - interval '13 days')::date
+      GROUP BY 1
+    `;
+    const byDate = new Map(
+      rows.map((r) => [
+        r.date,
+        { orders: Number(r.orders), revenueCents: Number(r.revenue) },
+      ]),
+    );
+
+    // rellenar los 14 días (más viejo → más nuevo), incluso los vacíos
+    const points: AdminMetricPoint[] = [];
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date();
+      d.setUTCHours(0, 0, 0, 0);
+      d.setUTCDate(d.getUTCDate() - i);
+      const date = d.toISOString().slice(0, 10);
+      const hit = byDate.get(date);
+      points.push({
+        date,
+        orders: hit?.orders ?? 0,
+        revenueCents: hit?.revenueCents ?? 0,
+      });
+    }
+    return points;
   }
 }

@@ -11,11 +11,13 @@ import {
 } from '@nestjs/common';
 import type {
   AdminBusinessDto,
+  AdminMetricPoint,
   AdminOrderDetailDto,
   AdminOrderDto,
   AdminProductDto,
   AdminStats,
   AdminUserDto,
+  AuditLogDto,
   Page,
   ReportDto,
 } from '@marketplace/shared';
@@ -103,28 +105,31 @@ export class AdminController {
 
   @Patch('reports/:id')
   resolve(
+    @CurrentUser() admin: AccessTokenPayload,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ResolveReportDto,
   ): Promise<ReportDto> {
-    return this.admin.resolveReport(id, dto.status);
+    return this.admin.resolveReport(admin.sub, id, dto.status);
   }
 
   @Patch('products/:id/status')
   @HttpCode(204)
   async moderateProduct(
+    @CurrentUser() admin: AccessTokenPayload,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ModerateProductDto,
   ): Promise<void> {
-    await this.admin.setProductStatus(id, dto.status);
+    await this.admin.setProductStatus(admin.sub, id, dto.status);
   }
 
   @Patch('businesses/:id/status')
   @HttpCode(204)
   async moderateBusiness(
+    @CurrentUser() admin: AccessTokenPayload,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ModerateBusinessDto,
   ): Promise<void> {
-    await this.admin.setBusinessStatus(id, dto.status);
+    await this.admin.setBusinessStatus(admin.sub, id, dto.status);
   }
 
   @Get('users')
@@ -172,5 +177,15 @@ export class AdminController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<AdminOrderDetailDto> {
     return this.admin.getOrderDetail(id);
+  }
+
+  @Get('audit')
+  audit(@Query() query: PageQuery): Promise<Page<AuditLogDto>> {
+    return this.admin.listAudit(query.page);
+  }
+
+  @Get('metrics')
+  metrics(): Promise<AdminMetricPoint[]> {
+    return this.admin.metrics();
   }
 }

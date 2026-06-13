@@ -45,8 +45,25 @@ model User {
   verificationTokens VerificationToken[]
   reviews            Review[]
   reports            Report[]
+  auditLogs          AuditLog[]
 
   @@map("users")
+}
+
+// Registro de acciones de moderación: quién hizo qué y a qué.
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String
+  action     String // USER_SUSPEND, USER_ROLE, PRODUCT_STATUS, BUSINESS_STATUS, REPORT_RESOLVE
+  targetType String // USER | PRODUCT | BUSINESS | REPORT
+  targetId   String
+  summary    String   @default("")
+  createdAt  DateTime @default(now())
+
+  actor User @relation(fields: [actorId], references: [id])
+
+  @@index([createdAt])
+  @@map("audit_logs")
 }
 
 enum VerificationTokenType {

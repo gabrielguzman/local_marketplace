@@ -116,6 +116,9 @@ describe('Trust: verificación, reseñas, denuncias y admin (e2e)', () => {
     await prisma.business.deleteMany({
       where: { owner: { email: { in: allEmails } } },
     });
+    await prisma.auditLog.deleteMany({
+      where: { actor: { email: { in: allEmails } } },
+    });
     await prisma.category.delete({ where: { id: categoryId } });
     await prisma.user.deleteMany({ where: { email: { in: allEmails } } });
     await app.close();

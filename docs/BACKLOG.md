@@ -44,15 +44,13 @@ cantidad en la página pública.
 - 🟠 **Subida real de imágenes (Cloudinary)** — pegar URLs a mano es inviable para un vendedor real. El mayor irritante de UX actual.
 - 🟢 Página de categoría `/c/[slug]` con subcategorías navegables (las hijas solo filtran).
 - 🟢 ABM de categorías para el admin (hoy solo viven en el seed).
-- 🟢 Productos relacionados en el detalle.
 
 ## 5. Búsqueda
 
 **Hecho:** full-text en español con índice GIN, filtros por categoría (incluye hijas),
-precio y negocio, paginación por cursor, ordenamiento por recientes / precio
-asc-desc / relevancia (`ts_rank`).
+precio, negocio y calificación, paginación por cursor, ordenamiento por recientes /
+precio asc-desc / relevancia (`ts_rank`).
 
-- 🟢 Filtro por calificación.
 - 🟢 Autocompletado / sugerencias en el buscador.
 - 🟢 Tolerancia a typos y sinónimos (la puerta a Meilisearch si el negocio lo pide).
 - 🟢 Indexar atributos de variantes (buscar "remera roja" no matchea el atributo color).
@@ -76,7 +74,6 @@ por el comprador, línea de tiempo del envío en el detalle.
 - 🔴 **Comisión de la plataforma** — no existe ningún fee. Decidir modelo (% por venta es lo estándar) y agregar `feeCents` a SubOrder calculado al crear la orden.
 - 🟢 Reembolsos (el estado REFUNDED existe sin flujo).
 - 🟢 Limpieza/expiración de órdenes PENDING_PAYMENT viejas.
-- 🟢 Comprobante de compra descargable.
 
 ## 8. Pagos y monetización (módulo inexistente)
 
@@ -106,11 +103,10 @@ reseña.
 **Hecho:** stats con GMV, denuncias por estado, usuarios (buscar/suspender/rol),
 negocios, productos, órdenes — todo con acciones directas, confirmación en las
 acciones destructivas, paginación real (20 por página) en los cuatro listados,
-detalle de orden con datos del comprador.
+detalle de orden con datos del comprador, log de auditoría de acciones de
+moderación, métricas con serie temporal de 14 días en el panel.
 
-- 🟢 **Auditoría** — log de qué admin hizo qué (imprescindible cuando haya más de un admin).
 - 🟢 Gestión de categorías (ver §4).
-- 🟢 Métricas con series temporales (ventas por día/semana).
 
 ## 12. Emails y notificaciones
 

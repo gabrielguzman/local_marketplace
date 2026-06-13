@@ -343,6 +343,24 @@ export interface AdminOrderDetailDto extends OrderDto {
   buyerName: string;
 }
 
+// Registro de auditoría de acciones de moderación
+export interface AuditLogDto {
+  id: string;
+  actorName: string;
+  action: string;
+  targetType: string;
+  targetId: string;
+  summary: string;
+  createdAt: string;
+}
+
+// Punto de una serie temporal diaria (métricas del admin)
+export interface AdminMetricPoint {
+  date: string; // YYYY-MM-DD
+  orders: number;
+  revenueCents: number;
+}
+
 // ── Dashboard del vendedor ───────────────────────────────
 
 export interface SellerDashboard {

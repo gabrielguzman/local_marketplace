@@ -5,10 +5,12 @@ import { App } from 'supertest/types';
 import cookieParser from 'cookie-parser';
 import type {
   AdminBusinessDto,
+  AdminMetricPoint,
   AdminOrderDto,
   AdminProductDto,
   AdminStats,
   AdminUserDto,
+  AuditLogDto,
   AuthResponse,
   OrderDto,
   Page,
@@ -127,6 +129,9 @@ describe('Paneles admin y vendedor (e2e)', () => {
     });
     await prisma.business.deleteMany({
       where: { owner: { email: { in: allEmails } } },
+    });
+    await prisma.auditLog.deleteMany({
+      where: { actor: { email: { in: allEmails } } },
     });
     await prisma.category.delete({ where: { id: categoryId } });
     await prisma.user.deleteMany({ where: { email: { in: allEmails } } });
@@ -303,5 +308,33 @@ describe('Paneles admin y vendedor (e2e)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
     expect((stats.body as AdminStats).gmvCents).toBeGreaterThanOrEqual(900000);
+  });
+
+  it('las acciones de moderación quedan en el log de auditoría', async () => {
+    // las suspensiones del test anterior dejaron rastro
+    const res = await request(app.getHttpServer())
+      .get('/admin/audit')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+    const audit = res.body as Page<AuditLogDto>;
+    expect(audit.total).toBeGreaterThanOrEqual(1);
+    expect(
+      audit.items.some(
+        (log) => log.action === 'USER_STATUS' && log.targetType === 'USER',
+      ),
+    ).toBe(true);
+  });
+
+  it('las métricas devuelven una serie de 14 días', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/admin/metrics')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+    const points = res.body as AdminMetricPoint[];
+    expect(points).toHaveLength(14);
+    // el día de hoy tiene al menos la orden pagada de esta suite
+    expect(points.reduce((sum, p) => sum + p.orders, 0)).toBeGreaterThanOrEqual(
+      1,
+    );
   });
 });
