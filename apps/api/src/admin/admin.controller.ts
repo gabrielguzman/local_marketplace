@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import type {
   AdminBusinessDto,
+  AdminOrderDetailDto,
   AdminOrderDto,
   AdminProductDto,
   AdminStats,
@@ -164,5 +165,12 @@ export class AdminController {
   @Get('orders')
   orders(@Query() query: PageQuery): Promise<Page<AdminOrderDto>> {
     return this.admin.listOrders(query.page);
+  }
+
+  @Get('orders/:id')
+  orderDetail(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<AdminOrderDetailDto> {
+    return this.admin.getOrderDetail(id);
   }
 }

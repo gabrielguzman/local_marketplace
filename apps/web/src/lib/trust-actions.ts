@@ -48,6 +48,68 @@ export async function createReviewAction(
   return { error: null };
 }
 
+export async function editReviewAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const token = await getAccessToken();
+  if (!token) redirect('/login');
+
+  const productId = String(formData.get('productId') ?? '');
+  const reviewId = String(formData.get('reviewId') ?? '');
+  const slug = String(formData.get('slug') ?? '');
+  try {
+    await authFetch(token, `/products/${productId}/reviews/${reviewId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        rating: Number(formData.get('rating') ?? 0),
+        comment: String(formData.get('comment') ?? ''),
+      }),
+    });
+  } catch (err) {
+    return toActionError(err);
+  }
+  revalidatePath(`/p/${slug}`);
+  return { error: null, ok: true };
+}
+
+export async function deleteReviewAction(formData: FormData): Promise<void> {
+  const token = await getAccessToken();
+  if (!token) redirect('/login');
+
+  const productId = String(formData.get('productId') ?? '');
+  const reviewId = String(formData.get('reviewId') ?? '');
+  const slug = String(formData.get('slug') ?? '');
+  await authFetch(token, `/products/${productId}/reviews/${reviewId}`, {
+    method: 'DELETE',
+  }).catch(() => undefined);
+  revalidatePath(`/p/${slug}`);
+}
+
+export async function replyReviewAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const token = await getAccessToken();
+  if (!token) redirect('/login');
+
+  const productId = String(formData.get('productId') ?? '');
+  const reviewId = String(formData.get('reviewId') ?? '');
+  const slug = String(formData.get('slug') ?? '');
+  try {
+    await authFetch(token, `/products/${productId}/reviews/${reviewId}/reply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ response: String(formData.get('response') ?? '') }),
+    });
+  } catch (err) {
+    return toActionError(err);
+  }
+  revalidatePath(`/p/${slug}`);
+  return { error: null, ok: true };
+}
+
 export async function reportProductAction(
   _prev: ActionState,
   formData: FormData,

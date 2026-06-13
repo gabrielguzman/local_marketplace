@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import type { AdminOrderDto, Page } from '@marketplace/shared';
@@ -57,8 +58,13 @@ export default async function AdminOrdersPage({
                   key={order.id}
                   className="border-b border-zinc-50 last:border-0 hover:bg-zinc-50/60"
                 >
-                  <td className="px-5 py-3.5 font-mono text-xs text-zinc-500">
-                    #{order.id.slice(0, 8)}
+                  <td className="px-5 py-3.5">
+                    <Link
+                      href={`/admin/ordenes/${order.id}`}
+                      className="font-mono text-xs text-brand-600 hover:underline"
+                    >
+                      #{order.id.slice(0, 8)}
+                    </Link>
                   </td>
                   <td className="px-5 py-3.5 text-zinc-600">
                     {order.buyerEmail}

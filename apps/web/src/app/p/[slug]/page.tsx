@@ -1,11 +1,17 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import type { ProductDetailDto, ReviewDto } from '@marketplace/shared';
+import type {
+  BusinessDto,
+  ProductDetailDto,
+  ReviewDto,
+} from '@marketplace/shared';
 import { BuyBox } from '@/components/add-to-cart';
 import { ReportButton } from '@/components/report-button';
+import { ReviewItem } from '@/components/review-item';
 import { Stars } from '@/components/stars';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, authFetch } from '@/lib/api';
+import { getAccessToken, getCurrentUser } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,6 +59,20 @@ export default async function ProductPage({
   const reviews = await apiFetch<ReviewDto[]>(
     `/products/${product.id}/reviews`,
   ).catch(() => []);
+
+  // ¿el que mira es el autor de alguna reseña o el dueño del negocio?
+  const currentUser = await getCurrentUser();
+  let isOwner = false;
+  if (currentUser) {
+    const token = await getAccessToken();
+    if (token) {
+      const myBusiness = await authFetch<BusinessDto>(
+        token,
+        '/businesses/me',
+      ).catch(() => null);
+      isOwner = myBusiness?.id === product.business.id;
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -137,31 +157,13 @@ export default async function ProductPage({
             ) : (
               <ul className="divide-y divide-zinc-100">
                 {reviews.map((review) => (
-                  <li key={review.id} className="py-4 first:pt-0 last:pb-0">
-                    <div className="flex items-center gap-2">
-                      <span aria-hidden="true" className="text-sm text-amber-500">
-                        {'★'.repeat(review.rating)}
-                        <span className="text-zinc-200">
-                          {'★'.repeat(5 - review.rating)}
-                        </span>
-                      </span>
-                      <span className="text-xs font-medium text-zinc-600">
-                        {review.authorName}
-                      </span>
-                      <span className="text-xs text-zinc-400">
-                        ·{' '}
-                        {new Date(review.createdAt).toLocaleDateString('es-AR', {
-                          day: 'numeric',
-                          month: 'long',
-                        })}
-                      </span>
-                    </div>
-                    {review.comment && (
-                      <p className="mt-1.5 text-sm leading-6 text-zinc-600">
-                        {review.comment}
-                      </p>
-                    )}
-                  </li>
+                  <ReviewItem
+                    key={review.id}
+                    review={review}
+                    productSlug={product.slug}
+                    isMine={review.authorId === currentUser?.id}
+                    canReply={isOwner}
+                  />
                 ))}
               </ul>
             )}

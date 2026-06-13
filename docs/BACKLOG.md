@@ -95,19 +95,19 @@ por el comprador, línea de tiempo del envío en el detalle.
 
 **Hecho:** reseñas solo post-entrega (1 por producto/usuario), promedio en producto
 y tienda, estrellas en las cards de listado, denuncias tipificadas, verificación
-de email para vender.
+de email para vender, respuesta del vendedor a una reseña, editar/borrar la propia
+reseña.
 
-- 🟢 Respuesta del vendedor a una reseña.
-- 🟢 Editar/borrar la propia reseña; reportar reseñas ofensivas.
+- 🟢 Reportar reseñas ofensivas.
 - 🟢 Preguntas y respuestas en la publicación (la "mensajería" de fase 2 — gran feature de conversión en ML).
 
 ## 11. Admin y moderación
 
 **Hecho:** stats con GMV, denuncias por estado, usuarios (buscar/suspender/rol),
 negocios, productos, órdenes — todo con acciones directas, confirmación en las
-acciones destructivas, paginación real (20 por página) en los cuatro listados.
+acciones destructivas, paginación real (20 por página) en los cuatro listados,
+detalle de orden con datos del comprador.
 
-- 🟢 Detalle de una orden desde el admin.
 - 🟢 **Auditoría** — log de qué admin hizo qué (imprescindible cuando haya más de un admin).
 - 🟢 Gestión de categorías (ver §4).
 - 🟢 Métricas con series temporales (ventas por día/semana).

@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import type {
   AdminBusinessDto,
+  AdminOrderDetailDto,
   AdminOrderDto,
   AdminProductDto,
   AdminStats,
@@ -13,6 +14,7 @@ import type {
   Page,
   ReportDto,
 } from '@marketplace/shared';
+import { ORDER_INCLUDE, toOrderDto } from '../orders/order.mapper';
 import type {
   BusinessStatus,
   Prisma,
@@ -275,6 +277,27 @@ export class AdminService {
         subOrderCount: order._count.subOrders,
         createdAt: order.createdAt.toISOString(),
       })),
+    };
+  }
+
+  async getOrderDetail(orderId: string): Promise<AdminOrderDetailDto> {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        ...ORDER_INCLUDE,
+        buyer: { select: { email: true, name: true } },
+      },
+    });
+    if (!order) {
+      throw new NotFoundException({
+        code: 'ORDER_NOT_FOUND',
+        message: 'Orden no encontrada',
+      });
+    }
+    return {
+      ...toOrderDto(order),
+      buyerEmail: order.buyer.email,
+      buyerName: order.buyer.name,
     };
   }
 

@@ -21,6 +21,25 @@ export class CreateReviewDto {
   comment?: string;
 }
 
+export class UpdateReviewDto {
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  rating?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  comment?: string;
+}
+
+export class ReplyReviewDto {
+  @IsString()
+  @MaxLength(2000)
+  response!: string;
+}
+
 export class CreateReportDto {
   @IsIn(REPORT_REASONS)
   reason!: ReportReason;

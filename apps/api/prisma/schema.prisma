@@ -330,6 +330,11 @@ model Review {
   rating     Int // 1..5, validado en la API
   comment    String   @default("")
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Respuesta pública del vendedor a la reseña
+  sellerResponse    String?
+  sellerRespondedAt DateTime?
 
   product  Product  @relation(fields: [productId], references: [id])
   business Business @relation(fields: [businessId], references: [id])

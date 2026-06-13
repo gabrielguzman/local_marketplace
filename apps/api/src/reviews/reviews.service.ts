@@ -5,8 +5,36 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import type { ReviewDto } from '@marketplace/shared';
+import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateReportDto, CreateReviewDto } from './dto/reviews.dto';
+import {
+  CreateReportDto,
+  CreateReviewDto,
+  ReplyReviewDto,
+  UpdateReviewDto,
+} from './dto/reviews.dto';
+
+const REVIEW_INCLUDE = {
+  author: { select: { name: true } },
+} satisfies Prisma.ReviewInclude;
+
+type ReviewWithAuthor = Prisma.ReviewGetPayload<{
+  include: typeof REVIEW_INCLUDE;
+}>;
+
+function toReviewDto(review: ReviewWithAuthor): ReviewDto {
+  return {
+    id: review.id,
+    productId: review.productId,
+    authorId: review.authorId,
+    rating: review.rating,
+    comment: review.comment,
+    authorName: review.author.name,
+    createdAt: review.createdAt.toISOString(),
+    sellerResponse: review.sellerResponse,
+    sellerRespondedAt: review.sellerRespondedAt?.toISOString() ?? null,
+  };
+}
 
 @Injectable()
 export class ReviewsService {
@@ -64,31 +92,105 @@ export class ReviewsService {
         rating: dto.rating,
         comment: dto.comment ?? '',
       },
-      include: { author: { select: { name: true } } },
+      include: REVIEW_INCLUDE,
     });
-    return {
-      id: review.id,
-      rating: review.rating,
-      comment: review.comment,
-      authorName: review.author.name,
-      createdAt: review.createdAt.toISOString(),
-    };
+    return toReviewDto(review);
   }
 
   async listForProduct(productId: string): Promise<ReviewDto[]> {
     const reviews = await this.prisma.review.findMany({
       where: { productId },
-      include: { author: { select: { name: true } } },
+      include: REVIEW_INCLUDE,
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
-    return reviews.map((review) => ({
-      id: review.id,
-      rating: review.rating,
-      comment: review.comment,
-      authorName: review.author.name,
-      createdAt: review.createdAt.toISOString(),
-    }));
+    return reviews.map(toReviewDto);
+  }
+
+  // El autor edita su propia reseña
+  async update(
+    userId: string,
+    productId: string,
+    reviewId: string,
+    dto: UpdateReviewDto,
+  ): Promise<ReviewDto> {
+    const review = await this.findInProduct(reviewId, productId);
+    if (review.authorId !== userId) {
+      throw new ForbiddenException({
+        code: 'NOT_REVIEW_AUTHOR',
+        message: 'Solo podés editar tu propia reseña',
+      });
+    }
+    const updated = await this.prisma.review.update({
+      where: { id: reviewId },
+      data: {
+        ...(dto.rating !== undefined && { rating: dto.rating }),
+        ...(dto.comment !== undefined && { comment: dto.comment }),
+      },
+      include: REVIEW_INCLUDE,
+    });
+    return toReviewDto(updated);
+  }
+
+  // El autor borra su propia reseña
+  async remove(
+    userId: string,
+    productId: string,
+    reviewId: string,
+  ): Promise<void> {
+    const review = await this.findInProduct(reviewId, productId);
+    if (review.authorId !== userId) {
+      throw new ForbiddenException({
+        code: 'NOT_REVIEW_AUTHOR',
+        message: 'Solo podés borrar tu propia reseña',
+      });
+    }
+    await this.prisma.review.delete({ where: { id: reviewId } });
+  }
+
+  // El dueño del negocio responde públicamente a una reseña
+  async respond(
+    userId: string,
+    productId: string,
+    reviewId: string,
+    dto: ReplyReviewDto,
+  ): Promise<ReviewDto> {
+    const review = await this.prisma.review.findUnique({
+      where: { id: reviewId },
+      include: { business: { select: { ownerId: true } } },
+    });
+    if (!review || review.productId !== productId) {
+      throw new NotFoundException({
+        code: 'REVIEW_NOT_FOUND',
+        message: 'Reseña no encontrada',
+      });
+    }
+    if (review.business.ownerId !== userId) {
+      throw new ForbiddenException({
+        code: 'NOT_BUSINESS_OWNER',
+        message: 'Solo el vendedor puede responder esta reseña',
+      });
+    }
+    const updated = await this.prisma.review.update({
+      where: { id: reviewId },
+      data: { sellerResponse: dto.response, sellerRespondedAt: new Date() },
+      include: REVIEW_INCLUDE,
+    });
+    return toReviewDto(updated);
+  }
+
+  private async findInProduct(reviewId: string, productId: string) {
+    const review = await this.prisma.review.findUnique({
+      where: { id: reviewId },
+      select: { id: true, authorId: true, productId: true },
+    });
+    if (!review || review.productId !== productId) {
+      throw new NotFoundException({
+        code: 'REVIEW_NOT_FOUND',
+        message: 'Reseña no encontrada',
+      });
+    }
+    return review;
   }
 
   async report(

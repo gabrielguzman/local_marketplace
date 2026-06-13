@@ -5,6 +5,7 @@ import { App } from 'supertest/types';
 import cookieParser from 'cookie-parser';
 import { createHash, randomBytes } from 'node:crypto';
 import type {
+  AdminOrderDetailDto,
   AdminStats,
   AuthResponse,
   BusinessDto,
@@ -42,6 +43,8 @@ describe('Trust: verificación, reseñas, denuncias y admin (e2e)', () => {
   let categoryId: string;
   let productId: string;
   let businessId: string;
+  let reviewId: string;
+  let orderId: string;
 
   async function register(email: string, verified = true): Promise<string> {
     const res = await request(app.getHttpServer())
@@ -205,7 +208,7 @@ describe('Trust: verificación, reseñas, denuncias y admin (e2e)', () => {
       .set('Authorization', `Bearer ${buyerToken}`)
       .send(ADDRESS)
       .expect(201);
-    const orderId = (checkout.body as OrderDto).id;
+    orderId = (checkout.body as OrderDto).id;
     await request(app.getHttpServer())
       .post(`/orders/${orderId}/pay`)
       .set('Authorization', `Bearer ${buyerToken}`)
@@ -231,6 +234,7 @@ describe('Trust: verificación, reseñas, denuncias y admin (e2e)', () => {
       .send({ rating: 4, comment: 'Muy buena, calienta rápido' })
       .expect(201);
     expect((review.body as ReviewDto).rating).toBe(4);
+    reviewId = (review.body as ReviewDto).id;
 
     // duplicada → 409
     await request(app.getHttpServer())
@@ -256,6 +260,57 @@ describe('Trust: verificación, reseñas, denuncias y admin (e2e)', () => {
       .get(`/businesses/tienda-trust-${stamp}`)
       .expect(200);
     expect((biz.body as BusinessDto).rating.count).toBe(1);
+  });
+
+  it('el vendedor responde la reseña; un tercero no puede', async () => {
+    // el comprador (no dueño del negocio) no puede responder
+    await request(app.getHttpServer())
+      .post(`/products/${productId}/reviews/${reviewId}/reply`)
+      .set('Authorization', `Bearer ${buyerToken}`)
+      .send({ response: 'Gracias!' })
+      .expect(403);
+
+    const res = await request(app.getHttpServer())
+      .post(`/products/${productId}/reviews/${reviewId}/reply`)
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .send({ response: '¡Gracias por tu compra!' })
+      .expect(201);
+    expect((res.body as ReviewDto).sellerResponse).toBe(
+      '¡Gracias por tu compra!',
+    );
+  });
+
+  it('el autor edita su reseña; un tercero no puede', async () => {
+    // el vendedor no puede editar la reseña ajena
+    await request(app.getHttpServer())
+      .patch(`/products/${productId}/reviews/${reviewId}`)
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .send({ rating: 1 })
+      .expect(403);
+
+    const res = await request(app.getHttpServer())
+      .patch(`/products/${productId}/reviews/${reviewId}`)
+      .set('Authorization', `Bearer ${buyerToken}`)
+      .send({ rating: 5, comment: 'La sigo usando, excelente' })
+      .expect(200);
+    expect((res.body as ReviewDto).rating).toBe(5);
+    // la respuesta del vendedor sobrevive a la edición
+    expect((res.body as ReviewDto).sellerResponse).toBeTruthy();
+  });
+
+  it('el autor borra su reseña y el producto queda sin reseñas', async () => {
+    await request(app.getHttpServer())
+      .delete(`/products/${productId}/reviews/${reviewId}`)
+      .set('Authorization', `Bearer ${buyerToken}`)
+      .expect(204);
+
+    const prod = await request(app.getHttpServer())
+      .get(`/products/pava-electrica-${stamp}`)
+      .expect(200);
+    expect((prod.body as ProductDetailDto).rating).toEqual({
+      avg: null,
+      count: 0,
+    });
   });
 
   // ── Denuncias y admin ────────────────────────────────────
@@ -322,6 +377,17 @@ describe('Trust: verificación, reseñas, denuncias y admin (e2e)', () => {
       .send({ status: 'RESOLVED' })
       .expect(200);
     expect((resolved.body as ReportDto).status).toBe('RESOLVED');
+  });
+
+  it('el admin ve el detalle de una orden con datos del comprador', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/admin/orders/${orderId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+    const order = res.body as AdminOrderDetailDto;
+    expect(order.buyerEmail).toBe(buyerEmail);
+    expect(order.subOrders.length).toBeGreaterThanOrEqual(1);
+    expect(order.shippingAddress.city).toBe('Springfield');
   });
 
   it('el admin puede suspender un negocio y desaparece del público', async () => {

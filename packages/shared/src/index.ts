@@ -238,10 +238,14 @@ export interface RatingSummary {
 
 export interface ReviewDto {
   id: string;
+  productId: string;
+  authorId: string;
   rating: number; // 1..5
   comment: string;
   authorName: string;
   createdAt: string;
+  sellerResponse: string | null;
+  sellerRespondedAt: string | null;
 }
 
 export const REPORT_REASONS = [
@@ -331,6 +335,12 @@ export interface AdminOrderDto {
   status: OrderStatus;
   subOrderCount: number;
   createdAt: string;
+}
+
+// Detalle completo de una orden para el admin
+export interface AdminOrderDetailDto extends OrderDto {
+  buyerEmail: string;
+  buyerName: string;
 }
 
 // ── Dashboard del vendedor ───────────────────────────────

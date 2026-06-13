@@ -1,10 +1,12 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -13,7 +15,12 @@ import type { ReviewDto } from '@marketplace/shared';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { AccessTokenPayload } from '../auth/auth.types';
-import { CreateReportDto, CreateReviewDto } from './dto/reviews.dto';
+import {
+  CreateReportDto,
+  CreateReviewDto,
+  ReplyReviewDto,
+  UpdateReviewDto,
+} from './dto/reviews.dto';
 import { ReviewsService } from './reviews.service';
 
 @Controller('products/:id')
@@ -33,6 +40,39 @@ export class ReviewsController {
     @Body() dto: CreateReviewDto,
   ): Promise<ReviewDto> {
     return this.reviews.create(user.sub, id, dto);
+  }
+
+  @Patch('reviews/:reviewId')
+  @UseGuards(JwtAuthGuard)
+  update(
+    @CurrentUser() user: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('reviewId', ParseUUIDPipe) reviewId: string,
+    @Body() dto: UpdateReviewDto,
+  ): Promise<ReviewDto> {
+    return this.reviews.update(user.sub, id, reviewId, dto);
+  }
+
+  @Delete('reviews/:reviewId')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(204)
+  async remove(
+    @CurrentUser() user: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('reviewId', ParseUUIDPipe) reviewId: string,
+  ): Promise<void> {
+    await this.reviews.remove(user.sub, id, reviewId);
+  }
+
+  @Post('reviews/:reviewId/reply')
+  @UseGuards(JwtAuthGuard)
+  reply(
+    @CurrentUser() user: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('reviewId', ParseUUIDPipe) reviewId: string,
+    @Body() dto: ReplyReviewDto,
+  ): Promise<ReviewDto> {
+    return this.reviews.respond(user.sub, id, reviewId, dto);
   }
 
   @Post('report')
