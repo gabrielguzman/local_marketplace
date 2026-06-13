@@ -44,7 +44,6 @@ cantidad en la página pública.
 - 🟠 **Subida real de imágenes (Cloudinary)** — pegar URLs a mano es inviable para un vendedor real. El mayor irritante de UX actual.
 - 🟢 Página de categoría `/c/[slug]` con subcategorías navegables (las hijas solo filtran).
 - 🟢 ABM de categorías para el admin (hoy solo viven en el seed).
-- 🟢 Publicar como borrador desde la UI (el estado DRAFT existe, el form siempre publica).
 - 🟢 Productos relacionados en el detalle.
 
 ## 5. Búsqueda
@@ -70,11 +69,11 @@ carrito anónimo (cookie de invitado + merge al loguear).
 
 **Hecho:** checkout transaccional con sub-órdenes por negocio y snapshots, pago
 simulado con descuento atómico de stock y auto-cancelación, estados del vendedor
-con transiciones validadas, vistas comprador/vendedor.
+con transiciones validadas, vistas comprador/vendedor, cancelación de orden impaga
+por el comprador, línea de tiempo del envío en el detalle.
 
 - 🔴 **MercadoPago Checkout Pro + webhook idempotente** — reemplaza el pago simulado; la arquitectura ya le dejó el lugar.
 - 🔴 **Comisión de la plataforma** — no existe ningún fee. Decidir modelo (% por venta es lo estándar) y agregar `feeCents` a SubOrder calculado al crear la orden.
-- 🟠 Cancelación por parte del comprador (antes del envío).
 - 🟢 Reembolsos (el estado REFUNDED existe sin flujo).
 - 🟢 Limpieza/expiración de órdenes PENDING_PAYMENT viejas.
 - 🟢 Comprobante de compra descargable.
@@ -105,9 +104,9 @@ de email para vender.
 ## 11. Admin y moderación
 
 **Hecho:** stats con GMV, denuncias por estado, usuarios (buscar/suspender/rol),
-negocios, productos, órdenes — todo con acciones directas.
+negocios, productos, órdenes — todo con acciones directas, confirmación en las
+acciones destructivas, paginación real (20 por página) en los cuatro listados.
 
-- 🟠 Paginación real en los listados (hoy límite fijo de 100).
 - 🟢 Detalle de una orden desde el admin.
 - 🟢 **Auditoría** — log de qué admin hizo qué (imprescindible cuando haya más de un admin).
 - 🟢 Gestión de categorías (ver §4).
@@ -126,7 +125,8 @@ email de verificación.
 ## 13. Frontend general
 
 **Hecho:** loading skeleton, error boundary y 404 globales; robots.txt, sitemap.xml
-y Open Graph en productos.
+y Open Graph en productos; feedback de éxito en formularios (FormFeedback) y
+confirmación reusable en acciones destructivas (ConfirmForm).
 
 - 🟢 JSON-LD (`schema.org/Product`) en el detalle de producto.
 - 🟢 `next/image` con remotePatterns (cuando las imágenes vengan de Cloudinary).

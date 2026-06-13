@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import type { AdminProductDto } from '@marketplace/shared';
+import type { AdminProductDto, Page } from '@marketplace/shared';
 import { ConfirmForm } from '@/components/confirm-form';
+import { Pagination } from '@/components/pagination';
 import { authFetch } from '@/lib/api';
 import { formatPrice } from '@/lib/format';
 import { getAccessToken } from '@/lib/session';
@@ -10,6 +11,13 @@ import { adminProductStatusAction } from '@/lib/trust-actions';
 
 export const metadata: Metadata = { title: 'Productos' };
 export const dynamic = 'force-dynamic';
+
+const EMPTY: Page<AdminProductDto> = {
+  items: [],
+  total: 0,
+  page: 1,
+  pageSize: 20,
+};
 
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
   ACTIVE: { label: 'Publicado', className: 'bg-green-50 text-green-700' },
@@ -21,17 +29,20 @@ const STATUS_BADGE: Record<string, { label: string; className: string }> = {
 export default async function AdminProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; page?: string }>;
 }) {
   const token = await getAccessToken();
   if (!token) redirect('/login');
 
-  const { q } = await searchParams;
-  const query = q ? `?q=${encodeURIComponent(q)}` : '';
-  const products = await authFetch<AdminProductDto[]>(
+  const { q, page } = await searchParams;
+  const query = new URLSearchParams();
+  if (q) query.set('q', q);
+  if (page) query.set('page', page);
+  const result = await authFetch<Page<AdminProductDto>>(
     token,
-    `/admin/products${query}`,
-  ).catch(() => []);
+    `/admin/products?${query}`,
+  ).catch(() => EMPTY);
+  const products = result.items;
 
   return (
     <div className="space-y-6">
@@ -132,6 +143,14 @@ export default async function AdminProductsPage({
           </p>
         )}
       </div>
+
+      <Pagination
+        basePath="/admin/productos"
+        page={result.page}
+        pageSize={result.pageSize}
+        total={result.total}
+        params={{ q }}
+      />
     </div>
   );
 }

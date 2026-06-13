@@ -15,9 +15,18 @@ import type {
   AdminProductDto,
   AdminStats,
   AdminUserDto,
+  Page,
   ReportDto,
 } from '@marketplace/shared';
-import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { AdminGuard } from '../auth/admin.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -50,6 +59,20 @@ class SearchQuery {
   @IsString()
   @MaxLength(120)
   q?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+}
+
+class PageQuery {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
 }
 
 class SetRoleDto {
@@ -104,8 +127,8 @@ export class AdminController {
   }
 
   @Get('users')
-  users(@Query() query: SearchQuery): Promise<AdminUserDto[]> {
-    return this.admin.listUsers(query.q);
+  users(@Query() query: SearchQuery): Promise<Page<AdminUserDto>> {
+    return this.admin.listUsers(query.q, query.page);
   }
 
   @Patch('users/:id/role')
@@ -129,17 +152,17 @@ export class AdminController {
   }
 
   @Get('businesses')
-  businesses(@Query() query: SearchQuery): Promise<AdminBusinessDto[]> {
-    return this.admin.listBusinesses(query.q);
+  businesses(@Query() query: SearchQuery): Promise<Page<AdminBusinessDto>> {
+    return this.admin.listBusinesses(query.q, query.page);
   }
 
   @Get('products')
-  products(@Query() query: SearchQuery): Promise<AdminProductDto[]> {
-    return this.admin.listProducts(query.q);
+  products(@Query() query: SearchQuery): Promise<Page<AdminProductDto>> {
+    return this.admin.listProducts(query.q, query.page);
   }
 
   @Get('orders')
-  orders(): Promise<AdminOrderDto[]> {
-    return this.admin.listOrders();
+  orders(@Query() query: PageQuery): Promise<Page<AdminOrderDto>> {
+    return this.admin.listOrders(query.page);
   }
 }

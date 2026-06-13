@@ -1,14 +1,22 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import type { AdminBusinessDto } from '@marketplace/shared';
+import type { AdminBusinessDto, Page } from '@marketplace/shared';
 import { ConfirmForm } from '@/components/confirm-form';
+import { Pagination } from '@/components/pagination';
 import { authFetch } from '@/lib/api';
 import { getAccessToken } from '@/lib/session';
 import { adminBusinessStatusAction } from '@/lib/trust-actions';
 
 export const metadata: Metadata = { title: 'Negocios' };
 export const dynamic = 'force-dynamic';
+
+const EMPTY: Page<AdminBusinessDto> = {
+  items: [],
+  total: 0,
+  page: 1,
+  pageSize: 20,
+};
 
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
   ACTIVE: { label: 'Activo', className: 'bg-green-50 text-green-700' },
@@ -19,17 +27,20 @@ const STATUS_BADGE: Record<string, { label: string; className: string }> = {
 export default async function AdminBusinessesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; page?: string }>;
 }) {
   const token = await getAccessToken();
   if (!token) redirect('/login');
 
-  const { q } = await searchParams;
-  const query = q ? `?q=${encodeURIComponent(q)}` : '';
-  const businesses = await authFetch<AdminBusinessDto[]>(
+  const { q, page } = await searchParams;
+  const query = new URLSearchParams();
+  if (q) query.set('q', q);
+  if (page) query.set('page', page);
+  const result = await authFetch<Page<AdminBusinessDto>>(
     token,
-    `/admin/businesses${query}`,
-  ).catch(() => []);
+    `/admin/businesses?${query}`,
+  ).catch(() => EMPTY);
+  const businesses = result.items;
 
   return (
     <div className="space-y-6">
@@ -131,6 +142,14 @@ export default async function AdminBusinessesPage({
           </p>
         )}
       </div>
+
+      <Pagination
+        basePath="/admin/negocios"
+        page={result.page}
+        pageSize={result.pageSize}
+        total={result.total}
+        params={{ q }}
+      />
     </div>
   );
 }

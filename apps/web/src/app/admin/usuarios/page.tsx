@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import type { AdminUserDto } from '@marketplace/shared';
+import type { AdminUserDto, Page } from '@marketplace/shared';
 import { ConfirmForm } from '@/components/confirm-form';
+import { Pagination } from '@/components/pagination';
 import { authFetch } from '@/lib/api';
 import { getAccessToken, getCurrentUser } from '@/lib/session';
 import {
@@ -12,21 +13,26 @@ import {
 export const metadata: Metadata = { title: 'Usuarios' };
 export const dynamic = 'force-dynamic';
 
+const EMPTY: Page<AdminUserDto> = { items: [], total: 0, page: 1, pageSize: 20 };
+
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; page?: string }>;
 }) {
   const token = await getAccessToken();
   if (!token) redirect('/login');
   const me = await getCurrentUser();
 
-  const { q } = await searchParams;
-  const query = q ? `?q=${encodeURIComponent(q)}` : '';
-  const users = await authFetch<AdminUserDto[]>(
+  const { q, page } = await searchParams;
+  const query = new URLSearchParams();
+  if (q) query.set('q', q);
+  if (page) query.set('page', page);
+  const result = await authFetch<Page<AdminUserDto>>(
     token,
-    `/admin/users${query}`,
-  ).catch(() => []);
+    `/admin/users?${query}`,
+  ).catch(() => EMPTY);
+  const users = result.items;
 
   return (
     <div className="space-y-6">
@@ -159,6 +165,14 @@ export default async function AdminUsersPage({
           </p>
         )}
       </div>
+
+      <Pagination
+        basePath="/admin/usuarios"
+        page={result.page}
+        pageSize={result.pageSize}
+        total={result.total}
+        params={{ q }}
+      />
     </div>
   );
 }

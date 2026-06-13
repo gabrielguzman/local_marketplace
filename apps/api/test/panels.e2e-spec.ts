@@ -4,10 +4,14 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import cookieParser from 'cookie-parser';
 import type {
+  AdminBusinessDto,
+  AdminOrderDto,
+  AdminProductDto,
   AdminStats,
   AdminUserDto,
   AuthResponse,
   OrderDto,
+  Page,
   ProductDetailDto,
   SellerDashboard,
 } from '@marketplace/shared';
@@ -216,9 +220,10 @@ describe('Paneles admin y vendedor (e2e)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .query({ q: `e2e-panel-seller-${stamp}` })
       .expect(200);
-    const users = res.body as AdminUserDto[];
-    expect(users).toHaveLength(1);
-    expect(users[0].businessName).toContain('Panel Shop');
+    const page = res.body as Page<AdminUserDto>;
+    expect(page.items).toHaveLength(1);
+    expect(page.total).toBe(1);
+    expect(page.items[0].businessName).toContain('Panel Shop');
   });
 
   it('suspender un usuario bloquea su login y mata sus sesiones', async () => {
@@ -276,20 +281,22 @@ describe('Paneles admin y vendedor (e2e)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .query({ q: `Panel Shop ${stamp}` })
       .expect(200);
-    expect(businesses.body).toHaveLength(1);
+    expect((businesses.body as Page<AdminBusinessDto>).items).toHaveLength(1);
 
     const products = await request(app.getHttpServer())
       .get('/admin/products')
       .set('Authorization', `Bearer ${adminToken}`)
       .query({ q: `Lampara velador ${stamp}` })
       .expect(200);
-    expect(products.body).toHaveLength(1);
+    expect((products.body as Page<AdminProductDto>).items).toHaveLength(1);
 
     const orders = await request(app.getHttpServer())
       .get('/admin/orders')
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
-    expect((orders.body as unknown[]).length).toBeGreaterThanOrEqual(1);
+    expect(
+      (orders.body as Page<AdminOrderDto>).items.length,
+    ).toBeGreaterThanOrEqual(1);
 
     const stats = await request(app.getHttpServer())
       .get('/admin/stats')

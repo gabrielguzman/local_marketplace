@@ -357,6 +357,14 @@ export interface Paginated<T> {
   nextCursor: string | null;
 }
 
+// Paginación por número de página (para tablas de admin)
+export interface Page<T> {
+  items: T[];
+  total: number;
+  page: number; // 1-based
+  pageSize: number;
+}
+
 // ── Dinero ───────────────────────────────────────────────
 // Siempre centavos (int) + moneda explícita.
 

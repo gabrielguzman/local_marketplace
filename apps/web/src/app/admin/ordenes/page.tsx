@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import type { AdminOrderDto } from '@marketplace/shared';
+import type { AdminOrderDto, Page } from '@marketplace/shared';
+import { Pagination } from '@/components/pagination';
 import { authFetch } from '@/lib/api';
 import { formatPrice } from '@/lib/format';
 import { ORDER_STATUS_LABEL } from '@/lib/labels';
@@ -9,20 +10,30 @@ import { getAccessToken } from '@/lib/session';
 export const metadata: Metadata = { title: 'Órdenes' };
 export const dynamic = 'force-dynamic';
 
-export default async function AdminOrdersPage() {
+const EMPTY: Page<AdminOrderDto> = { items: [], total: 0, page: 1, pageSize: 20 };
+
+export default async function AdminOrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
   const token = await getAccessToken();
   if (!token) redirect('/login');
 
-  const orders = await authFetch<AdminOrderDto[]>(token, '/admin/orders').catch(
-    () => [],
-  );
+  const { page } = await searchParams;
+  const query = page ? `?page=${page}` : '';
+  const result = await authFetch<Page<AdminOrderDto>>(
+    token,
+    `/admin/orders${query}`,
+  ).catch(() => EMPTY);
+  const orders = result.items;
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold tracking-tight">
         Órdenes{' '}
         <span className="text-sm font-normal text-zinc-400">
-          (últimas {orders.length})
+          ({result.total})
         </span>
       </h1>
 
@@ -79,6 +90,13 @@ export default async function AdminOrdersPage() {
           </p>
         )}
       </div>
+
+      <Pagination
+        basePath="/admin/ordenes"
+        page={result.page}
+        pageSize={result.pageSize}
+        total={result.total}
+      />
     </div>
   );
 }

@@ -10,6 +10,7 @@ import type {
   AdminStats,
   AdminUserDto,
   Currency,
+  Page,
   ReportDto,
 } from '@marketplace/shared';
 import type {
@@ -58,6 +59,14 @@ function toReportDto(report: ReportWithRelations): ReportDto {
   };
 }
 
+const PAGE_SIZE = 20;
+
+// Normaliza el número de página (1-based) y calcula el offset
+function paging(page?: number): { page: number; skip: number; take: number } {
+  const current = Math.max(1, Math.floor(page ?? 1));
+  return { page: current, skip: (current - 1) * PAGE_SIZE, take: PAGE_SIZE };
+}
+
 @Injectable()
 export class AdminService {
   constructor(private readonly prisma: PrismaService) {}
@@ -87,30 +96,41 @@ export class AdminService {
 
   // ── Usuarios ─────────────────────────────────────────────
 
-  async listUsers(q?: string): Promise<AdminUserDto[]> {
-    const users = await this.prisma.user.findMany({
-      where: q
-        ? {
-            OR: [
-              { email: { contains: q, mode: 'insensitive' } },
-              { name: { contains: q, mode: 'insensitive' } },
-            ],
-          }
-        : undefined,
-      include: { business: { select: { name: true } } },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-    });
-    return users.map((user) => ({
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      status: user.status,
-      emailVerified: user.emailVerifiedAt !== null,
-      businessName: user.business?.name ?? null,
-      createdAt: user.createdAt.toISOString(),
-    }));
+  async listUsers(q?: string, page?: number): Promise<Page<AdminUserDto>> {
+    const { page: current, skip, take } = paging(page);
+    const where: Prisma.UserWhereInput = q
+      ? {
+          OR: [
+            { email: { contains: q, mode: 'insensitive' } },
+            { name: { contains: q, mode: 'insensitive' } },
+          ],
+        }
+      : {};
+    const [total, users] = await this.prisma.$transaction([
+      this.prisma.user.count({ where }),
+      this.prisma.user.findMany({
+        where,
+        include: { business: { select: { name: true } } },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+      }),
+    ]);
+    return {
+      total,
+      page: current,
+      pageSize: PAGE_SIZE,
+      items: users.map((user) => ({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        status: user.status,
+        emailVerified: user.emailVerifiedAt !== null,
+        businessName: user.business?.name ?? null,
+        createdAt: user.createdAt.toISOString(),
+      })),
+    };
   }
 
   async setUserRole(
@@ -151,71 +171,111 @@ export class AdminService {
 
   // ── Listados de moderación ───────────────────────────────
 
-  async listBusinesses(q?: string): Promise<AdminBusinessDto[]> {
-    const businesses = await this.prisma.business.findMany({
-      where: q ? { name: { contains: q, mode: 'insensitive' } } : undefined,
-      include: {
-        owner: { select: { email: true } },
-        _count: {
-          select: { products: { where: { status: { not: 'DELETED' } } } },
+  async listBusinesses(
+    q?: string,
+    page?: number,
+  ): Promise<Page<AdminBusinessDto>> {
+    const { page: current, skip, take } = paging(page);
+    const where: Prisma.BusinessWhereInput = q
+      ? { name: { contains: q, mode: 'insensitive' } }
+      : {};
+    const [total, businesses] = await this.prisma.$transaction([
+      this.prisma.business.count({ where }),
+      this.prisma.business.findMany({
+        where,
+        include: {
+          owner: { select: { email: true } },
+          _count: {
+            select: { products: { where: { status: { not: 'DELETED' } } } },
+          },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-    });
-    return businesses.map((business) => ({
-      id: business.id,
-      name: business.name,
-      slug: business.slug,
-      status: business.status,
-      ownerEmail: business.owner.email,
-      productCount: business._count.products,
-      createdAt: business.createdAt.toISOString(),
-    }));
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+      }),
+    ]);
+    return {
+      total,
+      page: current,
+      pageSize: PAGE_SIZE,
+      items: businesses.map((business) => ({
+        id: business.id,
+        name: business.name,
+        slug: business.slug,
+        status: business.status,
+        ownerEmail: business.owner.email,
+        productCount: business._count.products,
+        createdAt: business.createdAt.toISOString(),
+      })),
+    };
   }
 
-  async listProducts(q?: string): Promise<AdminProductDto[]> {
-    const products = await this.prisma.product.findMany({
-      where: {
-        status: { not: 'DELETED' },
-        ...(q && { title: { contains: q, mode: 'insensitive' } }),
-      },
-      include: {
-        business: { select: { name: true } },
-        variants: { where: { isDefault: true }, take: 1 },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-    });
-    return products.map((product) => ({
-      id: product.id,
-      title: product.title,
-      slug: product.slug,
-      status: product.status,
-      businessName: product.business.name,
-      priceCents: product.variants[0]?.priceCents ?? 0,
-      createdAt: product.createdAt.toISOString(),
-    }));
+  async listProducts(
+    q?: string,
+    page?: number,
+  ): Promise<Page<AdminProductDto>> {
+    const { page: current, skip, take } = paging(page);
+    const where: Prisma.ProductWhereInput = {
+      status: { not: 'DELETED' },
+      ...(q && { title: { contains: q, mode: 'insensitive' } }),
+    };
+    const [total, products] = await this.prisma.$transaction([
+      this.prisma.product.count({ where }),
+      this.prisma.product.findMany({
+        where,
+        include: {
+          business: { select: { name: true } },
+          variants: { where: { isDefault: true }, take: 1 },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+      }),
+    ]);
+    return {
+      total,
+      page: current,
+      pageSize: PAGE_SIZE,
+      items: products.map((product) => ({
+        id: product.id,
+        title: product.title,
+        slug: product.slug,
+        status: product.status,
+        businessName: product.business.name,
+        priceCents: product.variants[0]?.priceCents ?? 0,
+        createdAt: product.createdAt.toISOString(),
+      })),
+    };
   }
 
-  async listOrders(): Promise<AdminOrderDto[]> {
-    const orders = await this.prisma.order.findMany({
-      include: {
-        buyer: { select: { email: true } },
-        _count: { select: { subOrders: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-    });
-    return orders.map((order) => ({
-      id: order.id,
-      buyerEmail: order.buyer.email,
-      totalCents: order.totalCents,
-      currency: order.currency as Currency,
-      status: order.status,
-      subOrderCount: order._count.subOrders,
-      createdAt: order.createdAt.toISOString(),
-    }));
+  async listOrders(page?: number): Promise<Page<AdminOrderDto>> {
+    const { page: current, skip, take } = paging(page);
+    const [total, orders] = await this.prisma.$transaction([
+      this.prisma.order.count(),
+      this.prisma.order.findMany({
+        include: {
+          buyer: { select: { email: true } },
+          _count: { select: { subOrders: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+      }),
+    ]);
+    return {
+      total,
+      page: current,
+      pageSize: PAGE_SIZE,
+      items: orders.map((order) => ({
+        id: order.id,
+        buyerEmail: order.buyer.email,
+        totalCents: order.totalCents,
+        currency: order.currency as Currency,
+        status: order.status,
+        subOrderCount: order._count.subOrders,
+        createdAt: order.createdAt.toISOString(),
+      })),
+    };
   }
 
   private async ensureUser(userId: string): Promise<void> {
