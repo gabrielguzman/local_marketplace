@@ -49,16 +49,21 @@ function toCartItemDto(item: ItemWithRelations): CartItemDto {
   };
 }
 
+// El dueño de un carrito: usuario logueado o invitado anónimo
+export type CartOwner = { userId: string } | { guestToken: string };
+
 @Injectable()
 export class CartService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getCart(userId: string): Promise<CartDto> {
+  async getCart(owner: CartOwner): Promise<CartDto> {
     const cart = await this.prisma.cart.findUnique({
-      where: { userId },
+      where: owner,
       include: { items: { include: ITEM_INCLUDE } },
     });
-    const items = (cart?.items ?? []).map(toCartItemDto);
+    const items = (cart?.items ?? [])
+      .map(toCartItemDto)
+      .filter((i) => i.product.status === 'ACTIVE');
     return {
       items,
       totalCents: items.reduce(
@@ -70,7 +75,7 @@ export class CartService {
   }
 
   async addItem(
-    userId: string,
+    owner: CartOwner,
     variantId: string,
     quantity: number,
   ): Promise<CartDto> {
@@ -86,9 +91,9 @@ export class CartService {
     }
 
     const cart = await this.prisma.cart.upsert({
-      where: { userId },
+      where: owner,
       update: {},
-      create: { userId },
+      create: owner,
     });
 
     const existing = await this.prisma.cartItem.findUnique({
@@ -102,35 +107,93 @@ export class CartService {
       update: { quantity: newQuantity },
       create: { cartId: cart.id, variantId, quantity },
     });
-    return this.getCart(userId);
+    return this.getCart(owner);
   }
 
   async updateItem(
-    userId: string,
+    owner: CartOwner,
     itemId: string,
     quantity: number,
   ): Promise<CartDto> {
-    const item = await this.findOwnItem(userId, itemId);
+    const item = await this.findOwnItem(owner, itemId);
     this.assertStock(item.variant.stock, quantity);
     await this.prisma.cartItem.update({
       where: { id: item.id },
       data: { quantity },
     });
-    return this.getCart(userId);
+    return this.getCart(owner);
   }
 
-  async removeItem(userId: string, itemId: string): Promise<CartDto> {
-    const item = await this.findOwnItem(userId, itemId);
+  async removeItem(owner: CartOwner, itemId: string): Promise<CartDto> {
+    const item = await this.findOwnItem(owner, itemId);
     await this.prisma.cartItem.delete({ where: { id: item.id } });
-    return this.getCart(userId);
+    return this.getCart(owner);
   }
 
-  private async findOwnItem(userId: string, itemId: string) {
+  // Al loguearse, vuelca el carrito de invitado en el del usuario.
+  // Suma cantidades (clampeadas al stock) y descarta el carrito invitado.
+  async mergeGuestIntoUser(
+    userId: string,
+    guestToken: string,
+  ): Promise<CartDto> {
+    const guestCart = await this.prisma.cart.findUnique({
+      where: { guestToken },
+      include: { items: { include: { variant: true } } },
+    });
+    if (!guestCart || guestCart.items.length === 0) {
+      if (guestCart) {
+        await this.prisma.cart.delete({ where: { id: guestCart.id } });
+      }
+      return this.getCart({ userId });
+    }
+
+    const userCart = await this.prisma.cart.upsert({
+      where: { userId },
+      update: {},
+      create: { userId },
+    });
+
+    for (const item of guestCart.items) {
+      const existing = await this.prisma.cartItem.findUnique({
+        where: {
+          cartId_variantId: { cartId: userCart.id, variantId: item.variantId },
+        },
+      });
+      const merged = Math.min(
+        (existing?.quantity ?? 0) + item.quantity,
+        item.variant.stock,
+      );
+      if (merged <= 0) continue;
+      await this.prisma.cartItem.upsert({
+        where: {
+          cartId_variantId: { cartId: userCart.id, variantId: item.variantId },
+        },
+        update: { quantity: merged },
+        create: {
+          cartId: userCart.id,
+          variantId: item.variantId,
+          quantity: merged,
+        },
+      });
+    }
+
+    await this.prisma.cart.delete({ where: { id: guestCart.id } });
+    return this.getCart({ userId });
+  }
+
+  private async findOwnItem(owner: CartOwner, itemId: string) {
     const item = await this.prisma.cartItem.findUnique({
       where: { id: itemId },
-      include: { cart: { select: { userId: true } }, variant: true },
+      include: {
+        cart: { select: { userId: true, guestToken: true } },
+        variant: true,
+      },
     });
-    if (!item || item.cart.userId !== userId) {
+    const matches =
+      'userId' in owner
+        ? item?.cart.userId === owner.userId
+        : item?.cart.guestToken === owner.guestToken;
+    if (!item || !matches) {
       throw new NotFoundException({
         code: 'CART_ITEM_NOT_FOUND',
         message: 'El item no está en tu carrito',

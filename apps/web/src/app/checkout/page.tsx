@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import type { CartDto } from '@marketplace/shared';
+import type { AddressDto, CartDto } from '@marketplace/shared';
 import { CheckoutForm } from '@/components/checkout-form';
 import { authFetch } from '@/lib/api';
 import { formatPrice } from '@/lib/format';
@@ -13,9 +13,14 @@ export default async function CheckoutPage() {
   const token = await getAccessToken();
   if (!token) redirect('/login');
 
-  const cart = await authFetch<CartDto>(token, '/cart').catch(
-    (): CartDto => ({ items: [], totalCents: 0, currency: 'ARS' }),
-  );
+  const [cart, addresses] = await Promise.all([
+    authFetch<CartDto>(token, '/cart').catch(
+      (): CartDto => ({ items: [], totalCents: 0, currency: 'ARS' }),
+    ),
+    authFetch<AddressDto[]>(token, '/me/addresses').catch(
+      () => [] as AddressDto[],
+    ),
+  ]);
   if (cart.items.length === 0) redirect('/carrito');
 
   return (
@@ -27,7 +32,7 @@ export default async function CheckoutPage() {
           <h2 className="mb-5 text-base font-bold tracking-tight">
             Dirección de envío
           </h2>
-          <CheckoutForm />
+          <CheckoutForm addresses={addresses} />
         </div>
 
         <aside>

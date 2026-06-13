@@ -2,7 +2,8 @@
 
 import { redirect } from 'next/navigation';
 import type { AuthResponse } from '@marketplace/shared';
-import { API_URL } from './api';
+import { API_URL, apiFetch } from './api';
+import { clearGuestCart, getGuestToken } from './cart-session';
 import { extractRefreshToken } from './session-cookies';
 import {
   clearSessionCookies,
@@ -36,7 +37,23 @@ async function authenticate(
 
   const auth = (await res.json()) as AuthResponse;
   await setSessionCookies(auth.accessToken, extractRefreshToken(res));
+  await mergeGuestCart(auth.accessToken);
   redirect('/');
+}
+
+// Vuelca el carrito de invitado en el del usuario recién logueado.
+async function mergeGuestCart(accessToken: string): Promise<void> {
+  const guestToken = await getGuestToken();
+  if (!guestToken) return;
+  await apiFetch('/cart/merge', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ guestToken }),
+  }).catch(() => undefined);
+  await clearGuestCart();
 }
 
 export async function loginAction(

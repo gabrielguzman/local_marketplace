@@ -68,6 +68,18 @@ export interface AuthResponse {
   user: UserDto;
 }
 
+// ── Direcciones ──────────────────────────────────────────
+
+export interface AddressDto {
+  id: string;
+  street: string;
+  number: string;
+  city: string;
+  province: string;
+  zipCode: string;
+  isDefault: boolean;
+}
+
 // ── Negocios ─────────────────────────────────────────────
 
 export interface BusinessDto {

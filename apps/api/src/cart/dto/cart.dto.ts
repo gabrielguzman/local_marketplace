@@ -1,4 +1,4 @@
-import { IsInt, IsUUID, Max, Min } from 'class-validator';
+import { IsInt, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator';
 
 export class AddCartItemDto {
   @IsUUID()
@@ -15,4 +15,10 @@ export class UpdateCartItemDto {
   @Min(1)
   @Max(999)
   quantity!: number;
+}
+
+export class MergeCartDto {
+  @IsString()
+  @MaxLength(64)
+  guestToken!: string;
 }

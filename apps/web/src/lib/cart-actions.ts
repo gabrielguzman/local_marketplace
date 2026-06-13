@@ -3,8 +3,9 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import type { OrderDto } from '@marketplace/shared';
-import { ApiRequestError, authFetch } from './api';
+import { ApiRequestError, apiFetch, authFetch } from './api';
 import type { ActionState } from './auth-actions';
+import { ensureCartHeaders } from './cart-session';
 import { getAccessToken } from './session';
 
 function toActionError(err: unknown): ActionState {
@@ -16,13 +17,11 @@ export async function addToCartAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const token = await getAccessToken();
-  if (!token) redirect('/login');
-
   try {
-    await authFetch(token, '/cart/items', {
+    const headers = await ensureCartHeaders();
+    await apiFetch('/cart/items', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...headers },
       body: JSON.stringify({
         variantId: String(formData.get('variantId') ?? ''),
         quantity: Number(formData.get('quantity') ?? 1),
@@ -38,19 +37,17 @@ export async function updateCartItemAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const token = await getAccessToken();
-  if (!token) redirect('/login');
-
   const itemId = String(formData.get('itemId') ?? '');
   const quantity = Number(formData.get('quantity') ?? 1);
 
   try {
+    const headers = await ensureCartHeaders();
     if (quantity < 1) {
-      await authFetch(token, `/cart/items/${itemId}`, { method: 'DELETE' });
+      await apiFetch(`/cart/items/${itemId}`, { method: 'DELETE', headers });
     } else {
-      await authFetch(token, `/cart/items/${itemId}`, {
+      await apiFetch(`/cart/items/${itemId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...headers },
         body: JSON.stringify({ quantity }),
       });
     }
@@ -64,11 +61,10 @@ export async function updateCartItemAction(
 }
 
 export async function removeCartItemAction(formData: FormData): Promise<void> {
-  const token = await getAccessToken();
-  if (!token) redirect('/login');
-
-  await authFetch(token, `/cart/items/${String(formData.get('itemId'))}`, {
+  const headers = await ensureCartHeaders();
+  await apiFetch(`/cart/items/${String(formData.get('itemId'))}`, {
     method: 'DELETE',
+    headers,
   }).catch(() => undefined);
   revalidatePath('/carrito');
 }
@@ -80,22 +76,34 @@ export async function checkoutAction(
   const token = await getAccessToken();
   if (!token) redirect('/login');
 
+  const address = {
+    street: String(formData.get('street') ?? ''),
+    number: String(formData.get('number') ?? ''),
+    city: String(formData.get('city') ?? ''),
+    province: String(formData.get('province') ?? ''),
+    zipCode: String(formData.get('zipCode') ?? ''),
+  };
+
   let order: OrderDto;
   try {
     order = await authFetch<OrderDto>(token, '/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        street: String(formData.get('street') ?? ''),
-        number: String(formData.get('number') ?? ''),
-        city: String(formData.get('city') ?? ''),
-        province: String(formData.get('province') ?? ''),
-        zipCode: String(formData.get('zipCode') ?? ''),
-      }),
+      body: JSON.stringify(address),
     });
   } catch (err) {
     return toActionError(err);
   }
+
+  // Guardar la dirección en la cuenta si lo pidió (no bloquea la compra)
+  if (formData.get('saveAddress') === 'on') {
+    await authFetch(token, '/me/addresses', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(address),
+    }).catch(() => undefined);
+  }
+
   redirect(`/compras/${order.id}`);
 }
 

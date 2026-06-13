@@ -1,6 +1,6 @@
 # Backlog por módulo
 
-> Actualizado: 2026-06-11 (49 tests e2e).
+> Actualizado: 2026-06-13 (56 tests e2e).
 > Marcas: 🔴 bloquea monetizar · 🟠 afecta la experiencia de compra/venta · 🟢 mejora/crecimiento
 
 ## 1. Autenticación
@@ -17,12 +17,13 @@ suspensión de cuentas, rate limiting, roles USER/ADMIN en el JWT.
 
 ## 2. Usuarios y perfil
 
-**Hecho:** GET/PATCH /me (nombre, teléfono, avatar por URL).
+**Hecho:** GET/PATCH /me (nombre, teléfono, avatar por URL), página /cuenta con
+edición de perfil, CRUD de direcciones guardadas (con principal automática) y
+selección de dirección guardada en el checkout.
 
-- 🟠 **No existe la página de perfil en la web** — la API de editar perfil no tiene UI.
-- 🟠 **Direcciones guardadas** — el modelo `Address` está en la DB desde el día 1, sin endpoints ni UI. En checkout se tipea todo cada vez.
 - 🟢 Eliminar cuenta (derecho al olvido / Ley 25.326).
 - 🟢 Avatar con upload real (depende de Cloudinary).
+- 🟢 Editar una dirección guardada (hoy se borra y se vuelve a cargar).
 
 ## 3. Negocios
 
@@ -60,9 +61,9 @@ asc-desc / relevancia (`ts_rank`).
 ## 6. Carrito
 
 **Hecho:** multi-negocio agrupado por tienda, cantidades validadas contra stock,
-badge con contador en el header, errores de stock visibles al cambiar cantidades.
+badge con contador en el header, errores de stock visibles al cambiar cantidades,
+carrito anónimo (cookie de invitado + merge al loguear).
 
-- 🟠 **Carrito anónimo** — hoy pide login para agregar; lo estándar es localStorage + merge al loguear. Pérdida de conversión directa.
 - 🟢 Favoritos / guardar para después.
 
 ## 7. Checkout y órdenes
@@ -74,7 +75,6 @@ con transiciones validadas, vistas comprador/vendedor.
 - 🔴 **MercadoPago Checkout Pro + webhook idempotente** — reemplaza el pago simulado; la arquitectura ya le dejó el lugar.
 - 🔴 **Comisión de la plataforma** — no existe ningún fee. Decidir modelo (% por venta es lo estándar) y agregar `feeCents` a SubOrder calculado al crear la orden.
 - 🟠 Cancelación por parte del comprador (antes del envío).
-- 🟠 Usar direcciones guardadas en el checkout.
 - 🟢 Reembolsos (el estado REFUNDED existe sin flujo).
 - 🟢 Limpieza/expiración de órdenes PENDING_PAYMENT viejas.
 - 🟢 Comprobante de compra descargable.

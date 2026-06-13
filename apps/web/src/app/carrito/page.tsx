@@ -1,12 +1,10 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import type { CartDto, CartItemDto } from '@marketplace/shared';
+import type { CartItemDto } from '@marketplace/shared';
 import { CartQuantity } from '@/components/cart-quantity';
-import { authFetch } from '@/lib/api';
 import { removeCartItemAction } from '@/lib/cart-actions';
+import { getCart } from '@/lib/cart-session';
 import { formatPrice } from '@/lib/format';
-import { getAccessToken } from '@/lib/session';
 
 export const metadata: Metadata = { title: 'Carrito' };
 export const dynamic = 'force-dynamic';
@@ -26,12 +24,7 @@ function groupByBusiness(items: CartItemDto[]) {
 }
 
 export default async function CartPage() {
-  const token = await getAccessToken();
-  if (!token) redirect('/login');
-
-  const cart = await authFetch<CartDto>(token, '/cart').catch(
-    (): CartDto => ({ items: [], totalCents: 0, currency: 'ARS' }),
-  );
+  const cart = await getCart();
 
   if (cart.items.length === 0) {
     return (
