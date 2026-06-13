@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import type { AdminBusinessDto } from '@marketplace/shared';
+import { ConfirmForm } from '@/components/confirm-form';
 import { authFetch } from '@/lib/api';
 import { getAccessToken } from '@/lib/session';
 import { adminBusinessStatusAction } from '@/lib/trust-actions';
@@ -92,13 +93,21 @@ export default async function AdminBusinessesPage({
                     </span>
                   </td>
                   <td className="px-5 py-3.5">
-                    <form action={adminBusinessStatusAction}>
-                      <input type="hidden" name="businessId" value={business.id} />
-                      <input
-                        type="hidden"
-                        name="status"
-                        value={business.status === 'SUSPENDED' ? 'ACTIVE' : 'SUSPENDED'}
-                      />
+                    <ConfirmForm
+                      action={adminBusinessStatusAction}
+                      fields={{
+                        businessId: business.id,
+                        status:
+                          business.status === 'SUSPENDED'
+                            ? 'ACTIVE'
+                            : 'SUSPENDED',
+                      }}
+                      confirmText={
+                        business.status === 'SUSPENDED'
+                          ? `¿Reactivar "${business.name}"?`
+                          : `¿Suspender "${business.name}"? Sus productos dejarán de verse.`
+                      }
+                    >
                       <button
                         type="submit"
                         className={`text-xs hover:underline ${
@@ -109,7 +118,7 @@ export default async function AdminBusinessesPage({
                       >
                         {business.status === 'SUSPENDED' ? 'Reactivar' : 'Suspender'}
                       </button>
-                    </form>
+                    </ConfirmForm>
                   </td>
                 </tr>
               );

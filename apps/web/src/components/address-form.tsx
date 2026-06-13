@@ -3,6 +3,7 @@
 import { useActionState, useRef } from 'react';
 import { createAddressAction } from '@/lib/account-actions';
 import type { ActionState } from '@/lib/auth-actions';
+import { FormFeedback } from './form-feedback';
 
 const initialState: ActionState = { error: null };
 
@@ -54,11 +55,7 @@ export function AddressForm() {
         Usar como dirección principal
       </label>
 
-      {state.error && (
-        <p className="rounded-lg bg-red-50 px-3.5 py-2.5 text-sm text-red-700">
-          {state.error}
-        </p>
-      )}
+      <FormFeedback state={state} okMessage="Dirección agregada" />
 
       <button type="submit" disabled={pending} className="btn-secondary">
         {pending ? 'Guardando…' : 'Agregar dirección'}

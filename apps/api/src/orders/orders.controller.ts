@@ -57,6 +57,15 @@ export class OrdersController {
     return this.orders.payOrder(user.sub, id);
   }
 
+  @Post('orders/:id/cancel')
+  @HttpCode(200)
+  cancel(
+    @CurrentUser() user: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<OrderDto> {
+    return this.orders.cancelOrder(user.sub, id);
+  }
+
   @Get('businesses/me/suborders')
   sales(@CurrentUser() user: AccessTokenPayload): Promise<SellerSubOrderDto[]> {
     return this.orders.listMySales(user.sub);

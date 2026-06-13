@@ -119,6 +119,18 @@ export async function payOrderAction(formData: FormData): Promise<void> {
   revalidatePath('/compras');
 }
 
+export async function cancelOrderAction(formData: FormData): Promise<void> {
+  const token = await getAccessToken();
+  if (!token) redirect('/login');
+
+  const orderId = String(formData.get('orderId') ?? '');
+  await authFetch(token, `/orders/${orderId}/cancel`, { method: 'POST' }).catch(
+    () => undefined,
+  );
+  revalidatePath(`/compras/${orderId}`);
+  revalidatePath('/compras');
+}
+
 export async function updateSaleStatusAction(
   formData: FormData,
 ): Promise<void> {

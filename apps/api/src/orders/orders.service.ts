@@ -192,6 +192,38 @@ export class OrdersService {
     return this.getMyOrder(userId, orderId);
   }
 
+  // El comprador cancela una orden que todavía no pagó.
+  async cancelOrder(userId: string, orderId: string): Promise<OrderDto> {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      select: { buyerId: true, status: true },
+    });
+    if (!order || order.buyerId !== userId) {
+      throw new NotFoundException({
+        code: 'ORDER_NOT_FOUND',
+        message: 'Orden no encontrada',
+      });
+    }
+    if (order.status !== 'PENDING_PAYMENT') {
+      throw new ConflictException({
+        code: 'ORDER_NOT_CANCELLABLE',
+        message: 'Solo se puede cancelar una orden que todavía no se pagó',
+      });
+    }
+
+    await this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        status: 'CANCELLED',
+        payment: { update: { status: 'REJECTED' } },
+        subOrders: {
+          updateMany: { where: {}, data: { status: 'CANCELLED' } },
+        },
+      },
+    });
+    return this.getMyOrder(userId, orderId);
+  }
+
   async listMyOrders(userId: string): Promise<OrderDto[]> {
     const orders = await this.prisma.order.findMany({
       where: { buyerId: userId },

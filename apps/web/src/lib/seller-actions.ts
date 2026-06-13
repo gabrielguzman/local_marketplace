@@ -76,6 +76,7 @@ export async function createProductAction(
   }
 
   const images = parseImageList(String(formData.get('images') ?? ''));
+  const status = formData.get('status') === 'DRAFT' ? 'DRAFT' : 'ACTIVE';
 
   try {
     await authFetch(token, '/products', {
@@ -85,6 +86,7 @@ export async function createProductAction(
         title: String(formData.get('title') ?? ''),
         description: String(formData.get('description') ?? '') || undefined,
         categoryId: String(formData.get('categoryId') ?? ''),
+        status,
         images: images.length > 0 ? images : undefined,
         variants: [
           {
@@ -223,7 +225,7 @@ export async function addVariantAction(
     return toActionError(err);
   }
   revalidatePath(`/vender/productos/${productId}/editar`);
-  return { error: null };
+  return { error: null, ok: true };
 }
 
 export async function updateVariantInlineAction(
@@ -256,7 +258,7 @@ export async function updateVariantInlineAction(
     return toActionError(err);
   }
   revalidatePath(`/vender/productos/${productId}/editar`);
-  return { error: null };
+  return { error: null, ok: true };
 }
 
 export async function deleteVariantAction(

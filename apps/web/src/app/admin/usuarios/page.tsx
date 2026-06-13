@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import type { AdminUserDto } from '@marketplace/shared';
+import { ConfirmForm } from '@/components/confirm-form';
 import { authFetch } from '@/lib/api';
 import { getAccessToken, getCurrentUser } from '@/lib/session';
 import {
@@ -101,13 +102,19 @@ export default async function AdminUsersPage({
                       <span className="text-xs text-zinc-300">Sos vos</span>
                     ) : (
                       <div className="flex items-center gap-3">
-                        <form action={adminUserStatusAction}>
-                          <input type="hidden" name="userId" value={user.id} />
-                          <input
-                            type="hidden"
-                            name="status"
-                            value={user.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE'}
-                          />
+                        <ConfirmForm
+                          action={adminUserStatusAction}
+                          fields={{
+                            userId: user.id,
+                            status:
+                              user.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE',
+                          }}
+                          confirmText={
+                            user.status === 'ACTIVE'
+                              ? `¿Suspender a ${user.name}? No va a poder iniciar sesión.`
+                              : `¿Reactivar a ${user.name}?`
+                          }
+                        >
                           <button
                             type="submit"
                             className={`text-xs hover:underline ${
@@ -118,21 +125,26 @@ export default async function AdminUsersPage({
                           >
                             {user.status === 'ACTIVE' ? 'Suspender' : 'Reactivar'}
                           </button>
-                        </form>
-                        <form action={adminUserRoleAction}>
-                          <input type="hidden" name="userId" value={user.id} />
-                          <input
-                            type="hidden"
-                            name="role"
-                            value={user.role === 'ADMIN' ? 'USER' : 'ADMIN'}
-                          />
+                        </ConfirmForm>
+                        <ConfirmForm
+                          action={adminUserRoleAction}
+                          fields={{
+                            userId: user.id,
+                            role: user.role === 'ADMIN' ? 'USER' : 'ADMIN',
+                          }}
+                          confirmText={
+                            user.role === 'ADMIN'
+                              ? `¿Quitarle el acceso de administrador a ${user.name}?`
+                              : `¿Darle acceso de administrador a ${user.name}?`
+                          }
+                        >
                           <button
                             type="submit"
                             className="text-xs text-zinc-500 hover:text-zinc-900 hover:underline"
                           >
                             {user.role === 'ADMIN' ? 'Quitar admin' : 'Hacer admin'}
                           </button>
-                        </form>
+                        </ConfirmForm>
                       </div>
                     )}
                   </td>

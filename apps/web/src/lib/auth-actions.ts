@@ -13,6 +13,8 @@ import {
 
 export interface ActionState {
   error: string | null;
+  // true cuando la acción terminó bien (para mostrar "✓ Guardado")
+  ok?: boolean;
 }
 
 async function authenticate(

@@ -36,13 +36,15 @@ export default async function NewProductPage() {
           Publicar un producto
         </h1>
         <p className="mb-6 mt-1 text-sm text-zinc-500">
-          Se publica en {business.name} apenas lo guardes.
+          Publicalo en {business.name} o guardalo como borrador para terminarlo
+          después.
         </p>
         <ProductForm
           categories={categories}
           action={createProductAction}
           submitLabel="Publicar producto"
           pendingLabel="Publicando…"
+          allowDraft
         />
       </div>
     </div>

@@ -26,6 +26,7 @@ export function ProductForm({
   pendingLabel,
   initial,
   hidden = {},
+  allowDraft = false,
 }: {
   categories: CategoryOption[];
   action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
@@ -33,6 +34,8 @@ export function ProductForm({
   pendingLabel: string;
   initial?: ProductFormInitial;
   hidden?: Record<string, string>;
+  // muestra un segundo botón "Guardar como borrador"
+  allowDraft?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, initialState);
 
@@ -133,9 +136,32 @@ export function ProductForm({
         </p>
       )}
 
-      <button type="submit" disabled={pending} className="btn-primary w-full">
-        {pending ? pendingLabel : submitLabel}
-      </button>
+      {allowDraft ? (
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button
+            type="submit"
+            name="status"
+            value="ACTIVE"
+            disabled={pending}
+            className="btn-primary flex-1"
+          >
+            {pending ? pendingLabel : submitLabel}
+          </button>
+          <button
+            type="submit"
+            name="status"
+            value="DRAFT"
+            disabled={pending}
+            className="btn-secondary flex-1"
+          >
+            Guardar como borrador
+          </button>
+        </div>
+      ) : (
+        <button type="submit" disabled={pending} className="btn-primary w-full">
+          {pending ? pendingLabel : submitLabel}
+        </button>
+      )}
     </form>
   );
 }

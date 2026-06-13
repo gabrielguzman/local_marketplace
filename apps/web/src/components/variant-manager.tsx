@@ -87,7 +87,14 @@ function VariantRow({
           </button>
         </form>
         {canDelete && (
-          <form action={deleteAction}>
+          <form
+            action={deleteAction}
+            onSubmit={(e) => {
+              if (!confirm(`¿Eliminar la variante "${label}"?`)) {
+                e.preventDefault();
+              }
+            }}
+          >
             <input type="hidden" name="productId" value={productId} />
             <input type="hidden" name="variantId" value={variant.id} />
             <button
@@ -104,6 +111,9 @@ function VariantRow({
         <p className="rounded bg-red-50 px-2 py-1.5 text-xs text-red-700">
           {updateState.error ?? deleteState.error}
         </p>
+      )}
+      {updateState.ok && (
+        <p className="text-xs font-medium text-green-600">✓ Cambios guardados</p>
       )}
     </li>
   );
@@ -190,6 +200,11 @@ export function VariantManager({
         {addState.error && (
           <p className="rounded bg-red-50 px-2 py-1.5 text-xs text-red-700">
             {addState.error}
+          </p>
+        )}
+        {addState.ok && (
+          <p className="text-xs font-medium text-green-600">
+            ✓ Variante agregada
           </p>
         )}
       </form>

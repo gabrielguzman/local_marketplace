@@ -2,9 +2,11 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import type { OrderDto } from '@marketplace/shared';
+import { ConfirmForm } from '@/components/confirm-form';
+import { OrderTimeline } from '@/components/order-timeline';
 import { ReviewForm } from '@/components/review-form';
 import { authFetch } from '@/lib/api';
-import { payOrderAction } from '@/lib/cart-actions';
+import { cancelOrderAction, payOrderAction } from '@/lib/cart-actions';
 import { formatPrice } from '@/lib/format';
 import { ORDER_STATUS_LABEL, SUB_ORDER_STATUS_LABEL } from '@/lib/labels';
 import { getAccessToken } from '@/lib/session';
@@ -69,12 +71,26 @@ export default async function OrderDetailPage({
               <strong>{formatPrice(order.totalCents, order.currency)}</strong>
             </p>
           </div>
-          <form action={payOrderAction}>
-            <input type="hidden" name="orderId" value={order.id} />
-            <button type="submit" className="btn-primary">
-              Pagar ahora (simulado)
-            </button>
-          </form>
+          <div className="flex items-center gap-3">
+            <ConfirmForm
+              action={cancelOrderAction}
+              fields={{ orderId: order.id }}
+              confirmText="¿Cancelar esta orden? No vas a poder retomarla."
+            >
+              <button
+                type="submit"
+                className="btn-secondary !border-red-200 !text-red-600"
+              >
+                Cancelar
+              </button>
+            </ConfirmForm>
+            <form action={payOrderAction}>
+              <input type="hidden" name="orderId" value={order.id} />
+              <button type="submit" className="btn-primary">
+                Pagar ahora (simulado)
+              </button>
+            </form>
+          </div>
         </div>
       )}
 
@@ -127,6 +143,11 @@ export default async function OrderDetailPage({
                   </li>
                 ))}
               </ul>
+              {order.status === 'PAID' && (
+                <div className="border-t border-zinc-100 px-5 py-4">
+                  <OrderTimeline status={subOrder.status} />
+                </div>
+              )}
               <p className="border-t border-zinc-100 px-5 py-3 text-right text-sm">
                 Subtotal:{' '}
                 <strong>

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import type { AdminProductDto } from '@marketplace/shared';
+import { ConfirmForm } from '@/components/confirm-form';
 import { authFetch } from '@/lib/api';
 import { formatPrice } from '@/lib/format';
 import { getAccessToken } from '@/lib/session';
@@ -106,16 +107,18 @@ export default async function AdminProductsPage({
                           {product.status === 'ACTIVE' ? 'Pausar' : 'Activar'}
                         </button>
                       </form>
-                      <form action={adminProductStatusAction}>
-                        <input type="hidden" name="productId" value={product.id} />
-                        <input type="hidden" name="status" value="DELETED" />
+                      <ConfirmForm
+                        action={adminProductStatusAction}
+                        fields={{ productId: product.id, status: 'DELETED' }}
+                        confirmText={`¿Eliminar "${product.title}"? No se puede deshacer.`}
+                      >
                         <button
                           type="submit"
                           className="text-xs text-red-600 hover:underline"
                         >
                           Eliminar
                         </button>
-                      </form>
+                      </ConfirmForm>
                     </div>
                   </td>
                 </tr>

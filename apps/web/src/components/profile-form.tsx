@@ -4,6 +4,7 @@ import { useActionState } from 'react';
 import type { UserDto } from '@marketplace/shared';
 import { updateProfileAction } from '@/lib/account-actions';
 import type { ActionState } from '@/lib/auth-actions';
+import { FormFeedback } from './form-feedback';
 
 const initialState: ActionState = { error: null };
 
@@ -65,11 +66,7 @@ export function ProfileForm({ user }: { user: UserDto }) {
         </label>
       </div>
 
-      {state.error && (
-        <p className="rounded-lg bg-red-50 px-3.5 py-2.5 text-sm text-red-700">
-          {state.error}
-        </p>
-      )}
+      <FormFeedback state={state} okMessage="Datos actualizados" />
 
       <button type="submit" disabled={pending} className="btn-primary">
         {pending ? 'Guardando…' : 'Guardar cambios'}

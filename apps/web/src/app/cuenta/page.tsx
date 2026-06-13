@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import type { AddressDto } from '@marketplace/shared';
 import { AddressForm } from '@/components/address-form';
+import { ConfirmForm } from '@/components/confirm-form';
 import { ProfileForm } from '@/components/profile-form';
 import { authFetch } from '@/lib/api';
 import {
@@ -76,15 +77,18 @@ export default async function AccountPage() {
                       </button>
                     </form>
                   )}
-                  <form action={deleteAddressAction}>
-                    <input type="hidden" name="addressId" value={address.id} />
+                  <ConfirmForm
+                    action={deleteAddressAction}
+                    fields={{ addressId: address.id }}
+                    confirmText="¿Eliminar esta dirección?"
+                  >
                     <button
                       type="submit"
                       className="text-zinc-400 hover:text-red-600 hover:underline"
                     >
                       Eliminar
                     </button>
-                  </form>
+                  </ConfirmForm>
                 </div>
               </li>
             ))}

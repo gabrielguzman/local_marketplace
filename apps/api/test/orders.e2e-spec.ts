@@ -292,4 +292,41 @@ describe('Cart & Orders (e2e)', () => {
     expect((after.body as OrderDto).status).toBe('CANCELLED');
     expect((after.body as OrderDto).paymentStatus).toBe('REJECTED');
   });
+
+  it('el comprador puede cancelar una orden impaga, pero no una pagada', async () => {
+    await request(app.getHttpServer())
+      .post('/cart/items')
+      .set('Authorization', `Bearer ${buyerToken}`)
+      .send({ variantId: variant1Id, quantity: 1 })
+      .expect(201);
+    const checkout = await request(app.getHttpServer())
+      .post('/checkout')
+      .set('Authorization', `Bearer ${buyerToken}`)
+      .send(ADDRESS)
+      .expect(201);
+    const newOrder = checkout.body as OrderDto;
+
+    const cancelled = await request(app.getHttpServer())
+      .post(`/orders/${newOrder.id}/cancel`)
+      .set('Authorization', `Bearer ${buyerToken}`)
+      .expect(200);
+    expect((cancelled.body as OrderDto).status).toBe('CANCELLED');
+    expect(
+      (cancelled.body as OrderDto).subOrders.every(
+        (s) => s.status === 'CANCELLED',
+      ),
+    ).toBe(true);
+
+    // cancelar de nuevo: 409
+    await request(app.getHttpServer())
+      .post(`/orders/${newOrder.id}/cancel`)
+      .set('Authorization', `Bearer ${buyerToken}`)
+      .expect(409);
+
+    // una orden ya pagada no se puede cancelar
+    await request(app.getHttpServer())
+      .post(`/orders/${orderId}/cancel`)
+      .set('Authorization', `Bearer ${buyerToken}`)
+      .expect(409);
+  });
 });

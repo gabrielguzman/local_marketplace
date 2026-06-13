@@ -124,8 +124,7 @@ export default async function SellerProductsPage() {
                         >
                           Editar
                         </Link>
-                        {(product.status === 'ACTIVE' ||
-                          product.status === 'PAUSED') && (
+                        {product.status !== 'DELETED' && (
                           <form action={setProductStatusAction}>
                             <input type="hidden" name="productId" value={product.id} />
                             <input

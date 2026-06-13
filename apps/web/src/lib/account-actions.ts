@@ -38,7 +38,7 @@ export async function updateProfileAction(
     return toActionError(err);
   }
   revalidatePath('/cuenta');
-  return { error: null };
+  return { error: null, ok: true };
 }
 
 export async function createAddressAction(
@@ -65,7 +65,7 @@ export async function createAddressAction(
     return toActionError(err);
   }
   revalidatePath('/cuenta');
-  return { error: null };
+  return { error: null, ok: true };
 }
 
 export async function setDefaultAddressAction(
