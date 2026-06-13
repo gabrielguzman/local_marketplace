@@ -132,19 +132,27 @@ export async function cancelOrderAction(formData: FormData): Promise<void> {
 }
 
 export async function updateSaleStatusAction(
+  _prev: ActionState,
   formData: FormData,
-): Promise<void> {
+): Promise<ActionState> {
   const token = await getAccessToken();
   if (!token) redirect('/login');
 
-  await authFetch(
-    token,
-    `/suborders/${String(formData.get('subOrderId'))}/status`,
-    {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: String(formData.get('status')) }),
-    },
-  ).catch(() => undefined);
+  try {
+    await authFetch(
+      token,
+      `/suborders/${String(formData.get('subOrderId'))}/status`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: String(formData.get('status')) }),
+      },
+    );
+  } catch (err) {
+    revalidatePath('/vender/ventas');
+    return toActionError(err);
+  }
   revalidatePath('/vender/ventas');
+  revalidatePath('/vender');
+  return { error: null, ok: true };
 }

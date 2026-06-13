@@ -269,6 +269,26 @@ export class ProductsService {
       where.id = { in: rankedIds };
     }
 
+    // filtro por calificación: productos cuyo promedio de reseñas ≥ minRating
+    if (query.minRating) {
+      const rated = await this.prisma.review.groupBy({
+        by: ['productId'],
+        _avg: { rating: true },
+        having: { rating: { _avg: { gte: query.minRating } } },
+      });
+      const ratedIds = new Set(rated.map((r) => r.productId));
+      const existing =
+        where.id && typeof where.id === 'object' && 'in' in where.id
+          ? (where.id.in as string[])
+          : null;
+      where.id = {
+        in: existing
+          ? existing.filter((id) => ratedIds.has(id))
+          : [...ratedIds],
+      };
+      rankedIds = rankedIds.filter((id) => ratedIds.has(id));
+    }
+
     if (query.business) {
       where.business = { slug: query.business };
     }

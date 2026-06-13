@@ -2,8 +2,8 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import type { BusinessDto, SellerSubOrderDto } from '@marketplace/shared';
+import { SaleStatusActions } from '@/components/sale-status-actions';
 import { authFetch } from '@/lib/api';
-import { updateSaleStatusAction } from '@/lib/cart-actions';
 import { formatPrice } from '@/lib/format';
 import { SELLER_NEXT_ACTIONS, SUB_ORDER_STATUS_LABEL } from '@/lib/labels';
 import { getAccessToken } from '@/lib/session';
@@ -51,7 +51,6 @@ export default async function SalesPage() {
         <ul className="space-y-4">
           {sales.map((sale) => {
             const badge = SUB_ORDER_STATUS_LABEL[sale.status];
-            const actions = SELLER_NEXT_ACTIONS[sale.status];
             return (
               <li key={sale.id} className="surface-card overflow-hidden">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-100 px-5 py-3">
@@ -97,26 +96,10 @@ export default async function SalesPage() {
                       {formatPrice(sale.subtotalCents, 'ARS')}
                     </strong>
                   </p>
-                  {actions.length > 0 && (
-                    <div className="flex gap-2">
-                      {actions.map((action) => (
-                        <form key={action.status} action={updateSaleStatusAction}>
-                          <input type="hidden" name="subOrderId" value={sale.id} />
-                          <input type="hidden" name="status" value={action.status} />
-                          <button
-                            type="submit"
-                            className={
-                              action.status === 'CANCELLED'
-                                ? 'btn-secondary !py-1.5 text-xs !text-red-600'
-                                : 'btn-primary !py-1.5 text-xs'
-                            }
-                          >
-                            {action.label}
-                          </button>
-                        </form>
-                      ))}
-                    </div>
-                  )}
+                  <SaleStatusActions
+                    subOrderId={sale.id}
+                    actions={SELLER_NEXT_ACTIONS[sale.status]}
+                  />
                 </div>
               </li>
             );

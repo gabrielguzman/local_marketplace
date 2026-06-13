@@ -41,6 +41,14 @@ export class SearchQueryDto {
   @Min(0)
   maxPriceCents?: number;
 
+  // promedio mínimo de reseñas (1..5)
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  minRating?: number;
+
   @IsOptional()
   @IsIn(SEARCH_SORTS)
   sort?: SearchSort;

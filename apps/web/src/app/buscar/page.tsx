@@ -14,6 +14,7 @@ interface SearchParams {
   category?: string;
   min?: string; // pesos
   max?: string;
+  rating?: string; // 1..5
   sort?: string;
   cursor?: string;
 }
@@ -25,6 +26,7 @@ function buildQuery(params: SearchParams, overrides: Partial<SearchParams> = {})
   if (merged.category) query.set('category', merged.category);
   if (merged.min) query.set('min', merged.min);
   if (merged.max) query.set('max', merged.max);
+  if (merged.rating) query.set('rating', merged.rating);
   if (merged.sort) query.set('sort', merged.sort);
   if (merged.cursor) query.set('cursor', merged.cursor);
   return query.toString();
@@ -46,6 +48,7 @@ export default async function SearchPage({
   if (params.max) {
     apiQuery.set('maxPriceCents', String(Math.round(Number(params.max) * 100)));
   }
+  if (params.rating) apiQuery.set('minRating', params.rating);
   if (params.sort) apiQuery.set('sort', params.sort);
   if (params.cursor) apiQuery.set('cursor', params.cursor);
 
@@ -58,7 +61,9 @@ export default async function SearchPage({
   ]);
 
   const activeCategory = categories.find((c) => c.slug === params.category);
-  const hasFilters = Boolean(params.q || params.category || params.min || params.max);
+  const hasFilters = Boolean(
+    params.q || params.category || params.min || params.max || params.rating,
+  );
 
   return (
     <div className="flex flex-col gap-8 md:flex-row">
@@ -106,6 +111,9 @@ export default async function SearchPage({
             {params.sort && (
               <input type="hidden" name="sort" value={params.sort} />
             )}
+            {params.rating && (
+              <input type="hidden" name="rating" value={params.rating} />
+            )}
             <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
               Precio
             </h2>
@@ -130,6 +138,40 @@ export default async function SearchPage({
               Aplicar
             </button>
           </form>
+
+          <div>
+            <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-400">
+              Calificación
+            </h2>
+            <ul className="space-y-0.5 text-sm">
+              {[4, 3, 2].map((stars) => {
+                const active = params.rating === String(stars);
+                return (
+                  <li key={stars}>
+                    <Link
+                      href={`/buscar?${buildQuery(params, {
+                        rating: active ? undefined : String(stars),
+                        cursor: undefined,
+                      })}`}
+                      className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 transition ${
+                        active
+                          ? 'bg-brand-50 font-semibold text-brand-700'
+                          : 'text-zinc-600 hover:bg-zinc-50'
+                      }`}
+                    >
+                      <span aria-hidden="true" className="text-amber-500">
+                        {'★'.repeat(stars)}
+                        <span className="text-zinc-300">
+                          {'★'.repeat(5 - stars)}
+                        </span>
+                      </span>
+                      <span className="text-xs text-zinc-400">y más</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         </div>
       </aside>
 

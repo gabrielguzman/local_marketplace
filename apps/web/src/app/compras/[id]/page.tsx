@@ -53,11 +53,21 @@ export default async function OrderDetailPage({
             })}
           </p>
         </div>
-        <span
-          className={`rounded-full px-3 py-1.5 text-sm font-medium ${badge.className}`}
-        >
-          {badge.label}
-        </span>
+        <div className="flex items-center gap-3">
+          {(order.status === 'PAID' || order.status === 'REFUNDED') && (
+            <Link
+              href={`/compras/${order.id}/comprobante`}
+              className="text-sm font-medium text-brand-600 hover:underline"
+            >
+              Comprobante ↓
+            </Link>
+          )}
+          <span
+            className={`rounded-full px-3 py-1.5 text-sm font-medium ${badge.className}`}
+          >
+            {badge.label}
+          </span>
+        </div>
       </div>
 
       {order.status === 'PENDING_PAYMENT' && (

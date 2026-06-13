@@ -38,12 +38,16 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-zinc-50 font-sans text-zinc-900">
-        <Header />
-        <VerifyBanner />
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
+        <div className="print:hidden">
+          <Header />
+          <VerifyBanner />
+        </div>
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 print:max-w-none print:px-0 print:py-0">
           {children}
         </main>
-        <Footer />
+        <div className="print:hidden">
+          <Footer />
+        </div>
       </body>
     </html>
   );

@@ -3,10 +3,13 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import type {
   BusinessDto,
+  Paginated,
   ProductDetailDto,
+  ProductSummaryDto,
   ReviewDto,
 } from '@marketplace/shared';
 import { BuyBox } from '@/components/add-to-cart';
+import { ProductCard } from '@/components/product-card';
 import { ReportButton } from '@/components/report-button';
 import { ReviewItem } from '@/components/review-item';
 import { Stars } from '@/components/stars';
@@ -59,6 +62,14 @@ export default async function ProductPage({
   const reviews = await apiFetch<ReviewDto[]>(
     `/products/${product.id}/reviews`,
   ).catch(() => []);
+
+  // Productos de la misma categoría (excluye el actual)
+  const relatedRes = await apiFetch<Paginated<ProductSummaryDto>>(
+    `/search?category=${product.category.slug}&limit=6`,
+  ).catch((): Paginated<ProductSummaryDto> => ({ items: [], nextCursor: null }));
+  const related = relatedRes.items
+    .filter((p) => p.id !== product.id)
+    .slice(0, 4);
 
   // ¿el que mira es el autor de alguna reseña o el dueño del negocio?
   const currentUser = await getCurrentUser();
@@ -226,6 +237,19 @@ export default async function ProductPage({
           <ReportButton productId={product.id} />
         </aside>
       </div>
+
+      {related.length > 0 && (
+        <section className="space-y-4">
+          <h2 className="text-lg font-bold tracking-tight">
+            Productos relacionados
+          </h2>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            {related.map((item) => (
+              <ProductCard key={item.id} product={item} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
