@@ -229,4 +229,78 @@ describe('Account & Guest cart (e2e)', () => {
       expect((guest.body as CartDto).items).toHaveLength(0);
     });
   });
+
+  describe('Seguridad de cuenta', () => {
+    const pwEmail = `e2e-acc-pw-${stamp}@test.com`;
+    const delEmail = `e2e-acc-del-${stamp}@test.com`;
+
+    afterAll(async () => {
+      await prisma.user.deleteMany({ where: { email: pwEmail } });
+      // la cuenta dada de baja quedó anonimizada (deleted-<id>@deleted.local)
+      await prisma.user.deleteMany({
+        where: { name: 'Usuario eliminado', passwordHash: null },
+      });
+    });
+
+    it('cambiar contraseña: verifica la actual y rota las sesiones', async () => {
+      const reg = await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({ email: pwEmail, password: 'super-secreta-123', name: 'Pw' })
+        .expect(201);
+      const token = (reg.body as AuthResponse).accessToken;
+
+      // contraseña actual incorrecta → 401
+      await request(app.getHttpServer())
+        .put('/me/password')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ currentPassword: 'mal', newPassword: 'nueva-secreta-456' })
+        .expect(401);
+
+      await request(app.getHttpServer())
+        .put('/me/password')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          currentPassword: 'super-secreta-123',
+          newPassword: 'nueva-secreta-456',
+        })
+        .expect(204);
+
+      // la vieja ya no sirve, la nueva sí
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: pwEmail, password: 'super-secreta-123' })
+        .expect(401);
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: pwEmail, password: 'nueva-secreta-456' })
+        .expect(200);
+    });
+
+    it('eliminar cuenta: anonimiza y bloquea el login', async () => {
+      const reg = await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({ email: delEmail, password: 'super-secreta-123', name: 'Del' })
+        .expect(201);
+      const token = (reg.body as AuthResponse).accessToken;
+
+      // password incorrecta → 401
+      await request(app.getHttpServer())
+        .delete('/me')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ password: 'mal' })
+        .expect(401);
+
+      await request(app.getHttpServer())
+        .delete('/me')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ password: 'super-secreta-123' })
+        .expect(204);
+
+      // la cuenta quedó inutilizable
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: delEmail, password: 'super-secreta-123' })
+        .expect(401);
+    });
+  });
 });

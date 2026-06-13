@@ -6,10 +6,10 @@
 ## 1. Autenticación
 
 **Hecho:** registro/login, refresh rotativo single-use, logout, verificación de email,
-suspensión de cuentas, rate limiting, roles USER/ADMIN en el JWT.
+suspensión de cuentas, rate limiting, roles USER/ADMIN en el JWT, cambio de contraseña
+estando logueado (rota las sesiones).
 
 - 🔴 **Recuperación de contraseña** — el tipo `PASSWORD_RESET` ya existe en el schema; falta endpoint + página. Depende de emails reales.
-- 🟠 Cambiar contraseña estando logueado.
 - 🟢 Cambiar email (con re-verificación).
 - 🟢 Google OAuth (previsto en el diseño original).
 - 🟢 Ver/cerrar sesiones activas ("cerrar sesión en todos los dispositivos").
@@ -18,12 +18,11 @@ suspensión de cuentas, rate limiting, roles USER/ADMIN en el JWT.
 ## 2. Usuarios y perfil
 
 **Hecho:** GET/PATCH /me (nombre, teléfono, avatar por URL), página /cuenta con
-edición de perfil, CRUD de direcciones guardadas (con principal automática) y
-selección de dirección guardada en el checkout.
+edición de perfil, CRUD de direcciones guardadas (con principal automática, editables
+inline) y selección de dirección guardada en el checkout, baja de cuenta con
+anonimización (Ley 25.326).
 
-- 🟢 Eliminar cuenta (derecho al olvido / Ley 25.326).
 - 🟢 Avatar con upload real (depende de Cloudinary).
-- 🟢 Editar una dirección guardada (hoy se borra y se vuelve a cargar).
 
 ## 3. Negocios
 

@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { ApiRequestError, authFetch } from './api';
 import type { ActionState } from './auth-actions';
-import { getAccessToken } from './session';
+import { clearSessionCookies, getAccessToken } from './session';
 
 function toActionError(err: unknown): ActionState {
   if (err instanceof ApiRequestError) return { error: err.message };
@@ -66,6 +66,79 @@ export async function createAddressAction(
   }
   revalidatePath('/cuenta');
   return { error: null, ok: true };
+}
+
+export async function updateAddressAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const token = await getAccessToken();
+  if (!token) redirect('/login');
+
+  try {
+    await authFetch(token, `/me/addresses/${String(formData.get('addressId'))}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        street: String(formData.get('street') ?? ''),
+        number: String(formData.get('number') ?? ''),
+        city: String(formData.get('city') ?? ''),
+        province: String(formData.get('province') ?? ''),
+        zipCode: String(formData.get('zipCode') ?? ''),
+      }),
+    });
+  } catch (err) {
+    return toActionError(err);
+  }
+  revalidatePath('/cuenta');
+  return { error: null, ok: true };
+}
+
+export async function changePasswordAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const token = await getAccessToken();
+  if (!token) redirect('/login');
+
+  const newPassword = String(formData.get('newPassword') ?? '');
+  if (newPassword !== String(formData.get('confirmPassword') ?? '')) {
+    return { error: 'Las contraseñas nuevas no coinciden' };
+  }
+
+  try {
+    await authFetch(token, '/me/password', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        currentPassword: String(formData.get('currentPassword') ?? ''),
+        newPassword,
+      }),
+    });
+  } catch (err) {
+    return toActionError(err);
+  }
+  return { error: null, ok: true };
+}
+
+export async function deleteAccountAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const token = await getAccessToken();
+  if (!token) redirect('/login');
+
+  try {
+    await authFetch(token, '/me', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: String(formData.get('password') ?? '') }),
+    });
+  } catch (err) {
+    return toActionError(err);
+  }
+  await clearSessionCookies();
+  redirect('/');
 }
 
 export async function setDefaultAddressAction(

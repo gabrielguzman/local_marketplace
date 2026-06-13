@@ -2,13 +2,11 @@ import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import type { AddressDto } from '@marketplace/shared';
 import { AddressForm } from '@/components/address-form';
-import { ConfirmForm } from '@/components/confirm-form';
+import { AddressRow } from '@/components/address-row';
+import { ChangePasswordForm } from '@/components/change-password-form';
+import { DeleteAccountForm } from '@/components/delete-account-form';
 import { ProfileForm } from '@/components/profile-form';
 import { authFetch } from '@/lib/api';
-import {
-  deleteAddressAction,
-  setDefaultAddressAction,
-} from '@/lib/account-actions';
 import { getAccessToken, getCurrentUser } from '@/lib/session';
 
 export const metadata: Metadata = { title: 'Mi cuenta' };
@@ -48,49 +46,7 @@ export default async function AccountPage() {
         {addresses.length > 0 && (
           <ul className="mb-6 space-y-3">
             {addresses.map((address) => (
-              <li
-                key={address.id}
-                className="flex items-start justify-between gap-4 rounded-xl border border-zinc-200 p-4"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-zinc-800">
-                    {address.street} {address.number}
-                    {address.isDefault && (
-                      <span className="ml-2 rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-700">
-                        Principal
-                      </span>
-                    )}
-                  </p>
-                  <p className="text-sm text-zinc-500">
-                    {address.city}, {address.province} (CP {address.zipCode})
-                  </p>
-                </div>
-                <div className="flex shrink-0 items-center gap-3 text-xs">
-                  {!address.isDefault && (
-                    <form action={setDefaultAddressAction}>
-                      <input type="hidden" name="addressId" value={address.id} />
-                      <button
-                        type="submit"
-                        className="font-medium text-brand-600 hover:underline"
-                      >
-                        Hacer principal
-                      </button>
-                    </form>
-                  )}
-                  <ConfirmForm
-                    action={deleteAddressAction}
-                    fields={{ addressId: address.id }}
-                    confirmText="¿Eliminar esta dirección?"
-                  >
-                    <button
-                      type="submit"
-                      className="text-zinc-400 hover:text-red-600 hover:underline"
-                    >
-                      Eliminar
-                    </button>
-                  </ConfirmForm>
-                </div>
-              </li>
+              <AddressRow key={address.id} address={address} />
             ))}
           </ul>
         )}
@@ -101,6 +57,24 @@ export default async function AccountPage() {
           </h3>
           <AddressForm />
         </div>
+      </section>
+
+      <section className="surface-card p-7">
+        <h2 className="mb-5 text-base font-bold tracking-tight">
+          Cambiar contraseña
+        </h2>
+        <ChangePasswordForm />
+      </section>
+
+      <section className="surface-card border-red-100 p-7">
+        <h2 className="text-base font-bold tracking-tight text-red-700">
+          Eliminar cuenta
+        </h2>
+        <p className="mb-4 mt-1 text-sm text-zinc-500">
+          Esta acción es permanente. Se borran tus datos personales y tu cuenta
+          deja de funcionar.
+        </p>
+        <DeleteAccountForm />
       </section>
     </div>
   );
