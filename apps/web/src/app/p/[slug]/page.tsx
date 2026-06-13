@@ -9,11 +9,13 @@ import type {
   ReviewDto,
 } from '@marketplace/shared';
 import { BuyBox } from '@/components/add-to-cart';
+import { FavoriteButton } from '@/components/favorite-button';
 import { ProductCard } from '@/components/product-card';
 import { ReportButton } from '@/components/report-button';
 import { ReviewItem } from '@/components/review-item';
 import { Stars } from '@/components/stars';
 import { apiFetch, authFetch } from '@/lib/api';
+import { getFavoriteIds } from '@/lib/favorites';
 import { getAccessToken, getCurrentUser } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
@@ -74,14 +76,16 @@ export default async function ProductPage({
   // ¿el que mira es el autor de alguna reseña o el dueño del negocio?
   const currentUser = await getCurrentUser();
   let isOwner = false;
+  let isFavorite = false;
   if (currentUser) {
     const token = await getAccessToken();
     if (token) {
-      const myBusiness = await authFetch<BusinessDto>(
-        token,
-        '/businesses/me',
-      ).catch(() => null);
+      const [myBusiness, favoriteIds] = await Promise.all([
+        authFetch<BusinessDto>(token, '/businesses/me').catch(() => null),
+        getFavoriteIds(),
+      ]);
       isOwner = myBusiness?.id === product.business.id;
+      isFavorite = favoriteIds.has(product.id);
     }
   }
 
@@ -195,6 +199,14 @@ export default async function ProductPage({
             </div>
 
             <BuyBox variants={product.variants} />
+
+            <div className="mt-3">
+              <FavoriteButton
+                productId={product.id}
+                slug={product.slug}
+                favorited={isFavorite}
+              />
+            </div>
 
             <div className="mt-5 space-y-2 border-t border-zinc-100 pt-4 text-xs text-zinc-500">
               <p className="flex items-center gap-2">

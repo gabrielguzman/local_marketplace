@@ -179,6 +179,43 @@ describe('Products (e2e)', () => {
     expect(relItems[0].rating).toEqual({ avg: null, count: 0 });
   });
 
+  it('favoritos: agregar (idempotente), listar y quitar', async () => {
+    await request(app.getHttpServer())
+      .put(`/me/favorites/${productId}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(204);
+    // segunda vez no rompe
+    await request(app.getHttpServer())
+      .put(`/me/favorites/${productId}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(204);
+
+    const list = await request(app.getHttpServer())
+      .get('/me/favorites')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+    expect(
+      (list.body as ProductSummaryDto[]).some((p) => p.id === productId),
+    ).toBe(true);
+
+    const ids = await request(app.getHttpServer())
+      .get('/me/favorites/ids')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+    expect(ids.body as string[]).toContain(productId);
+
+    await request(app.getHttpServer())
+      .delete(`/me/favorites/${productId}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(204);
+
+    const after = await request(app.getHttpServer())
+      .get('/me/favorites')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+    expect(after.body as ProductSummaryDto[]).toHaveLength(0);
+  });
+
   it('otro usuario no puede editar mi producto', async () => {
     const other = await request(app.getHttpServer())
       .post('/auth/register')

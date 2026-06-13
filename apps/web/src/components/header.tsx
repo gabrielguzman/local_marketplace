@@ -66,6 +66,26 @@ export async function Header() {
                 </Link>
               )}
               <Link
+                href="/favoritos"
+                aria-label="Favoritos"
+                className="rounded-lg px-3 py-2 text-zinc-600 transition hover:bg-zinc-100 hover:text-red-500"
+              >
+                <svg
+                  className="h-5 w-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M12 20s-7-4.35-9.5-8.5C1 8.5 2.5 5.5 5.5 5.5c1.9 0 3.2 1.1 3.9 2.2.4.6.6.9 1.1.9s.7-.3 1.1-.9c.7-1.1 2-2.2 3.9-2.2 3 0 4.5 3 3 6C19 15.65 12 20 12 20Z"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </Link>
+              <Link
                 href="/compras"
                 className="rounded-lg px-3 py-2 text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
               >

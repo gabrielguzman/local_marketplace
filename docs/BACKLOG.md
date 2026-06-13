@@ -59,9 +59,8 @@ precio asc-desc / relevancia (`ts_rank`).
 
 **Hecho:** multi-negocio agrupado por tienda, cantidades validadas contra stock,
 badge con contador en el header, errores de stock visibles al cambiar cantidades,
-carrito anónimo (cookie de invitado + merge al loguear).
-
-- 🟢 Favoritos / guardar para después.
+carrito anónimo (cookie de invitado + merge al loguear), favoritos (guardar para
+después) con página propia y corazón en el detalle.
 
 ## 7. Checkout y órdenes
 

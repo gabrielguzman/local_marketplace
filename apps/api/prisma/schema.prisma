@@ -46,8 +46,24 @@ model User {
   reviews            Review[]
   reports            Report[]
   auditLogs          AuditLog[]
+  favorites          Favorite[]
 
   @@map("users")
+}
+
+// Productos guardados por un usuario ("guardar para después")
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@map("favorites")
 }
 
 // Registro de acciones de moderación: quién hizo qué y a qué.
@@ -184,12 +200,13 @@ model Product {
   // GENERATED ALWAYS AS (to_tsvector('spanish', title || ' ' || description)) STORED
   searchVector Unsupported("tsvector")? @default(dbgenerated("to_tsvector('spanish'::regconfig, ((COALESCE(title, ''::text) || ' '::text) || COALESCE(description, ''::text)))"))
 
-  business Business         @relation(fields: [businessId], references: [id])
-  category Category         @relation(fields: [categoryId], references: [id])
-  variants ProductVariant[]
-  images   ProductImage[]
-  reviews  Review[]
-  reports  Report[]
+  business  Business         @relation(fields: [businessId], references: [id])
+  category  Category         @relation(fields: [categoryId], references: [id])
+  variants  ProductVariant[]
+  images    ProductImage[]
+  reviews   Review[]
+  reports   Report[]
+  favorites Favorite[]
 
   @@index([businessId])
   @@index([categoryId])

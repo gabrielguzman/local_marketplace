@@ -9,6 +9,7 @@ import { BusinessesModule } from './businesses/businesses.module';
 import { CartModule } from './cart/cart.module';
 import { CategoriesModule } from './categories/categories.module';
 import { EmailModule } from './email/email.module';
+import { FavoritesModule } from './favorites/favorites.module';
 import { HealthModule } from './health/health.module';
 import { OrdersModule } from './orders/orders.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -37,6 +38,7 @@ import { UsersModule } from './users/users.module';
     CartModule,
     OrdersModule,
     ReviewsModule,
+    FavoritesModule,
     AdminModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
