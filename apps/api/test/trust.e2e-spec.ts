@@ -283,6 +283,37 @@ describe('Trust: verificación, reseñas, denuncias y admin (e2e)', () => {
     );
   });
 
+  it('votos "útil": un tercero suma y alterna, el autor no puede votar la suya', async () => {
+    // el autor no puede votar su propia reseña
+    await request(app.getHttpServer())
+      .post(`/products/${productId}/reviews/${reviewId}/helpful`)
+      .set('Authorization', `Bearer ${buyerToken}`)
+      .expect(409);
+
+    // el vendedor (tercero) la marca útil
+    const voted = await request(app.getHttpServer())
+      .post(`/products/${productId}/reviews/${reviewId}/helpful`)
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .expect(201);
+    expect(voted.body).toEqual({ helpfulCount: 1, votedHelpful: true });
+
+    // al listar como el votante, viene marcada
+    const listed = await request(app.getHttpServer())
+      .get(`/products/${productId}/reviews`)
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .expect(200);
+    const mine = (listed.body as ReviewDto[]).find((r) => r.id === reviewId);
+    expect(mine?.helpfulCount).toBe(1);
+    expect(mine?.votedHelpful).toBe(true);
+
+    // volver a postear alterna (saca el voto)
+    const toggled = await request(app.getHttpServer())
+      .post(`/products/${productId}/reviews/${reviewId}/helpful`)
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .expect(201);
+    expect(toggled.body).toEqual({ helpfulCount: 0, votedHelpful: false });
+  });
+
   it('el autor edita su reseña; un tercero no puede', async () => {
     // el vendedor no puede editar la reseña ajena
     await request(app.getHttpServer())

@@ -136,6 +136,21 @@ export async function reportProductAction(
   return { error: null };
 }
 
+export async function voteReviewHelpfulAction(
+  formData: FormData,
+): Promise<void> {
+  const token = await getAccessToken();
+  if (!token) redirect('/login');
+
+  const productId = String(formData.get('productId') ?? '');
+  const reviewId = String(formData.get('reviewId') ?? '');
+  const slug = String(formData.get('slug') ?? '');
+  await authFetch(token, `/products/${productId}/reviews/${reviewId}/helpful`, {
+    method: 'POST',
+  }).catch(() => undefined);
+  revalidatePath(`/p/${slug}`);
+}
+
 export async function reportReviewAction(formData: FormData): Promise<void> {
   const token = await getAccessToken();
   if (!token) redirect('/login');

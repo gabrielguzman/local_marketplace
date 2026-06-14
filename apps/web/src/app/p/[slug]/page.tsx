@@ -245,6 +245,7 @@ export default async function ProductPage({
                     isMine={review.authorId === currentUser?.id}
                     canReply={isOwner}
                     canReport={Boolean(currentUser)}
+                    canVote={Boolean(currentUser)}
                   />
                 ))}
                 </ul>

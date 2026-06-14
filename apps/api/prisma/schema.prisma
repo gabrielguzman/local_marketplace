@@ -49,6 +49,7 @@ model User {
   favorites          Favorite[]
   questions          Question[]
   reviewReports      ReviewReport[]
+  reviewVotes        ReviewVote[]
   notifications      Notification[]
 
   @@map("users")
@@ -471,10 +472,25 @@ model Review {
   business Business       @relation(fields: [businessId], references: [id])
   author   User           @relation(fields: [authorId], references: [id])
   reports  ReviewReport[]
+  votes    ReviewVote[]
 
   @@unique([productId, authorId]) // una reseña por usuario y producto
   @@index([businessId])
   @@map("reviews")
+}
+
+// Voto "me resultó útil" de un usuario sobre una reseña (1 por usuario)
+model ReviewVote {
+  id        String   @id @default(uuid())
+  reviewId  String
+  userId    String
+  createdAt DateTime @default(now())
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([reviewId, userId])
+  @@map("review_votes")
 }
 
 enum ReportReason {

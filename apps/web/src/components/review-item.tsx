@@ -8,6 +8,7 @@ import {
   editReviewAction,
   replyReviewAction,
   reportReviewAction,
+  voteReviewHelpfulAction,
 } from '@/lib/trust-actions';
 
 const initialState: ActionState = { error: null };
@@ -27,12 +28,14 @@ export function ReviewItem({
   isMine,
   canReply,
   canReport,
+  canVote,
 }: {
   review: ReviewDto;
   productSlug: string;
   isMine: boolean;
   canReply: boolean;
   canReport: boolean;
+  canVote: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [replying, setReplying] = useState(false);
@@ -233,6 +236,34 @@ export function ReviewItem({
           </div>
         </form>
       )}
+
+      {/* "¿Te resultó útil?" */}
+      <div className="mt-2.5 flex items-center gap-3 text-xs">
+        {canVote && !isMine ? (
+          <form action={voteReviewHelpfulAction}>
+            {hidden}
+            <button
+              type="submit"
+              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-medium transition ${
+                review.votedHelpful
+                  ? 'border-brand-300 bg-brand-50 text-brand-700'
+                  : 'border-zinc-200 text-zinc-500 hover:border-brand-300 hover:text-brand-600'
+              }`}
+            >
+              👍 Útil{review.helpfulCount > 0 && ` (${review.helpfulCount})`}
+            </button>
+          </form>
+        ) : (
+          review.helpfulCount > 0 && (
+            <span className="text-zinc-400">
+              👍 {review.helpfulCount}{' '}
+              {review.helpfulCount === 1
+                ? 'persona la encontró útil'
+                : 'personas la encontraron útil'}
+            </span>
+          )
+        )}
+      </div>
     </li>
   );
 }

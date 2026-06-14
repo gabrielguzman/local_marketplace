@@ -14,6 +14,7 @@ import { Throttle } from '@nestjs/throttler';
 import type { ReviewDto } from '@marketplace/shared';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 import type { AccessTokenPayload } from '../auth/auth.types';
 import {
   CreateReportDto,
@@ -28,8 +29,12 @@ export class ReviewsController {
   constructor(private readonly reviews: ReviewsService) {}
 
   @Get('reviews')
-  list(@Param('id', ParseUUIDPipe) id: string): Promise<ReviewDto[]> {
-    return this.reviews.listForProduct(id);
+  @UseGuards(OptionalJwtAuthGuard)
+  list(
+    @CurrentUser() user: AccessTokenPayload | undefined,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<ReviewDto[]> {
+    return this.reviews.listForProduct(id, user?.sub);
   }
 
   @Post('reviews')
@@ -73,6 +78,17 @@ export class ReviewsController {
     @Body() dto: ReplyReviewDto,
   ): Promise<ReviewDto> {
     return this.reviews.respond(user.sub, id, reviewId, dto);
+  }
+
+  @Post('reviews/:reviewId/helpful')
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  toggleHelpful(
+    @CurrentUser() user: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('reviewId', ParseUUIDPipe) reviewId: string,
+  ): Promise<{ helpfulCount: number; votedHelpful: boolean }> {
+    return this.reviews.toggleHelpful(user.sub, id, reviewId);
   }
 
   @Post('reviews/:reviewId/report')

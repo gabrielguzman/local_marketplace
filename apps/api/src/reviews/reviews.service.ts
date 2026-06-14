@@ -23,7 +23,11 @@ type ReviewWithAuthor = Prisma.ReviewGetPayload<{
   include: typeof REVIEW_INCLUDE;
 }>;
 
-function toReviewDto(review: ReviewWithAuthor): ReviewDto {
+function toReviewDto(
+  review: ReviewWithAuthor,
+  helpfulCount = 0,
+  votedHelpful = false,
+): ReviewDto {
   return {
     id: review.id,
     productId: review.productId,
@@ -34,6 +38,8 @@ function toReviewDto(review: ReviewWithAuthor): ReviewDto {
     createdAt: review.createdAt.toISOString(),
     sellerResponse: review.sellerResponse,
     sellerRespondedAt: review.sellerRespondedAt?.toISOString() ?? null,
+    helpfulCount,
+    votedHelpful,
   };
 }
 
@@ -120,14 +126,68 @@ export class ReviewsService {
     }));
   }
 
-  async listForProduct(productId: string): Promise<ReviewDto[]> {
+  async listForProduct(
+    productId: string,
+    viewerId?: string,
+  ): Promise<ReviewDto[]> {
     const reviews = await this.prisma.review.findMany({
       where: { productId },
       include: REVIEW_INCLUDE,
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
-    return reviews.map(toReviewDto);
+    if (reviews.length === 0) return [];
+
+    const reviewIds = reviews.map((r) => r.id);
+    const [counts, myVotes] = await Promise.all([
+      this.prisma.reviewVote.groupBy({
+        by: ['reviewId'],
+        where: { reviewId: { in: reviewIds } },
+        _count: true,
+      }),
+      viewerId
+        ? this.prisma.reviewVote.findMany({
+            where: { reviewId: { in: reviewIds }, userId: viewerId },
+            select: { reviewId: true },
+          })
+        : Promise.resolve([]),
+    ]);
+    const countByReview = new Map(counts.map((c) => [c.reviewId, c._count]));
+    const votedByMe = new Set(myVotes.map((v) => v.reviewId));
+
+    return reviews.map((r) =>
+      toReviewDto(r, countByReview.get(r.id) ?? 0, votedByMe.has(r.id)),
+    );
+  }
+
+  // Alterna el voto "me resultó útil" del usuario sobre una reseña ajena
+  async toggleHelpful(
+    userId: string,
+    productId: string,
+    reviewId: string,
+  ): Promise<{ helpfulCount: number; votedHelpful: boolean }> {
+    const review = await this.findInProduct(reviewId, productId);
+    if (review.authorId === userId) {
+      throw new ConflictException({
+        code: 'CANNOT_VOTE_OWN',
+        message: 'No podés votar tu propia reseña',
+      });
+    }
+
+    const existing = await this.prisma.reviewVote.findUnique({
+      where: { reviewId_userId: { reviewId, userId } },
+      select: { id: true },
+    });
+    if (existing) {
+      await this.prisma.reviewVote.delete({ where: { id: existing.id } });
+    } else {
+      await this.prisma.reviewVote.create({ data: { reviewId, userId } });
+    }
+
+    const helpfulCount = await this.prisma.reviewVote.count({
+      where: { reviewId },
+    });
+    return { helpfulCount, votedHelpful: !existing };
   }
 
   // El autor edita su propia reseña

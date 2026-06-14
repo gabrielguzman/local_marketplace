@@ -318,6 +318,8 @@ export interface ReviewDto {
   createdAt: string;
   sellerResponse: string | null;
   sellerRespondedAt: string | null;
+  helpfulCount: number; // cuántos la marcaron "útil"
+  votedHelpful: boolean; // si el que mira ya la votó
 }
 
 // Pregunta pública sobre un producto (con respuesta del vendedor)
