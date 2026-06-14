@@ -3,15 +3,17 @@ import type { CategoryDto } from '@marketplace/shared';
 import { apiFetch } from '@/lib/api';
 import { logoutAction } from '@/lib/auth-actions';
 import { getCartCount } from '@/lib/cart-session';
+import { getUnreadCount } from '@/lib/notifications';
 import { getCurrentUser } from '@/lib/session';
 import { Logo } from './logo';
 import { SearchBar } from './search-bar';
 
 export async function Header() {
-  const [user, categories, cartCount] = await Promise.all([
+  const [user, categories, cartCount, notifCount] = await Promise.all([
     getCurrentUser(),
     apiFetch<CategoryDto[]>('/categories').catch(() => [] as CategoryDto[]),
     getCartCount(),
+    getUnreadCount(),
   ]);
 
   const cartLink = (
@@ -65,6 +67,27 @@ export async function Header() {
                   Admin
                 </Link>
               )}
+              <Link
+                href="/notificaciones"
+                aria-label={`Notificaciones (${notifCount})`}
+                className="relative rounded-lg px-3 py-2 text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
+              >
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path
+                    d="M6 8a6 6 0 1 1 12 0c0 5 2 6 2 6H4s2-1 2-6Z"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path d="M10 19a2 2 0 0 0 4 0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                </svg>
+                {notifCount > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                    {notifCount > 99 ? '99+' : notifCount}
+                  </span>
+                )}
+              </Link>
               <Link
                 href="/favoritos"
                 aria-label="Favoritos"

@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import type { QuestionDto } from '@marketplace/shared';
 import type { Prisma } from '@prisma/client';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AnswerQuestionDto, AskQuestionDto } from './dto/questions.dto';
 
@@ -30,7 +31,10 @@ function toDto(q: QuestionWithAuthor): QuestionDto {
 
 @Injectable()
 export class QuestionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async list(productId: string): Promise<QuestionDto[]> {
     const questions = await this.prisma.question.findMany({
@@ -49,7 +53,12 @@ export class QuestionsService {
   ): Promise<QuestionDto> {
     const product = await this.prisma.product.findUnique({
       where: { id: productId },
-      select: { status: true },
+      select: {
+        status: true,
+        slug: true,
+        title: true,
+        business: { select: { ownerId: true } },
+      },
     });
     if (!product || product.status !== 'ACTIVE') {
       throw new NotFoundException({
@@ -61,6 +70,17 @@ export class QuestionsService {
       data: { productId, authorId: userId, body: dto.body },
       include: QUESTION_INCLUDE,
     });
+
+    // avisar al vendedor (salvo que se pregunte a sí mismo)
+    if (product.business.ownerId !== userId) {
+      await this.notifications.notify({
+        userId: product.business.ownerId,
+        type: 'QUESTION',
+        title: 'Te hicieron una pregunta',
+        body: `${product.title}: "${dto.body}"`,
+        link: `/p/${product.slug}`,
+      });
+    }
     return toDto(question);
   }
 
@@ -72,7 +92,15 @@ export class QuestionsService {
   ): Promise<QuestionDto> {
     const question = await this.prisma.question.findUnique({
       where: { id: questionId },
-      include: { product: { select: { businessId: true } } },
+      include: {
+        product: {
+          select: {
+            slug: true,
+            title: true,
+            business: { select: { ownerId: true } },
+          },
+        },
+      },
     });
     if (!question || question.productId !== productId) {
       throw new NotFoundException({
@@ -80,11 +108,7 @@ export class QuestionsService {
         message: 'Pregunta no encontrada',
       });
     }
-    const business = await this.prisma.business.findUnique({
-      where: { id: question.product.businessId },
-      select: { ownerId: true },
-    });
-    if (business?.ownerId !== userId) {
+    if (question.product.business.ownerId !== userId) {
       throw new ForbiddenException({
         code: 'NOT_BUSINESS_OWNER',
         message: 'Solo el vendedor puede responder',
@@ -94,6 +118,15 @@ export class QuestionsService {
       where: { id: questionId },
       data: { answer: dto.answer, answeredAt: new Date() },
       include: QUESTION_INCLUDE,
+    });
+
+    // avisar a quien preguntó
+    await this.notifications.notify({
+      userId: question.authorId,
+      type: 'QUESTION_ANSWERED',
+      title: 'Respondieron tu pregunta',
+      body: `${question.product.title}: "${dto.answer}"`,
+      link: `/p/${question.product.slug}`,
     });
     return toDto(updated);
   }

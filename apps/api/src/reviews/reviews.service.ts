@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import type { ReviewDto } from '@marketplace/shared';
 import type { Prisma } from '@prisma/client';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateReportDto,
@@ -38,7 +39,10 @@ function toReviewDto(review: ReviewWithAuthor): ReviewDto {
 
 @Injectable()
 export class ReviewsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   // Solo puede reseñar quien recibió el producto (sub-orden DELIVERED)
   async create(
@@ -157,7 +161,10 @@ export class ReviewsService {
   ): Promise<ReviewDto> {
     const review = await this.prisma.review.findUnique({
       where: { id: reviewId },
-      include: { business: { select: { ownerId: true } } },
+      include: {
+        business: { select: { ownerId: true } },
+        product: { select: { slug: true, title: true } },
+      },
     });
     if (!review || review.productId !== productId) {
       throw new NotFoundException({
@@ -175,6 +182,15 @@ export class ReviewsService {
       where: { id: reviewId },
       data: { sellerResponse: dto.response, sellerRespondedAt: new Date() },
       include: REVIEW_INCLUDE,
+    });
+
+    // avisar al autor de la reseña
+    await this.notifications.notify({
+      userId: review.authorId,
+      type: 'REVIEW_REPLY',
+      title: 'El vendedor respondió tu reseña',
+      body: review.product.title,
+      link: `/p/${review.product.slug}`,
     });
     return toReviewDto(updated);
   }

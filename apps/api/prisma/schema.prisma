@@ -49,8 +49,34 @@ model User {
   favorites          Favorite[]
   questions          Question[]
   reviewReports      ReviewReport[]
+  notifications      Notification[]
 
   @@map("users")
+}
+
+enum NotificationType {
+  SALE // al vendedor: vendiste un producto
+  ORDER_STATUS // al comprador: cambió el estado del envío
+  QUESTION // al vendedor: te hicieron una pregunta
+  QUESTION_ANSWERED // al comprador: respondieron tu pregunta
+  REVIEW_REPLY // al comprador: el vendedor respondió tu reseña
+}
+
+// Notificación in-app para un usuario.
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String           @default("")
+  link      String? // ruta destino (ej /compras/<id>, /vender/ventas)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("notifications")
 }
 
 // Preguntas públicas sobre un producto; el vendedor responde.

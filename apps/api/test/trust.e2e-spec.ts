@@ -329,6 +329,44 @@ describe('Trust: verificación, reseñas, denuncias y admin (e2e)', () => {
     expect(list.body as unknown[]).toHaveLength(1);
   });
 
+  it('se generan notificaciones in-app para vendedor y comprador', async () => {
+    // el vendedor recibió venta + pregunta
+    const seller = await request(app.getHttpServer())
+      .get('/me/notifications')
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .expect(200);
+    const sellerTypes = (
+      seller.body as { items: { type: string }[]; unreadCount: number }
+    ).items.map((n) => n.type);
+    expect(sellerTypes).toContain('SALE');
+    expect(sellerTypes).toContain('QUESTION');
+    expect(
+      (seller.body as { unreadCount: number }).unreadCount,
+    ).toBeGreaterThan(0);
+
+    // el comprador recibió estados de envío + respuesta a su pregunta
+    const buyer = await request(app.getHttpServer())
+      .get('/me/notifications')
+      .set('Authorization', `Bearer ${buyerToken}`)
+      .expect(200);
+    const buyerTypes = (buyer.body as { items: { type: string }[] }).items.map(
+      (n) => n.type,
+    );
+    expect(buyerTypes).toContain('ORDER_STATUS');
+    expect(buyerTypes).toContain('QUESTION_ANSWERED');
+
+    // marcar leídas baja el contador a 0
+    await request(app.getHttpServer())
+      .post('/me/notifications/read')
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .expect(204);
+    const after = await request(app.getHttpServer())
+      .get('/me/notifications/unread-count')
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .expect(200);
+    expect((after.body as { count: number }).count).toBe(0);
+  });
+
   it('reportar una reseña: el autor no puede denunciar la propia', async () => {
     // el vendedor denuncia la reseña del comprador
     await request(app.getHttpServer())

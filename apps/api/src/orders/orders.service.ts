@@ -13,6 +13,7 @@ import type {
 } from '@marketplace/shared';
 import type { SubOrderStatus } from '@prisma/client';
 import { BusinessesService } from '../businesses/businesses.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutDto } from './dto/orders.dto';
 import {
@@ -65,6 +66,7 @@ export class OrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly businesses: BusinessesService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   // Crea la orden (PENDING_PAYMENT) desde el carrito y lo vacía.
@@ -251,7 +253,33 @@ export class OrdersService {
       throw err;
     }
 
+    // avisar a cada vendedor que vendió (best-effort)
+    await this.notifySellersOfSale(order.subOrders);
+
     return this.getMyOrder(userId, orderId);
+  }
+
+  private async notifySellersOfSale(
+    subOrders: { businessId: string; items: { titleSnapshot: string }[] }[],
+  ): Promise<void> {
+    const businessIds = [...new Set(subOrders.map((s) => s.businessId))];
+    const businesses = await this.prisma.business.findMany({
+      where: { id: { in: businessIds } },
+      select: { id: true, ownerId: true },
+    });
+    const ownerOf = new Map(businesses.map((b) => [b.id, b.ownerId]));
+    for (const sub of subOrders) {
+      const ownerId = ownerOf.get(sub.businessId);
+      if (!ownerId) continue;
+      const titles = sub.items.map((i) => i.titleSnapshot).join(', ');
+      await this.notifications.notify({
+        userId: ownerId,
+        type: 'SALE',
+        title: '¡Vendiste un producto!',
+        body: titles,
+        link: '/vender/ventas',
+      });
+    }
   }
 
   // El comprador cancela una orden que todavía no pagó.
@@ -380,7 +408,7 @@ export class OrdersService {
     const business = await this.businesses.findMine(userId);
     const subOrder = await this.prisma.subOrder.findUnique({
       where: { id: subOrderId },
-      include: { order: { select: { status: true } } },
+      include: { order: { select: { status: true, id: true, buyerId: true } } },
     });
     if (!subOrder || subOrder.businessId !== business.id) {
       throw new NotFoundException({
@@ -406,6 +434,24 @@ export class OrdersService {
       data: { status },
       include: SELLER_SUB_ORDER_INCLUDE,
     });
+
+    // avisar al comprador del nuevo estado
+    await this.notifications.notify({
+      userId: subOrder.order.buyerId,
+      type: 'ORDER_STATUS',
+      title: STATUS_NOTICE[status],
+      body: `${business.name}`,
+      link: `/compras/${subOrder.order.id}`,
+    });
+
     return toSellerSubOrderDto(updated);
   }
 }
+
+const STATUS_NOTICE: Record<SubOrderStatus, string> = {
+  PENDING: 'Tu compra está pendiente',
+  CONFIRMED: 'El vendedor confirmó tu compra',
+  SHIPPED: 'Tu compra fue enviada',
+  DELIVERED: 'Tu compra fue entregada',
+  CANCELLED: 'El vendedor canceló tu compra',
+};

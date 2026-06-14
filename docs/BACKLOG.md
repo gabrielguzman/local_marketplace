@@ -106,11 +106,13 @@ moderación, métricas con serie temporal de 14 días en el panel, ABM de catego
 ## 12. Emails y notificaciones
 
 **Hecho:** EmailService con abstracción lista para swap (hoy loguea a consola) +
-email de verificación.
+email de verificación; **notificaciones in-app** (campanita con contador en el
+header + página /notificaciones) que se emiten en venta, cambio de estado del
+envío, pregunta al vendedor, respuesta a la pregunta y respuesta del vendedor a
+una reseña.
 
 - 🔴 **Proveedor real (Resend)** — sin esto la verificación y el reset de password no llegan a nadie.
-- 🟠 Transaccionales del flujo de compra: confirmación al comprador, aviso de venta al vendedor, cambios de estado de envío.
-- 🟢 Notificaciones in-app (campanita).
+- 🟠 Espejar las notificaciones in-app como emails transaccionales (depende de Resend).
 - 🟢 Preferencias de notificación por usuario.
 
 ## 13. Frontend general

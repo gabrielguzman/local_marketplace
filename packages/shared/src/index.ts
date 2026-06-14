@@ -458,6 +458,32 @@ export interface SellerDashboard {
   recentSales: SellerSubOrderDto[];
 }
 
+// ── Notificaciones ───────────────────────────────────────
+
+export const NOTIFICATION_TYPES = [
+  'SALE',
+  'ORDER_STATUS',
+  'QUESTION',
+  'QUESTION_ANSWERED',
+  'REVIEW_REPLY',
+] as const;
+export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
+
+export interface NotificationDto {
+  id: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  link: string | null;
+  read: boolean;
+  createdAt: string;
+}
+
+export interface NotificationsResponse {
+  items: NotificationDto[];
+  unreadCount: number;
+}
+
 // ── Convenciones de la API ───────────────────────────────
 
 export interface ApiError {
