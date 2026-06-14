@@ -51,6 +51,15 @@ export class ProductsController {
     );
   }
 
+  @Post(':id/duplicate')
+  @UseGuards(JwtAuthGuard)
+  async duplicate(
+    @CurrentUser() user: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<ProductDetailDto> {
+    return toProductDetailDto(await this.products.duplicate(user.sub, id));
+  }
+
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
   async update(

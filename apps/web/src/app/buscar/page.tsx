@@ -70,6 +70,14 @@ export default async function SearchPage({
     apiFetch<string[]>(`/search/brands${brandsQuery}`).catch(() => []),
   ]);
 
+  // Si no hay resultados, ofrecemos lo más vendido para no dejar la página vacía.
+  const suggestions =
+    results.items.length === 0
+      ? await apiFetch<ProductSummaryDto[]>('/search/best-sellers').catch(
+          () => [],
+        )
+      : [];
+
   const activeCategory = categories.find((c) => c.slug === params.category);
   const hasFilters = Boolean(
     params.q ||
@@ -311,6 +319,18 @@ export default async function SearchPage({
               <Link href="/buscar" className="btn-secondary mt-5">
                 Quitar filtros
               </Link>
+            )}
+            {suggestions.length > 0 && (
+              <div className="mt-10 text-left">
+                <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-zinc-400">
+                  Quizás te interese
+                </h2>
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                  {suggestions.map((product) => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         ) : (

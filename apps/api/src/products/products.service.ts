@@ -83,6 +83,50 @@ export class ProductsService {
     });
   }
 
+  // Clona un producto como borrador: copia ficha, variantes (stock en 0) e
+  // imágenes. Útil para publicar productos parecidos sin cargar todo de nuevo.
+  async duplicate(
+    userId: string,
+    productId: string,
+  ): Promise<ProductWithRelations> {
+    await this.assertOwnership(userId, productId);
+    const source = await this.prisma.product.findUniqueOrThrow({
+      where: { id: productId },
+      include: { variants: { orderBy: { isDefault: 'desc' } }, images: true },
+    });
+
+    const title = `${source.title} (copia)`;
+    return this.prisma.product.create({
+      data: {
+        businessId: source.businessId,
+        categoryId: source.categoryId,
+        title,
+        description: source.description,
+        brand: source.brand,
+        condition: source.condition,
+        specs: source.specs as unknown as Prisma.InputJsonValue,
+        slug: await this.uniqueSlug(title),
+        status: 'DRAFT',
+        variants: {
+          create: source.variants.map((v, i) => ({
+            sku: v.sku ? `${v.sku}-copia` : null,
+            attributes: v.attributes as unknown as Prisma.InputJsonValue,
+            priceCents: v.priceCents,
+            stock: 0,
+            isDefault: i === 0,
+          })),
+        },
+        images: {
+          create: source.images.map((img) => ({
+            url: img.url,
+            position: img.position,
+          })),
+        },
+      },
+      include: DETAIL_INCLUDE,
+    });
+  }
+
   async findPublicBySlug(slug: string): Promise<ProductWithRelations> {
     const product = await this.prisma.product.findUnique({
       where: { slug },

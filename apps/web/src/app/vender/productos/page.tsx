@@ -6,7 +6,10 @@ import { DeleteProductButton } from '@/components/delete-product-button';
 import { Pagination } from '@/components/pagination';
 import { authFetch } from '@/lib/api';
 import { formatPrice } from '@/lib/format';
-import { setProductStatusAction } from '@/lib/seller-actions';
+import {
+  duplicateProductAction,
+  setProductStatusAction,
+} from '@/lib/seller-actions';
 import { getAccessToken } from '@/lib/session';
 
 export const metadata: Metadata = { title: 'Mis productos' };
@@ -154,6 +157,19 @@ export default async function SellerProductsPage({
                             </button>
                           </form>
                         )}
+                        <form action={duplicateProductAction}>
+                          <input
+                            type="hidden"
+                            name="productId"
+                            value={product.id}
+                          />
+                          <button
+                            type="submit"
+                            className="text-xs text-zinc-500 hover:text-zinc-900 hover:underline"
+                          >
+                            Duplicar
+                          </button>
+                        </form>
                         <DeleteProductButton productId={product.id} />
                       </div>
                     </td>

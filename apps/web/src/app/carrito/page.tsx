@@ -44,6 +44,9 @@ export default async function CartPage() {
   }
 
   const groups = groupByBusiness(cart.items);
+  const hasStockIssue = cart.items.some(
+    (i) => i.variant.stock === 0 || i.quantity > i.variant.stock,
+  );
 
   return (
     <div className="space-y-6">
@@ -105,6 +108,22 @@ export default async function CartPage() {
                           </button>
                         </form>
                       </div>
+
+                      {item.variant.stock === 0 ? (
+                        <p className="mt-2 text-xs font-medium text-red-600">
+                          Sin stock — quitalo para continuar.
+                        </p>
+                      ) : item.quantity > item.variant.stock ? (
+                        <p className="mt-2 text-xs font-medium text-red-600">
+                          Solo quedan {item.variant.stock}. Ajustá la cantidad.
+                        </p>
+                      ) : (
+                        item.variant.stock <= 5 && (
+                          <p className="mt-2 text-xs font-medium text-amber-600">
+                            ¡Últimas {item.variant.stock} unidades!
+                          </p>
+                        )
+                      )}
                     </div>
 
                     <p className="shrink-0 text-sm font-bold">
@@ -140,9 +159,25 @@ export default async function CartPage() {
                 <dd>{formatPrice(cart.totalCents, cart.currency)}</dd>
               </div>
             </dl>
-            <Link href="/checkout" className="btn-primary mt-5 w-full">
-              Continuar compra
-            </Link>
+            {hasStockIssue ? (
+              <>
+                <p className="mt-5 text-xs text-red-600">
+                  Hay productos sin stock o con cantidad mayor a la disponible.
+                  Ajustalos para continuar.
+                </p>
+                <button
+                  type="button"
+                  disabled
+                  className="btn-primary mt-2 w-full cursor-not-allowed opacity-50"
+                >
+                  Continuar compra
+                </button>
+              </>
+            ) : (
+              <Link href="/checkout" className="btn-primary mt-5 w-full">
+                Continuar compra
+              </Link>
+            )}
           </div>
         </aside>
       </div>

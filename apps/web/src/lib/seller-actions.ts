@@ -189,6 +189,23 @@ export async function setProductStatusAction(
   revalidatePath('/vender');
 }
 
+export async function duplicateProductAction(
+  formData: FormData,
+): Promise<void> {
+  const token = await getAccessToken();
+  if (!token) redirect('/login');
+
+  const created = await authFetch<{ id: string }>(
+    token,
+    `/products/${String(formData.get('productId'))}/duplicate`,
+    { method: 'POST' },
+  ).catch(() => null);
+
+  revalidatePath('/vender/productos');
+  if (created) redirect(`/vender/productos/${created.id}/editar`);
+  redirect('/vender/productos');
+}
+
 export async function deleteProductAction(formData: FormData): Promise<void> {
   const token = await getAccessToken();
   if (!token) redirect('/login');
