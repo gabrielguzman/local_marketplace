@@ -56,4 +56,16 @@ export class CheckoutDto {
 export class UpdateSubOrderStatusDto {
   @IsIn(['CONFIRMED', 'SHIPPED', 'DELIVERED', 'CANCELLED'])
   status!: 'CONFIRMED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+
+  // al marcar enviada
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  trackingCode?: string;
+
+  // al cancelar
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  cancelReason?: string;
 }

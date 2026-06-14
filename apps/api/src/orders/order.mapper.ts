@@ -65,6 +65,8 @@ function toSubOrderDto(
     subtotalCents: subOrder.subtotalCents,
     shippingMethod: subOrder.shippingMethod,
     shippingCents: subOrder.shippingCents,
+    trackingCode: subOrder.trackingCode,
+    cancelReason: subOrder.cancelReason,
     business: subOrder.business,
     items: subOrder.items.map(toOrderItemDto),
   };
@@ -93,6 +95,8 @@ export function toSellerSubOrderDto(
     subtotalCents: subOrder.subtotalCents,
     shippingMethod: subOrder.shippingMethod,
     shippingCents: subOrder.shippingCents,
+    trackingCode: subOrder.trackingCode,
+    cancelReason: subOrder.cancelReason,
     business: subOrder.business,
     items: subOrder.items.map(toOrderItemDto),
     orderId: subOrder.order.id,

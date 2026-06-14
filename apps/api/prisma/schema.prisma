@@ -419,6 +419,8 @@ model SubOrder {
   subtotalCents  Int // sólo productos (sin envío)
   shippingMethod ShippingMethod @default(TO_AGREE)
   shippingCents  Int            @default(0)
+  trackingCode   String? // número de seguimiento (al marcar enviada)
+  cancelReason   String? // motivo si el vendedor la cancela
 
   order    Order       @relation(fields: [orderId], references: [id])
   business Business    @relation(fields: [businessId], references: [id])

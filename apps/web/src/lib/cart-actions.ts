@@ -148,6 +148,8 @@ export async function updateSaleStatusAction(
   const token = await getAccessToken();
   if (!token) redirect('/login');
 
+  const trackingCode = String(formData.get('trackingCode') ?? '').trim();
+  const cancelReason = String(formData.get('cancelReason') ?? '').trim();
   try {
     await authFetch(
       token,
@@ -155,7 +157,11 @@ export async function updateSaleStatusAction(
       {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: String(formData.get('status')) }),
+        body: JSON.stringify({
+          status: String(formData.get('status')),
+          ...(trackingCode && { trackingCode }),
+          ...(cancelReason && { cancelReason }),
+        }),
       },
     );
   } catch (err) {

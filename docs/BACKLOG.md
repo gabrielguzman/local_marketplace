@@ -64,11 +64,14 @@ después) con página propia y corazón en el detalle.
 **Hecho:** checkout transaccional con sub-órdenes por negocio y snapshots, **método
 de envío por tienda con costo que impacta el total**, pago simulado con descuento
 atómico de stock y auto-cancelación, estados del vendedor con transiciones validadas,
-vistas comprador/vendedor, cancelación de orden impaga, línea de tiempo del envío.
+**número de seguimiento al enviar y motivo al cancelar** (visibles para el comprador
++ notificación), vistas comprador/vendedor, cancelación de orden impaga, línea de
+tiempo del envío.
 
 - 🔴 **MercadoPago Checkout Pro + webhook idempotente** — reemplaza el pago simulado; la arquitectura ya le dejó el lugar.
 - 🔴 **Comisión de la plataforma** — no existe ningún fee. Decidir modelo (% por venta es lo estándar) y agregar `feeCents` a SubOrder calculado al crear la orden.
-- 🟢 Reembolsos (el estado REFUNDED existe sin flujo).
+- 🟢 Reembolsos (el estado REFUNDED existe sin flujo) — va con la integración de pagos.
+- 🟢 Mensajería comprador↔vendedor sobre una orden (post-venta, fase 2).
 - 🟢 Limpieza/expiración de órdenes PENDING_PAYMENT viejas.
 
 ## 8. Pagos y monetización (módulo inexistente)

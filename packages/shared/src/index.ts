@@ -268,6 +268,8 @@ export interface SubOrderDto {
   subtotalCents: number; // sólo productos
   shippingMethod: ShippingMethod;
   shippingCents: number;
+  trackingCode: string | null;
+  cancelReason: string | null;
   business: { id: string; name: string; slug: string };
   items: OrderItemDto[];
 }

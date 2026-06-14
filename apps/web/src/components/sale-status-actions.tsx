@@ -29,16 +29,43 @@ export function SaleStatusActions({
             key={action.status}
             action={formAction}
             onSubmit={(e) => {
-              if (
-                action.status === 'CANCELLED' &&
-                !confirm('¿Cancelar esta venta? Avisale al comprador.')
-              ) {
-                e.preventDefault();
+              const form = e.currentTarget;
+              if (action.status === 'SHIPPED') {
+                const code = prompt(
+                  'Número de seguimiento (opcional, podés dejarlo vacío):',
+                  '',
+                );
+                if (code === null) {
+                  e.preventDefault();
+                  return;
+                }
+                (
+                  form.querySelector(
+                    'input[name="trackingCode"]',
+                  ) as HTMLInputElement
+                ).value = code.trim();
+              }
+              if (action.status === 'CANCELLED') {
+                const reason = prompt(
+                  '¿Por qué cancelás la venta? (el comprador lo va a ver)',
+                  '',
+                );
+                if (reason === null || reason.trim() === '') {
+                  e.preventDefault();
+                  return;
+                }
+                (
+                  form.querySelector(
+                    'input[name="cancelReason"]',
+                  ) as HTMLInputElement
+                ).value = reason.trim();
               }
             }}
           >
             <input type="hidden" name="subOrderId" value={subOrderId} />
             <input type="hidden" name="status" value={action.status} />
+            <input type="hidden" name="trackingCode" value="" />
+            <input type="hidden" name="cancelReason" value="" />
             <button
               type="submit"
               disabled={pending}

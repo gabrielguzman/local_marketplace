@@ -158,6 +158,17 @@ export default async function OrderDetailPage({
                   <OrderTimeline status={subOrder.status} />
                 </div>
               )}
+              {subOrder.trackingCode && (
+                <p className="border-t border-zinc-100 px-5 py-2.5 text-sm text-zinc-600">
+                  📦 Seguimiento:{' '}
+                  <strong className="font-mono">{subOrder.trackingCode}</strong>
+                </p>
+              )}
+              {subOrder.cancelReason && (
+                <p className="border-t border-zinc-100 bg-red-50/40 px-5 py-2.5 text-sm text-red-700">
+                  Cancelada: {subOrder.cancelReason}
+                </p>
+              )}
               <div className="flex items-center justify-between border-t border-zinc-100 px-5 py-3 text-sm text-zinc-500">
                 <span>
                   {SHIPPING_METHOD_LABELS[subOrder.shippingMethod]}

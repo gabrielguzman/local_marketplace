@@ -237,14 +237,35 @@ describe('Cart & Orders (e2e)', () => {
       .send({ status: 'SHIPPED' })
       .expect(409);
 
-    for (const status of ['CONFIRMED', 'SHIPPED', 'DELIVERED'] as const) {
-      const res = await request(app.getHttpServer())
-        .patch(`/suborders/${subOrderId}/status`)
-        .set('Authorization', `Bearer ${seller1Token}`)
-        .send({ status })
-        .expect(200);
-      expect((res.body as SellerSubOrderDto).status).toBe(status);
-    }
+    // CONFIRMED, luego SHIPPED con número de seguimiento
+    await request(app.getHttpServer())
+      .patch(`/suborders/${subOrderId}/status`)
+      .set('Authorization', `Bearer ${seller1Token}`)
+      .send({ status: 'CONFIRMED' })
+      .expect(200);
+    const shipped = await request(app.getHttpServer())
+      .patch(`/suborders/${subOrderId}/status`)
+      .set('Authorization', `Bearer ${seller1Token}`)
+      .send({ status: 'SHIPPED', trackingCode: 'CA123456789AR' })
+      .expect(200);
+    expect((shipped.body as SellerSubOrderDto).trackingCode).toBe(
+      'CA123456789AR',
+    );
+    await request(app.getHttpServer())
+      .patch(`/suborders/${subOrderId}/status`)
+      .set('Authorization', `Bearer ${seller1Token}`)
+      .send({ status: 'DELIVERED' })
+      .expect(200);
+
+    // el comprador ve el número de seguimiento en su orden
+    const detail = await request(app.getHttpServer())
+      .get(`/orders/${orderId}`)
+      .set('Authorization', `Bearer ${buyerToken}`)
+      .expect(200);
+    expect(
+      (detail.body as OrderDto).subOrders.find((s) => s.id === subOrderId)
+        ?.trackingCode,
+    ).toBe('CA123456789AR');
   });
 
   it('el comprador ve su orden con los snapshots', async () => {

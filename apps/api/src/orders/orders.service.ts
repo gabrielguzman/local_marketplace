@@ -404,6 +404,7 @@ export class OrdersService {
     userId: string,
     subOrderId: string,
     status: SubOrderStatus,
+    opts: { trackingCode?: string; cancelReason?: string } = {},
   ): Promise<SellerSubOrderDto> {
     const business = await this.businesses.findMine(userId);
     const subOrder = await this.prisma.subOrder.findUnique({
@@ -431,16 +432,28 @@ export class OrdersService {
 
     const updated = await this.prisma.subOrder.update({
       where: { id: subOrderId },
-      data: { status },
+      data: {
+        status,
+        ...(status === 'SHIPPED' &&
+          opts.trackingCode && { trackingCode: opts.trackingCode }),
+        ...(status === 'CANCELLED' &&
+          opts.cancelReason && { cancelReason: opts.cancelReason }),
+      },
       include: SELLER_SUB_ORDER_INCLUDE,
     });
 
-    // avisar al comprador del nuevo estado
+    // avisar al comprador del nuevo estado (con tracking o motivo)
+    const extra =
+      status === 'SHIPPED' && opts.trackingCode
+        ? `Seguimiento: ${opts.trackingCode}`
+        : status === 'CANCELLED' && opts.cancelReason
+          ? `Motivo: ${opts.cancelReason}`
+          : business.name;
     await this.notifications.notify({
       userId: subOrder.order.buyerId,
       type: 'ORDER_STATUS',
       title: STATUS_NOTICE[status],
-      body: `${business.name}`,
+      body: extra,
       link: `/compras/${subOrder.order.id}`,
     });
 

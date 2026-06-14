@@ -82,6 +82,9 @@ export class OrdersController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateSubOrderStatusDto,
   ): Promise<SellerSubOrderDto> {
-    return this.orders.updateSubOrderStatus(user.sub, id, dto.status);
+    return this.orders.updateSubOrderStatus(user.sub, id, dto.status, {
+      trackingCode: dto.trackingCode,
+      cancelReason: dto.cancelReason,
+    });
   }
 }
