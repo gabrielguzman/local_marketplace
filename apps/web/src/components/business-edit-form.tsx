@@ -39,31 +39,35 @@ export function BusinessEditForm({ business }: { business: BusinessDto }) {
         />
       </label>
 
-      <label className="block">
-        <span className="field-label">
-          URL del logo <span className="font-normal text-zinc-400">(opcional)</span>
-        </span>
-        <input
-          name="logoUrl"
-          type="url"
-          defaultValue={business.logoUrl ?? ''}
-          placeholder="https://…"
-          className="field-input"
-        />
-      </label>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="block">
+          <span className="field-label">
+            URL del logo{' '}
+            <span className="font-normal text-zinc-400">(opcional)</span>
+          </span>
+          <input
+            name="logoUrl"
+            type="url"
+            defaultValue={business.logoUrl ?? ''}
+            placeholder="https://…"
+            className="field-input"
+          />
+        </label>
 
-      <label className="block">
-        <span className="field-label">
-          URL del banner <span className="font-normal text-zinc-400">(opcional)</span>
-        </span>
-        <input
-          name="bannerUrl"
-          type="url"
-          defaultValue={business.bannerUrl ?? ''}
-          placeholder="https://…"
-          className="field-input"
-        />
-      </label>
+        <label className="block">
+          <span className="field-label">
+            URL del banner{' '}
+            <span className="font-normal text-zinc-400">(opcional)</span>
+          </span>
+          <input
+            name="bannerUrl"
+            type="url"
+            defaultValue={business.bannerUrl ?? ''}
+            placeholder="https://…"
+            className="field-input"
+          />
+        </label>
+      </div>
 
       <fieldset className="space-y-4 border-t border-zinc-100 pt-5">
         <legend className="text-sm font-bold tracking-tight">Contacto</legend>
@@ -233,9 +237,15 @@ export function BusinessEditForm({ business }: { business: BusinessDto }) {
         </p>
       )}
 
-      <button type="submit" disabled={pending} className="btn-primary w-full">
-        {pending ? 'Guardando…' : 'Guardar cambios'}
-      </button>
+      <div className="border-t border-zinc-100 pt-5">
+        <button
+          type="submit"
+          disabled={pending}
+          className="btn-primary w-full sm:w-auto sm:px-10"
+        >
+          {pending ? 'Guardando…' : 'Guardar cambios'}
+        </button>
+      </div>
     </form>
   );
 }
