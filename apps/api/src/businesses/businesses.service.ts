@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import type { RatingSummary } from '@marketplace/shared';
+import type { BusinessStats, RatingSummary } from '@marketplace/shared';
 import type { Business } from '@prisma/client';
 import { slugify } from '../common/slug';
 import { PrismaService } from '../prisma/prisma.service';
@@ -96,6 +96,20 @@ export class BusinessesService {
       avg: agg._avg.rating === null ? null : Number(agg._avg.rating.toFixed(1)),
       count: agg._count,
     };
+  }
+
+  // Métricas públicas: productos activos y ventas concretadas (sub-órdenes
+  // entregadas). Se muestran en el perfil de la tienda.
+  async publicStats(businessId: string): Promise<BusinessStats> {
+    const [productCount, salesCount] = await this.prisma.$transaction([
+      this.prisma.product.count({
+        where: { businessId, status: 'ACTIVE' },
+      }),
+      this.prisma.subOrder.count({
+        where: { businessId, status: 'DELIVERED' },
+      }),
+    ]);
+    return { productCount, salesCount };
   }
 
   private async uniqueSlug(name: string): Promise<string> {

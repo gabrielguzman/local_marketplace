@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import type { AuditLogDto, Page } from '@marketplace/shared';
@@ -17,19 +18,30 @@ const TARGET_LABEL: Record<string, string> = {
   REPORT: 'Denuncia',
 };
 
+const FILTERS: { value?: string; label: string }[] = [
+  { value: undefined, label: 'Todo' },
+  { value: 'USER', label: 'Usuarios' },
+  { value: 'PRODUCT', label: 'Productos' },
+  { value: 'BUSINESS', label: 'Negocios' },
+  { value: 'REPORT', label: 'Denuncias' },
+];
+
 export default async function AdminAuditPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; type?: string }>;
 }) {
   const token = await getAccessToken();
   if (!token) redirect('/login');
 
-  const { page } = await searchParams;
-  const query = page ? `?page=${page}` : '';
+  const { page, type } = await searchParams;
+  const query = new URLSearchParams();
+  if (page) query.set('page', page);
+  if (type) query.set('targetType', type);
+  const qs = query.toString();
   const result = await authFetch<Page<AuditLogDto>>(
     token,
-    `/admin/audit${query}`,
+    `/admin/audit${qs ? `?${qs}` : ''}`,
   ).catch(() => EMPTY);
   const logs = result.items;
 
@@ -41,6 +53,26 @@ export default async function AdminAuditPage({
           ({result.total})
         </span>
       </h1>
+
+      <div className="flex flex-wrap gap-1.5 text-xs">
+        {FILTERS.map((f) => {
+          const active = (type ?? undefined) === f.value;
+          const href = f.value ? `/admin/auditoria?type=${f.value}` : '/admin/auditoria';
+          return (
+            <Link
+              key={f.label}
+              href={href}
+              className={`rounded-full border px-3 py-1 transition ${
+                active
+                  ? 'border-brand-500 bg-brand-50 font-semibold text-brand-700'
+                  : 'border-zinc-200 text-zinc-600 hover:border-brand-300'
+              }`}
+            >
+              {f.label}
+            </Link>
+          );
+        })}
+      </div>
 
       <div className="surface-card overflow-x-auto">
         <table className="w-full text-sm">
@@ -86,6 +118,7 @@ export default async function AdminAuditPage({
         page={result.page}
         pageSize={result.pageSize}
         total={result.total}
+        params={type ? { type } : undefined}
       />
     </div>
   );

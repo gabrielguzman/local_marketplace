@@ -499,11 +499,16 @@ export class AdminService {
     );
   }
 
-  async listAudit(page?: number): Promise<Page<AuditLogDto>> {
+  async listAudit(
+    page?: number,
+    targetType?: string,
+  ): Promise<Page<AuditLogDto>> {
     const { page: current, skip, take } = paging(page);
+    const where = targetType ? { targetType } : {};
     const [total, logs] = await this.prisma.$transaction([
-      this.prisma.auditLog.count(),
+      this.prisma.auditLog.count({ where }),
       this.prisma.auditLog.findMany({
+        where,
         include: { actor: { select: { name: true } } },
         orderBy: { createdAt: 'desc' },
         skip,

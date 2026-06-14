@@ -48,9 +48,10 @@ export class BusinessesController {
   @Get(':slug')
   async bySlug(@Param('slug') slug: string): Promise<BusinessDto> {
     const business = await this.businesses.findBySlug(slug);
-    return toBusinessDto(
-      business,
-      await this.businesses.ratingFor(business.id),
-    );
+    const [rating, stats] = await Promise.all([
+      this.businesses.ratingFor(business.id),
+      this.businesses.publicStats(business.id),
+    ]);
+    return toBusinessDto(business, rating, stats);
   }
 }

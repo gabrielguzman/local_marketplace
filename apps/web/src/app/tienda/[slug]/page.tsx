@@ -90,6 +90,53 @@ export default async function BusinessPage({
             ● Tienda activa
           </span>
         </div>
+
+        <dl className="flex flex-wrap gap-x-8 gap-y-2 border-t border-zinc-100 px-6 py-4 text-sm">
+          {business.rating.avg !== null && (
+            <div className="flex items-baseline gap-1.5">
+              <dt className="font-bold text-zinc-900">
+                <span className="text-amber-500">★</span> {business.rating.avg}
+              </dt>
+              <dd className="text-zinc-400">
+                ({business.rating.count}{' '}
+                {business.rating.count === 1 ? 'reseña' : 'reseñas'})
+              </dd>
+            </div>
+          )}
+          {business.stats && (
+            <>
+              <div className="flex items-baseline gap-1.5">
+                <dt className="font-bold text-zinc-900">
+                  {business.stats.productCount}
+                </dt>
+                <dd className="text-zinc-400">
+                  {business.stats.productCount === 1
+                    ? 'producto'
+                    : 'productos'}
+                </dd>
+              </div>
+              <div className="flex items-baseline gap-1.5">
+                <dt className="font-bold text-zinc-900">
+                  {business.stats.salesCount}
+                </dt>
+                <dd className="text-zinc-400">
+                  {business.stats.salesCount === 1
+                    ? 'venta concretada'
+                    : 'ventas concretadas'}
+                </dd>
+              </div>
+            </>
+          )}
+          <div className="flex items-baseline gap-1.5">
+            <dt className="text-zinc-400">En Mercato desde</dt>
+            <dd className="font-medium text-zinc-700">
+              {new Date(business.createdAt).toLocaleDateString('es-AR', {
+                month: 'long',
+                year: 'numeric',
+              })}
+            </dd>
+          </div>
+        </dl>
       </section>
 
       <div className="grid gap-8 lg:grid-cols-[1fr_300px]">

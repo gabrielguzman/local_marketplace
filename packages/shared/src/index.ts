@@ -127,6 +127,13 @@ export interface BusinessDto {
   status: BusinessStatus;
   rating: RatingSummary;
   createdAt: string;
+  stats?: BusinessStats;
+}
+
+// Métricas públicas que se muestran en el perfil de la tienda
+export interface BusinessStats {
+  productCount: number;
+  salesCount: number;
 }
 
 // ── Catálogo ─────────────────────────────────────────────

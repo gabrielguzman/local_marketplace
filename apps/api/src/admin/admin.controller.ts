@@ -80,6 +80,12 @@ class PageQuery {
   page?: number;
 }
 
+class AuditQuery extends PageQuery {
+  @IsOptional()
+  @IsIn(['USER', 'PRODUCT', 'BUSINESS', 'REPORT'])
+  targetType?: string;
+}
+
 class SetRoleDto {
   @IsIn(['USER', 'ADMIN'])
   role!: 'USER' | 'ADMIN';
@@ -205,8 +211,8 @@ export class AdminController {
   }
 
   @Get('audit')
-  audit(@Query() query: PageQuery): Promise<Page<AuditLogDto>> {
-    return this.admin.listAudit(query.page);
+  audit(@Query() query: AuditQuery): Promise<Page<AuditLogDto>> {
+    return this.admin.listAudit(query.page, query.targetType);
   }
 
   @Get('metrics')
