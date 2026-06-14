@@ -13,6 +13,7 @@ import { BuyBox } from '@/components/add-to-cart';
 import { FavoriteButton } from '@/components/favorite-button';
 import { ProductCard } from '@/components/product-card';
 import { QuestionsSection } from '@/components/questions-section';
+import { RatingBars } from '@/components/rating-bars';
 import { ReportButton } from '@/components/report-button';
 import { ReviewItem } from '@/components/review-item';
 import { Stars } from '@/components/stars';
@@ -222,17 +223,18 @@ export default async function ProductPage({
 
           {/* Reseñas */}
           <section className="surface-card p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-base font-bold tracking-tight">Reseñas</h2>
-              <Stars rating={product.rating} />
-            </div>
+            <h2 className="mb-4 text-base font-bold tracking-tight">Reseñas</h2>
             {reviews.length === 0 ? (
               <p className="text-sm text-zinc-500">
                 Este producto todavía no tiene reseñas. Comprálo y sé el
                 primero en opinar.
               </p>
             ) : (
-              <ul className="divide-y divide-zinc-100">
+              <>
+                <div className="mb-5 border-b border-zinc-100 pb-5">
+                  <RatingBars rating={product.rating} reviews={reviews} />
+                </div>
+                <ul className="divide-y divide-zinc-100">
                 {reviews.map((review) => (
                   <ReviewItem
                     key={review.id}
@@ -243,7 +245,8 @@ export default async function ProductPage({
                     canReport={Boolean(currentUser)}
                   />
                 ))}
-              </ul>
+                </ul>
+              </>
             )}
           </section>
 

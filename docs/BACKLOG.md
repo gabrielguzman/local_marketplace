@@ -46,9 +46,9 @@ alertas de stock, selector de variante y cantidad en la página pública.
 ## 5. Búsqueda
 
 **Hecho:** full-text en español con índice GIN, filtros por categoría (incluye hijas),
-precio, negocio, calificación y condición (nuevo/usado), paginación por cursor,
-ordenamiento por recientes / precio asc-desc / relevancia (`ts_rank`), autocompletado,
-indexado de marca + atributos de variantes + ficha técnica en el full-text.
+precio, negocio, calificación, condición (nuevo/usado) y **marca (faceta con chips)**,
+paginación por cursor, ordenamiento por recientes / precio asc-desc / relevancia
+(`ts_rank`), autocompletado, indexado de marca + atributos de variantes + ficha técnica.
 
 - 🟢 Tolerancia a typos y sinónimos (la puerta a Meilisearch si el negocio lo pide).
 
@@ -64,8 +64,8 @@ después) con página propia y corazón en el detalle.
 **Hecho:** checkout transaccional con sub-órdenes por negocio y snapshots, **método
 de envío por tienda con costo que impacta el total**, pago simulado con descuento
 atómico de stock y auto-cancelación, estados del vendedor con transiciones validadas,
-**número de seguimiento al enviar y motivo al cancelar** (visibles para el comprador
-+ notificación), vistas comprador/vendedor, cancelación de orden impaga, línea de
+**número de seguimiento al enviar y motivo al cancelar** (visibles para el comprador,
+con notificación), vistas comprador/vendedor, cancelación de orden impaga, línea de
 tiempo del envío.
 
 - 🔴 **MercadoPago Checkout Pro + webhook idempotente** — reemplaza el pago simulado; la arquitectura ya le dejó el lugar.
@@ -92,11 +92,12 @@ checkout el comprador elige el método por tienda y el costo impacta en el total
 
 ## 10. Reseñas y confianza
 
-**Hecho:** reseñas solo post-entrega (1 por producto/usuario), promedio en producto
-y tienda, estrellas en las cards de listado, denuncias tipificadas, verificación
-de email para vender, respuesta del vendedor a una reseña, editar/borrar la propia
-reseña, denunciar reseñas ofensivas (cola de moderación en admin), preguntas y
-respuestas en la publicación.
+**Hecho:** reseñas solo post-entrega (1 por producto/usuario, con badge "compra
+verificada"), promedio + **distribución de estrellas** en el detalle, estrellas en
+las cards de listado, denuncias tipificadas, verificación de email para vender,
+respuesta del vendedor a una reseña, editar/borrar la propia reseña, denunciar
+reseñas ofensivas (cola de moderación en admin), preguntas y respuestas en la
+publicación.
 
 ## 11. Admin y moderación
 

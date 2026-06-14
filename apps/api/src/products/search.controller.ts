@@ -22,4 +22,9 @@ export class SearchController {
   suggest(@Query('q') q?: string): Promise<SearchSuggestion[]> {
     return this.products.suggest(q ?? '');
   }
+
+  @Get('brands')
+  brands(@Query('category') category?: string): Promise<string[]> {
+    return this.products.brands(category);
+  }
 }

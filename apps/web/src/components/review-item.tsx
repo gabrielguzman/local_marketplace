@@ -70,6 +70,9 @@ export function ReviewItem({
             month: 'long',
           })}
         </span>
+        <span className="inline-flex items-center gap-0.5 rounded-full bg-green-50 px-1.5 py-0.5 text-[10px] font-semibold text-green-700">
+          ✓ Compra verificada
+        </span>
         {isMine && !editing && (
           <span className="ml-auto flex items-center gap-2 text-xs">
             <button

@@ -142,6 +142,23 @@ describe('Products (e2e)', () => {
         (p) => p.id === productId,
       ),
     ).toBe(false);
+
+    // faceta de marca: la lista la incluye y el filtro exacto la trae
+    const brands = await request(app.getHttpServer())
+      .get('/search/brands')
+      .query({ category: categorySlug })
+      .expect(200);
+    expect(brands.body as string[]).toContain('Bauker');
+
+    const byBrandFilter = await request(app.getHttpServer())
+      .get('/search')
+      .query({ category: categorySlug, brand: 'Bauker' })
+      .expect(200);
+    expect(
+      (byBrandFilter.body as Paginated<ProductSummaryDto>).items.some(
+        (p) => p.id === productId,
+      ),
+    ).toBe(true);
   });
 
   it('la página pública del producto funciona sin auth', async () => {

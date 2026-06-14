@@ -268,6 +268,32 @@ export class ProductsService {
     return products;
   }
 
+  // Marcas disponibles (faceta del buscador), opcionalmente por categoría
+  async brands(categorySlug?: string): Promise<string[]> {
+    const where: Prisma.ProductWhereInput = {
+      status: 'ACTIVE',
+      brand: { not: null },
+    };
+    if (categorySlug) {
+      const category = await this.prisma.category.findUnique({
+        where: { slug: categorySlug },
+        include: { children: { select: { id: true } } },
+      });
+      if (!category) return [];
+      where.categoryId = {
+        in: [category.id, ...category.children.map((c) => c.id)],
+      };
+    }
+    const rows = await this.prisma.product.findMany({
+      where,
+      select: { brand: true },
+      distinct: ['brand'],
+      orderBy: { brand: 'asc' },
+      take: 30,
+    });
+    return rows.map((r) => r.brand).filter((b): b is string => Boolean(b));
+  }
+
   async search(query: SearchQueryDto): Promise<Paginated<ProductSummaryDto>> {
     const limit = query.limit ?? 20;
     // 'relevance' solo tiene sentido con texto de búsqueda
@@ -315,6 +341,10 @@ export class ProductsService {
 
     if (query.condition) {
       where.condition = query.condition;
+    }
+
+    if (query.brand) {
+      where.brand = query.brand;
     }
 
     // filtro por calificación: productos cuyo promedio de reseñas ≥ minRating

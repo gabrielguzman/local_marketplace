@@ -34,6 +34,11 @@ export class SearchQueryDto {
   condition?: 'NEW' | 'USED';
 
   @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  brand?: string;
+
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(0)

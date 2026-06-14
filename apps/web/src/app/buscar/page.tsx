@@ -16,6 +16,7 @@ interface SearchParams {
   max?: string;
   rating?: string; // 1..5
   condition?: string; // NEW | USED
+  brand?: string;
   sort?: string;
   cursor?: string;
 }
@@ -29,6 +30,7 @@ function buildQuery(params: SearchParams, overrides: Partial<SearchParams> = {})
   if (merged.max) query.set('max', merged.max);
   if (merged.rating) query.set('rating', merged.rating);
   if (merged.condition) query.set('condition', merged.condition);
+  if (merged.brand) query.set('brand', merged.brand);
   if (merged.sort) query.set('sort', merged.sort);
   if (merged.cursor) query.set('cursor', merged.cursor);
   return query.toString();
@@ -52,15 +54,20 @@ export default async function SearchPage({
   }
   if (params.rating) apiQuery.set('minRating', params.rating);
   if (params.condition) apiQuery.set('condition', params.condition);
+  if (params.brand) apiQuery.set('brand', params.brand);
   if (params.sort) apiQuery.set('sort', params.sort);
   if (params.cursor) apiQuery.set('cursor', params.cursor);
 
-  const [categories, results] = await Promise.all([
+  const brandsQuery = params.category
+    ? `?category=${encodeURIComponent(params.category)}`
+    : '';
+  const [categories, results, brands] = await Promise.all([
     apiFetch<CategoryDto[]>('/categories').catch(() => []),
     apiFetch<Paginated<ProductSummaryDto>>(`/search?${apiQuery}`).catch(() => ({
       items: [],
       nextCursor: null,
     })),
+    apiFetch<string[]>(`/search/brands${brandsQuery}`).catch(() => []),
   ]);
 
   const activeCategory = categories.find((c) => c.slug === params.category);
@@ -70,7 +77,8 @@ export default async function SearchPage({
       params.min ||
       params.max ||
       params.rating ||
-      params.condition,
+      params.condition ||
+      params.brand,
   );
 
   return (
@@ -125,6 +133,9 @@ export default async function SearchPage({
             {params.condition && (
               <input type="hidden" name="condition" value={params.condition} />
             )}
+            {params.brand && (
+              <input type="hidden" name="brand" value={params.brand} />
+            )}
             <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
               Precio
             </h2>
@@ -149,6 +160,36 @@ export default async function SearchPage({
               Aplicar
             </button>
           </form>
+
+          {brands.length > 0 && (
+            <div>
+              <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-400">
+                Marca
+              </h2>
+              <ul className="space-y-0.5 text-sm">
+                {brands.map((b) => {
+                  const active = params.brand === b;
+                  return (
+                    <li key={b}>
+                      <Link
+                        href={`/buscar?${buildQuery(params, {
+                          brand: active ? undefined : b,
+                          cursor: undefined,
+                        })}`}
+                        className={`block rounded-md px-2.5 py-1.5 transition ${
+                          active
+                            ? 'bg-brand-50 font-semibold text-brand-700'
+                            : 'text-zinc-600 hover:bg-zinc-50'
+                        }`}
+                      >
+                        {b}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
 
           <div>
             <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-400">
