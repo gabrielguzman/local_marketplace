@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   Param,
@@ -15,6 +16,7 @@ import type {
   AdminOrderDetailDto,
   AdminOrderDto,
   AdminProductDto,
+  AdminReviewDto,
   AdminStats,
   AdminUserDto,
   AuditLogDto,
@@ -177,6 +179,29 @@ export class AdminController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<AdminOrderDetailDto> {
     return this.admin.getOrderDetail(id);
+  }
+
+  @Get('reviews/reported')
+  reportedReviews(): Promise<AdminReviewDto[]> {
+    return this.admin.listReportedReviews();
+  }
+
+  @Delete('reviews/:id')
+  @HttpCode(204)
+  async deleteReview(
+    @CurrentUser() admin: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<void> {
+    await this.admin.deleteReview(admin.sub, id);
+  }
+
+  @Delete('reviews/:id/reports')
+  @HttpCode(204)
+  async dismissReviewReports(
+    @CurrentUser() admin: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<void> {
+    await this.admin.dismissReviewReports(admin.sub, id);
   }
 
   @Get('audit')

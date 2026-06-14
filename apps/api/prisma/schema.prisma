@@ -47,8 +47,41 @@ model User {
   reports            Report[]
   auditLogs          AuditLog[]
   favorites          Favorite[]
+  questions          Question[]
+  reviewReports      ReviewReport[]
 
   @@map("users")
+}
+
+// Preguntas públicas sobre un producto; el vendedor responde.
+model Question {
+  id         String    @id @default(uuid())
+  productId  String
+  authorId   String
+  body       String
+  answer     String?
+  answeredAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  author  User    @relation(fields: [authorId], references: [id])
+
+  @@index([productId])
+  @@map("questions")
+}
+
+// Denuncia de una reseña ofensiva (1 por usuario y reseña).
+model ReviewReport {
+  id         String   @id @default(uuid())
+  reviewId   String
+  reporterId String
+  createdAt  DateTime @default(now())
+
+  review   Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  reporter User   @relation(fields: [reporterId], references: [id])
+
+  @@unique([reviewId, reporterId])
+  @@map("review_reports")
 }
 
 // Productos guardados por un usuario ("guardar para después")
@@ -207,6 +240,7 @@ model Product {
   reviews   Review[]
   reports   Report[]
   favorites Favorite[]
+  questions Question[]
 
   @@index([businessId])
   @@index([categoryId])
@@ -370,9 +404,10 @@ model Review {
   sellerResponse    String?
   sellerRespondedAt DateTime?
 
-  product  Product  @relation(fields: [productId], references: [id])
-  business Business @relation(fields: [businessId], references: [id])
-  author   User     @relation(fields: [authorId], references: [id])
+  product  Product        @relation(fields: [productId], references: [id])
+  business Business       @relation(fields: [businessId], references: [id])
+  author   User           @relation(fields: [authorId], references: [id])
+  reports  ReviewReport[]
 
   @@unique([productId, authorId]) // una reseña por usuario y producto
   @@index([businessId])

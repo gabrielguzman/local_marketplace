@@ -14,6 +14,7 @@ import { HealthModule } from './health/health.module';
 import { OrdersModule } from './orders/orders.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProductsModule } from './products/products.module';
+import { QuestionsModule } from './questions/questions.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { UsersModule } from './users/users.module';
 
@@ -38,6 +39,7 @@ import { UsersModule } from './users/users.module';
     CartModule,
     OrdersModule,
     ReviewsModule,
+    QuestionsModule,
     FavoritesModule,
     AdminModule,
   ],

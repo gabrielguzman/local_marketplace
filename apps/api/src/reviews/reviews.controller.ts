@@ -75,6 +75,19 @@ export class ReviewsController {
     return this.reviews.respond(user.sub, id, reviewId, dto);
   }
 
+  @Post('reviews/:reviewId/report')
+  @HttpCode(202)
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  async reportReview(
+    @CurrentUser() user: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('reviewId', ParseUUIDPipe) reviewId: string,
+  ): Promise<{ ok: true }> {
+    await this.reviews.reportReview(user.sub, id, reviewId);
+    return { ok: true };
+  }
+
   @Post('report')
   @HttpCode(202)
   @UseGuards(JwtAuthGuard)

@@ -9,6 +9,7 @@ import type {
   AdminOrderDetailDto,
   AdminOrderDto,
   AdminProductDto,
+  AdminReviewDto,
   AdminStats,
   AdminUserDto,
   AuditLogDto,
@@ -307,6 +308,63 @@ export class AdminService {
         createdAt: order.createdAt.toISOString(),
       })),
     };
+  }
+
+  // ── Moderación de reseñas denunciadas ────────────────────
+
+  async listReportedReviews(): Promise<AdminReviewDto[]> {
+    const reviews = await this.prisma.review.findMany({
+      where: { reports: { some: {} } },
+      include: {
+        author: { select: { name: true } },
+        product: { select: { title: true, slug: true } },
+        _count: { select: { reports: true } },
+      },
+      orderBy: { reports: { _count: 'desc' } },
+      take: 100,
+    });
+    return reviews.map((r) => ({
+      id: r.id,
+      rating: r.rating,
+      comment: r.comment,
+      authorName: r.author.name,
+      productTitle: r.product.title,
+      productSlug: r.product.slug,
+      reportCount: r._count.reports,
+      createdAt: r.createdAt.toISOString(),
+    }));
+  }
+
+  async deleteReview(adminId: string, reviewId: string): Promise<void> {
+    const review = await this.prisma.review.findUnique({
+      where: { id: reviewId },
+      select: { id: true },
+    });
+    if (!review) {
+      throw new NotFoundException({
+        code: 'REVIEW_NOT_FOUND',
+        message: 'Reseña no encontrada',
+      });
+    }
+    await this.prisma.review.delete({ where: { id: reviewId } });
+    await this.audit(
+      adminId,
+      'REVIEW_DELETE',
+      'REVIEW',
+      reviewId,
+      'Borró una reseña denunciada',
+    );
+  }
+
+  async dismissReviewReports(adminId: string, reviewId: string): Promise<void> {
+    await this.prisma.reviewReport.deleteMany({ where: { reviewId } });
+    await this.audit(
+      adminId,
+      'REVIEW_DISMISS',
+      'REVIEW',
+      reviewId,
+      'Desestimó las denuncias de una reseña',
+    );
   }
 
   async getOrderDetail(orderId: string): Promise<AdminOrderDetailDto> {

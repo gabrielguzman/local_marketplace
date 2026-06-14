@@ -88,10 +88,8 @@ por el comprador, línea de tiempo del envío en el detalle.
 **Hecho:** reseñas solo post-entrega (1 por producto/usuario), promedio en producto
 y tienda, estrellas en las cards de listado, denuncias tipificadas, verificación
 de email para vender, respuesta del vendedor a una reseña, editar/borrar la propia
-reseña.
-
-- 🟢 Reportar reseñas ofensivas.
-- 🟢 Preguntas y respuestas en la publicación (la "mensajería" de fase 2 — gran feature de conversión en ML).
+reseña, denunciar reseñas ofensivas (cola de moderación en admin), preguntas y
+respuestas en la publicación.
 
 ## 11. Admin y moderación
 

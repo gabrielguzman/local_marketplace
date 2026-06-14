@@ -7,6 +7,7 @@ import {
   deleteReviewAction,
   editReviewAction,
   replyReviewAction,
+  reportReviewAction,
 } from '@/lib/trust-actions';
 
 const initialState: ActionState = { error: null };
@@ -25,14 +26,17 @@ export function ReviewItem({
   productSlug,
   isMine,
   canReply,
+  canReport,
 }: {
   review: ReviewDto;
   productSlug: string;
   isMine: boolean;
   canReply: boolean;
+  canReport: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [replying, setReplying] = useState(false);
+  const [reported, setReported] = useState(false);
   const [rating, setRating] = useState(review.rating);
 
   const [editState, editAction, editing_] = useActionState(
@@ -92,6 +96,26 @@ export function ReviewItem({
                 Borrar
               </button>
             </form>
+          </span>
+        )}
+        {canReport && !isMine && (
+          <span className="ml-auto text-xs">
+            {reported ? (
+              <span className="text-zinc-400">Denunciada ✓</span>
+            ) : (
+              <form
+                action={reportReviewAction}
+                onSubmit={() => setReported(true)}
+              >
+                {hidden}
+                <button
+                  type="submit"
+                  className="text-zinc-400 hover:text-red-600 hover:underline"
+                >
+                  Denunciar
+                </button>
+              </form>
+            )}
           </span>
         )}
       </div>

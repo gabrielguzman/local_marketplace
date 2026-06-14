@@ -6,11 +6,13 @@ import type {
   Paginated,
   ProductDetailDto,
   ProductSummaryDto,
+  QuestionDto,
   ReviewDto,
 } from '@marketplace/shared';
 import { BuyBox } from '@/components/add-to-cart';
 import { FavoriteButton } from '@/components/favorite-button';
 import { ProductCard } from '@/components/product-card';
+import { QuestionsSection } from '@/components/questions-section';
 import { ReportButton } from '@/components/report-button';
 import { ReviewItem } from '@/components/review-item';
 import { Stars } from '@/components/stars';
@@ -61,9 +63,14 @@ export default async function ProductPage({
   const product = await getProduct(slug);
   if (!product) notFound();
 
-  const reviews = await apiFetch<ReviewDto[]>(
-    `/products/${product.id}/reviews`,
-  ).catch(() => []);
+  const [reviews, questions] = await Promise.all([
+    apiFetch<ReviewDto[]>(`/products/${product.id}/reviews`).catch(
+      () => [] as ReviewDto[],
+    ),
+    apiFetch<QuestionDto[]>(`/products/${product.id}/questions`).catch(
+      () => [] as QuestionDto[],
+    ),
+  ]);
 
   // Productos de la misma categoría (excluye el actual)
   const relatedRes = await apiFetch<Paginated<ProductSummaryDto>>(
@@ -178,11 +185,21 @@ export default async function ProductPage({
                     productSlug={product.slug}
                     isMine={review.authorId === currentUser?.id}
                     canReply={isOwner}
+                    canReport={Boolean(currentUser)}
                   />
                 ))}
               </ul>
             )}
           </section>
+
+          {/* Preguntas y respuestas */}
+          <QuestionsSection
+            productId={product.id}
+            slug={product.slug}
+            questions={questions}
+            canAnswer={isOwner}
+            isLoggedIn={Boolean(currentUser)}
+          />
         </div>
 
         {/* Caja de compra */}

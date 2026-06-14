@@ -179,6 +179,26 @@ export class ReviewsService {
     return toReviewDto(updated);
   }
 
+  // Un usuario denuncia una reseña ofensiva (1 por usuario y reseña)
+  async reportReview(
+    userId: string,
+    productId: string,
+    reviewId: string,
+  ): Promise<void> {
+    const review = await this.findInProduct(reviewId, productId);
+    if (review.authorId === userId) {
+      throw new ConflictException({
+        code: 'CANNOT_REPORT_OWN',
+        message: 'No podés denunciar tu propia reseña',
+      });
+    }
+    await this.prisma.reviewReport.upsert({
+      where: { reviewId_reporterId: { reviewId, reporterId: userId } },
+      update: {},
+      create: { reviewId, reporterId: userId },
+    });
+  }
+
   private async findInProduct(reviewId: string, productId: string) {
     const review = await this.prisma.review.findUnique({
       where: { id: reviewId },

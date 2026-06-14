@@ -263,6 +263,17 @@ export interface ReviewDto {
   sellerRespondedAt: string | null;
 }
 
+// Pregunta pública sobre un producto (con respuesta del vendedor)
+export interface QuestionDto {
+  id: string;
+  body: string;
+  answer: string | null;
+  answeredAt: string | null;
+  authorName: string;
+  authorId: string;
+  createdAt: string;
+}
+
 export const REPORT_REASONS = [
   'SPAM',
   'PROHIBITED',
@@ -356,6 +367,18 @@ export interface AdminOrderDto {
 export interface AdminOrderDetailDto extends OrderDto {
   buyerEmail: string;
   buyerName: string;
+}
+
+// Reseña denunciada, para la cola de moderación del admin
+export interface AdminReviewDto {
+  id: string;
+  rating: number;
+  comment: string;
+  authorName: string;
+  productTitle: string;
+  productSlug: string;
+  reportCount: number;
+  createdAt: string;
 }
 
 // Registro de auditoría de acciones de moderación

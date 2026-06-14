@@ -136,7 +136,44 @@ export async function reportProductAction(
   return { error: null };
 }
 
+export async function reportReviewAction(formData: FormData): Promise<void> {
+  const token = await getAccessToken();
+  if (!token) redirect('/login');
+
+  const productId = String(formData.get('productId') ?? '');
+  const reviewId = String(formData.get('reviewId') ?? '');
+  await authFetch(token, `/products/${productId}/reviews/${reviewId}/report`, {
+    method: 'POST',
+  }).catch(() => undefined);
+}
+
 // ── Acciones de admin ──────────────────────────────────────
+
+export async function adminDeleteReviewAction(
+  formData: FormData,
+): Promise<void> {
+  const token = await getAccessToken();
+  if (!token) redirect('/login');
+
+  await authFetch(token, `/admin/reviews/${String(formData.get('reviewId'))}`, {
+    method: 'DELETE',
+  }).catch(() => undefined);
+  revalidatePath('/admin/resenas');
+}
+
+export async function adminDismissReviewReportsAction(
+  formData: FormData,
+): Promise<void> {
+  const token = await getAccessToken();
+  if (!token) redirect('/login');
+
+  await authFetch(
+    token,
+    `/admin/reviews/${String(formData.get('reviewId'))}/reports`,
+    { method: 'DELETE' },
+  ).catch(() => undefined);
+  revalidatePath('/admin/resenas');
+}
 
 export async function adminResolveReportAction(
   formData: FormData,

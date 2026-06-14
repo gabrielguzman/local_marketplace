@@ -301,6 +301,55 @@ describe('Trust: verificación, reseñas, denuncias y admin (e2e)', () => {
     expect((res.body as ReviewDto).sellerResponse).toBeTruthy();
   });
 
+  it('preguntas y respuestas: cualquiera pregunta, sólo el vendedor responde', async () => {
+    const asked = await request(app.getHttpServer())
+      .post(`/products/${productId}/questions`)
+      .set('Authorization', `Bearer ${buyerToken}`)
+      .send({ body: '¿Tiene garantía oficial?' })
+      .expect(201);
+    const questionId = (asked.body as { id: string }).id;
+
+    // el comprador (no vendedor) no puede responder
+    await request(app.getHttpServer())
+      .post(`/products/${productId}/questions/${questionId}/answer`)
+      .set('Authorization', `Bearer ${buyerToken}`)
+      .send({ answer: 'Sí' })
+      .expect(403);
+
+    const answered = await request(app.getHttpServer())
+      .post(`/products/${productId}/questions/${questionId}/answer`)
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .send({ answer: 'Sí, 12 meses de garantía oficial' })
+      .expect(201);
+    expect((answered.body as { answer: string }).answer).toContain('12 meses');
+
+    const list = await request(app.getHttpServer())
+      .get(`/products/${productId}/questions`)
+      .expect(200);
+    expect(list.body as unknown[]).toHaveLength(1);
+  });
+
+  it('reportar una reseña: el autor no puede denunciar la propia', async () => {
+    // el vendedor denuncia la reseña del comprador
+    await request(app.getHttpServer())
+      .post(`/products/${productId}/reviews/${reviewId}/report`)
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .expect(202);
+    // idempotente
+    await request(app.getHttpServer())
+      .post(`/products/${productId}/reviews/${reviewId}/report`)
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .expect(202);
+    // el autor no puede denunciar su propia reseña
+    await request(app.getHttpServer())
+      .post(`/products/${productId}/reviews/${reviewId}/report`)
+      .set('Authorization', `Bearer ${buyerToken}`)
+      .expect(409);
+
+    const count = await prisma.reviewReport.count({ where: { reviewId } });
+    expect(count).toBe(1);
+  });
+
   it('el autor borra su reseña y el producto queda sin reseñas', async () => {
     await request(app.getHttpServer())
       .delete(`/products/${productId}/reviews/${reviewId}`)
