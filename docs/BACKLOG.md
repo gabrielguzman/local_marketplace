@@ -61,10 +61,10 @@ después) con página propia y corazón en el detalle.
 
 ## 7. Checkout y órdenes
 
-**Hecho:** checkout transaccional con sub-órdenes por negocio y snapshots, pago
-simulado con descuento atómico de stock y auto-cancelación, estados del vendedor
-con transiciones validadas, vistas comprador/vendedor, cancelación de orden impaga
-por el comprador, línea de tiempo del envío en el detalle.
+**Hecho:** checkout transaccional con sub-órdenes por negocio y snapshots, **método
+de envío por tienda con costo que impacta el total**, pago simulado con descuento
+atómico de stock y auto-cancelación, estados del vendedor con transiciones validadas,
+vistas comprador/vendedor, cancelación de orden impaga, línea de tiempo del envío.
 
 - 🔴 **MercadoPago Checkout Pro + webhook idempotente** — reemplaza el pago simulado; la arquitectura ya le dejó el lugar.
 - 🔴 **Comisión de la plataforma** — no existe ningún fee. Decidir modelo (% por venta es lo estándar) y agregar `feeCents` a SubOrder calculado al crear la orden.
@@ -79,9 +79,12 @@ por el comprador, línea de tiempo del envío en el detalle.
 - 🟢 Conciliación: reporte pagos MP vs órdenes.
 - 🟢 Split automático (MP marketplace) — proyecto en sí mismo, fase posterior.
 
-## 9. Envíos (módulo inexistente)
+## 9. Envíos
 
-- 🟠 Opciones por vendedor: retiro en persona / envío con costo fijo — lo mínimo para cerrar el círculo.
+**Hecho:** cada negocio configura retiro en persona y/o costo fijo de envío; en el
+checkout el comprador elige el método por tienda y el costo impacta en el total
+(SubOrder guarda método + costo, Order suma el envío).
+
 - 🟢 Costo por zona, integración con correo/mensajería, tracking.
 
 ## 10. Reseñas y confianza

@@ -63,12 +63,21 @@ export async function updateBusinessAction(
         province: str('province'),
         hours: str('hours'),
         policies: str('policies'),
+        pickupEnabled: formData.get('pickupEnabled') === 'on',
+        shippingCents: shippingCostToCents(str('shippingCost')),
       }),
     });
   } catch (err) {
     return toActionError(err);
   }
   redirect('/vender');
+}
+
+// pesos → centavos; vacío = null (no ofrece envío)
+function shippingCostToCents(raw: string): number | null {
+  if (!raw) return null;
+  const cents = Math.round(Number(raw.replace(',', '.')) * 100);
+  return Number.isInteger(cents) && cents >= 0 ? cents : null;
 }
 
 function parseJson<T>(raw: unknown, fallback: T): T {

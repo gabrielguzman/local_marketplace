@@ -12,7 +12,15 @@ const ITEM_INCLUDE = {
     include: {
       product: {
         include: {
-          business: { select: { id: true, name: true, slug: true } },
+          business: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              pickupEnabled: true,
+              shippingCents: true,
+            },
+          },
           images: true,
         },
       },

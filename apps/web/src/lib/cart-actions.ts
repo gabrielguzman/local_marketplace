@@ -84,12 +84,22 @@ export async function checkoutAction(
     zipCode: String(formData.get('zipCode') ?? ''),
   };
 
+  let shipping: { businessId: string; method: string }[] = [];
+  try {
+    shipping = JSON.parse(String(formData.get('shipping') ?? '[]')) as {
+      businessId: string;
+      method: string;
+    }[];
+  } catch {
+    shipping = [];
+  }
+
   let order: OrderDto;
   try {
     order = await authFetch<OrderDto>(token, '/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(address),
+      body: JSON.stringify({ ...address, shipping }),
     });
   } catch (err) {
     return toActionError(err);

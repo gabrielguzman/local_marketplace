@@ -9,6 +9,7 @@ import type {
   OrderDto,
   SellerDashboard,
   SellerSubOrderDto,
+  ShippingMethod,
 } from '@marketplace/shared';
 import type { SubOrderStatus } from '@prisma/client';
 import { BusinessesService } from '../businesses/businesses.service';
@@ -30,6 +31,35 @@ const SUB_ORDER_FLOW: Record<SubOrderStatus, SubOrderStatus[]> = {
   CANCELLED: [],
 };
 
+// Resuelve el método de envío de una sub-orden según lo que ofrece el negocio
+// y lo que eligió el comprador. SHIPPING cobra el costo fijo; el resto, 0.
+function resolveShipping(
+  config: { pickupEnabled: boolean; shippingCents: number | null },
+  chosen: ShippingMethod | undefined,
+): { method: ShippingMethod; shippingCents: number } {
+  const canShip = config.shippingCents != null;
+  const canPickup = config.pickupEnabled;
+
+  let method: ShippingMethod;
+  if (chosen) {
+    if (
+      (chosen === 'SHIPPING' && !canShip) ||
+      (chosen === 'PICKUP' && !canPickup)
+    ) {
+      throw new BadRequestException({
+        code: 'SHIPPING_UNAVAILABLE',
+        message: 'El método de envío elegido no está disponible',
+      });
+    }
+    method = chosen;
+  } else {
+    method = canShip ? 'SHIPPING' : canPickup ? 'PICKUP' : 'TO_AGREE';
+  }
+
+  const shippingCents = method === 'SHIPPING' ? (config.shippingCents ?? 0) : 0;
+  return { method, shippingCents };
+}
+
 @Injectable()
 export class OrdersService {
   constructor(
@@ -40,6 +70,7 @@ export class OrdersService {
   // Crea la orden (PENDING_PAYMENT) desde el carrito y lo vacía.
   // El stock NO se descuenta acá: se descuenta al aprobarse el pago.
   async checkout(userId: string, dto: CheckoutDto): Promise<OrderDto> {
+    const { shipping, ...address } = dto;
     const order = await this.prisma.$transaction(async (tx) => {
       const cart = await tx.cart.findUnique({
         where: { userId },
@@ -49,7 +80,14 @@ export class OrdersService {
               variant: {
                 include: {
                   product: {
-                    select: { title: true, status: true, businessId: true },
+                    select: {
+                      title: true,
+                      status: true,
+                      businessId: true,
+                      business: {
+                        select: { pickupEnabled: true, shippingCents: true },
+                      },
+                    },
                   },
                 },
               },
@@ -87,26 +125,50 @@ export class OrdersService {
         byBusiness.set(key, [...(byBusiness.get(key) ?? []), item]);
       }
 
-      const totalCents = cart.items.reduce(
+      const itemsTotal = cart.items.reduce(
         (sum, i) => sum + i.variant.priceCents * i.quantity,
         0,
       );
+
+      const subOrders = [...byBusiness.entries()].map(([businessId, items]) => {
+        const config = items[0].variant.product.business;
+        const chosen = shipping?.find(
+          (s) => s.businessId === businessId,
+        )?.method;
+        const { method, shippingCents } = resolveShipping(config, chosen);
+        return {
+          businessId,
+          method,
+          shippingCents,
+          items,
+          subtotalCents: items.reduce(
+            (sum, i) => sum + i.variant.priceCents * i.quantity,
+            0,
+          ),
+        };
+      });
+
+      const shippingTotal = subOrders.reduce(
+        (sum, s) => sum + s.shippingCents,
+        0,
+      );
+      const totalCents = itemsTotal + shippingTotal;
 
       const created = await tx.order.create({
         data: {
           buyerId: userId,
           totalCents,
-          shippingAddress: { ...dto },
+          shippingCents: shippingTotal,
+          shippingAddress: { ...address },
           payment: { create: { amountCents: totalCents } },
           subOrders: {
-            create: [...byBusiness.entries()].map(([businessId, items]) => ({
-              businessId,
-              subtotalCents: items.reduce(
-                (sum, i) => sum + i.variant.priceCents * i.quantity,
-                0,
-              ),
+            create: subOrders.map((s) => ({
+              businessId: s.businessId,
+              subtotalCents: s.subtotalCents,
+              shippingMethod: s.method,
+              shippingCents: s.shippingCents,
               items: {
-                create: items.map((item) => ({
+                create: s.items.map((item) => ({
                   variantId: item.variantId,
                   quantity: item.quantity,
                   unitPriceCents: item.variant.priceCents,

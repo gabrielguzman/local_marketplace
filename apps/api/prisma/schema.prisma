@@ -178,6 +178,9 @@ model Business {
   // Operación
   hours    String? // horarios, texto libre
   policies String? // políticas de la tienda, texto libre
+  // Envíos
+  pickupEnabled Boolean @default(false) // retiro en persona
+  shippingCents Int? // costo fijo de envío; null = no ofrece envío
   status      BusinessStatus @default(PENDING)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
@@ -353,13 +356,20 @@ enum SubOrderStatus {
   CANCELLED
 }
 
+enum ShippingMethod {
+  PICKUP // retiro en persona
+  SHIPPING // envío a domicilio
+  TO_AGREE // a coordinar con el vendedor
+}
+
 model Order {
   id     String      @id @default(uuid())
   buyerId String
   status OrderStatus @default(PENDING_PAYMENT)
 
-  totalCents Int
-  currency   String @default("ARS")
+  totalCents    Int
+  shippingCents Int    @default(0) // suma de envíos de las sub-órdenes
+  currency      String @default("ARS")
 
   // Snapshot de la dirección al momento de la compra
   shippingAddress Json
@@ -376,11 +386,13 @@ model Order {
 }
 
 model SubOrder {
-  id            String         @id @default(uuid())
-  orderId       String
-  businessId    String
-  status        SubOrderStatus @default(PENDING)
-  subtotalCents Int
+  id             String         @id @default(uuid())
+  orderId        String
+  businessId     String
+  status         SubOrderStatus @default(PENDING)
+  subtotalCents  Int // sólo productos (sin envío)
+  shippingMethod ShippingMethod @default(TO_AGREE)
+  shippingCents  Int            @default(0)
 
   order    Order       @relation(fields: [orderId], references: [id])
   business Business    @relation(fields: [businessId], references: [id])

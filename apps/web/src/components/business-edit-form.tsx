@@ -193,6 +193,40 @@ export function BusinessEditForm({ business }: { business: BusinessDto }) {
         </label>
       </fieldset>
 
+      <fieldset className="space-y-4 border-t border-zinc-100 pt-5">
+        <legend className="text-sm font-bold tracking-tight">Envíos</legend>
+        <label className="flex items-center gap-2 text-sm text-zinc-600">
+          <input
+            name="pickupEnabled"
+            type="checkbox"
+            defaultChecked={business.pickupEnabled}
+            className="h-4 w-4 rounded border-zinc-300"
+          />
+          Ofrezco retiro en persona (gratis)
+        </label>
+        <label className="block max-w-xs">
+          <span className="field-label">
+            Costo de envío a domicilio (ARS){' '}
+            <span className="font-normal text-zinc-400">
+              (vacío = a coordinar)
+            </span>
+          </span>
+          <input
+            name="shippingCost"
+            type="number"
+            min={0}
+            step="0.01"
+            defaultValue={
+              business.shippingCents != null
+                ? business.shippingCents / 100
+                : ''
+            }
+            placeholder="Ej: 2500"
+            className="field-input"
+          />
+        </label>
+      </fieldset>
+
       {state.error && (
         <p className="flex items-start gap-2 rounded-lg bg-red-50 px-3.5 py-2.5 text-sm text-red-700">
           <span aria-hidden="true">⚠️</span> {state.error}

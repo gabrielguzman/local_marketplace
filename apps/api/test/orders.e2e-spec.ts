@@ -329,4 +329,55 @@ describe('Cart & Orders (e2e)', () => {
       .set('Authorization', `Bearer ${buyerToken}`)
       .expect(409);
   });
+
+  it('el envío del vendedor se suma al total según el método elegido', async () => {
+    // el vendedor 1 configura envío $30 y retiro en persona
+    const biz = await request(app.getHttpServer())
+      .get('/businesses/me')
+      .set('Authorization', `Bearer ${seller1Token}`)
+      .expect(200);
+    const businessId = (biz.body as { id: string }).id;
+    await request(app.getHttpServer())
+      .patch('/businesses/me')
+      .set('Authorization', `Bearer ${seller1Token}`)
+      .send({ pickupEnabled: true, shippingCents: 3000000 })
+      .expect(200);
+
+    // envío a domicilio: suma el costo al total
+    await request(app.getHttpServer())
+      .post('/cart/items')
+      .set('Authorization', `Bearer ${buyerToken}`)
+      .send({ variantId: variant1Id, quantity: 1 })
+      .expect(201);
+    const shipped = await request(app.getHttpServer())
+      .post('/checkout')
+      .set('Authorization', `Bearer ${buyerToken}`)
+      .send({
+        ...ADDRESS,
+        shipping: [{ businessId, method: 'SHIPPING' }],
+      })
+      .expect(201);
+    const shippedOrder = shipped.body as OrderDto;
+    expect(shippedOrder.shippingCents).toBe(3000000);
+    expect(shippedOrder.totalCents).toBe(1500000 + 3000000);
+    expect(shippedOrder.subOrders[0].shippingMethod).toBe('SHIPPING');
+
+    // retiro en persona: sin costo de envío
+    await request(app.getHttpServer())
+      .post('/cart/items')
+      .set('Authorization', `Bearer ${buyerToken}`)
+      .send({ variantId: variant1Id, quantity: 1 })
+      .expect(201);
+    const pickup = await request(app.getHttpServer())
+      .post('/checkout')
+      .set('Authorization', `Bearer ${buyerToken}`)
+      .send({
+        ...ADDRESS,
+        shipping: [{ businessId, method: 'PICKUP' }],
+      })
+      .expect(201);
+    const pickupOrder = pickup.body as OrderDto;
+    expect(pickupOrder.shippingCents).toBe(0);
+    expect(pickupOrder.subOrders[0].shippingMethod).toBe('PICKUP');
+  });
 });

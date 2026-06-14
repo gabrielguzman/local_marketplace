@@ -107,7 +107,15 @@ export default async function ReceiptPage({
           </div>
         ))}
 
-        <div className="flex justify-between pt-5 text-lg font-bold">
+        {order.shippingCents > 0 && (
+          <div className="flex justify-between pt-4 text-sm text-zinc-500">
+            <span>Envío</span>
+            <span className="tabular-nums">
+              {formatPrice(order.shippingCents, order.currency)}
+            </span>
+          </div>
+        )}
+        <div className="flex justify-between pt-2 text-lg font-bold">
           <span>Total</span>
           <span className="tabular-nums">
             {formatPrice(order.totalCents, order.currency)}

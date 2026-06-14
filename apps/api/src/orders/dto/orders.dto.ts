@@ -1,4 +1,23 @@
-import { IsIn, IsString, MaxLength, MinLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsIn,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+  MinLength,
+  ValidateNested,
+} from 'class-validator';
+import { SHIPPING_METHODS, type ShippingMethod } from '@marketplace/shared';
+
+export class ShippingChoiceDto {
+  @IsUUID()
+  businessId!: string;
+
+  @IsIn(SHIPPING_METHODS)
+  method!: ShippingMethod;
+}
 
 export class CheckoutDto {
   @IsString()
@@ -25,6 +44,13 @@ export class CheckoutDto {
   @MinLength(3)
   @MaxLength(12)
   zipCode!: string;
+
+  // Método de envío elegido por cada negocio del carrito
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ShippingChoiceDto)
+  shipping?: ShippingChoiceDto[];
 }
 
 export class UpdateSubOrderStatusDto {

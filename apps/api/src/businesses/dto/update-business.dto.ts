@@ -1,8 +1,12 @@
 import {
+  IsBoolean,
+  IsInt,
   IsOptional,
   IsString,
   IsUrl,
+  Max,
   MaxLength,
+  Min,
   MinLength,
 } from 'class-validator';
 
@@ -78,4 +82,16 @@ export class UpdateBusinessDto {
   @IsString()
   @MaxLength(2000)
   policies?: string;
+
+  // ── Envíos ──
+  @IsOptional()
+  @IsBoolean()
+  pickupEnabled?: boolean;
+
+  // null = no ofrece envío a domicilio
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(100_000_000)
+  shippingCents?: number | null;
 }

@@ -191,6 +191,8 @@ async function seedDemoData() {
     hours: 'Lun a Vie de 9 a 18 hs · Sáb de 10 a 14 hs',
     policies:
       'Cambios y devoluciones dentro de los 30 días con el comprobante. Envíos a todo el país en 3 a 5 días hábiles.',
+    pickupEnabled: true,
+    shippingCents: 250000, // $2.500 de envío
   };
   const business = await prisma.business.upsert({
     where: { ownerId: owner.id },

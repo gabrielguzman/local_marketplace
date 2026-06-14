@@ -22,6 +22,8 @@ export function toBusinessDto(
     province: business.province,
     hours: business.hours,
     policies: business.policies,
+    pickupEnabled: business.pickupEnabled,
+    shippingCents: business.shippingCents,
     status: business.status,
     rating,
     createdAt: business.createdAt.toISOString(),

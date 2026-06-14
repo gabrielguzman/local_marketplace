@@ -49,6 +49,15 @@ export const SUB_ORDER_STATUSES = [
 ] as const;
 export type SubOrderStatus = (typeof SUB_ORDER_STATUSES)[number];
 
+export const SHIPPING_METHODS = ['PICKUP', 'SHIPPING', 'TO_AGREE'] as const;
+export type ShippingMethod = (typeof SHIPPING_METHODS)[number];
+
+export const SHIPPING_METHOD_LABELS: Record<ShippingMethod, string> = {
+  PICKUP: 'Retiro en persona',
+  SHIPPING: 'Envío a domicilio',
+  TO_AGREE: 'A coordinar con el vendedor',
+};
+
 export const PAYMENT_STATUSES = [
   'PENDING',
   'APPROVED',
@@ -113,6 +122,8 @@ export interface BusinessDto {
   province: string | null;
   hours: string | null;
   policies: string | null;
+  pickupEnabled: boolean;
+  shippingCents: number | null;
   status: BusinessStatus;
   rating: RatingSummary;
   createdAt: string;
@@ -217,7 +228,13 @@ export interface CartItemDto {
     status: ProductStatus;
     imageUrl: string | null;
   };
-  business: { id: string; name: string; slug: string };
+  business: {
+    id: string;
+    name: string;
+    slug: string;
+    pickupEnabled: boolean;
+    shippingCents: number | null;
+  };
 }
 
 export interface CartDto {
@@ -248,7 +265,9 @@ export interface OrderItemDto {
 export interface SubOrderDto {
   id: string;
   status: SubOrderStatus;
-  subtotalCents: number;
+  subtotalCents: number; // sólo productos
+  shippingMethod: ShippingMethod;
+  shippingCents: number;
   business: { id: string; name: string; slug: string };
   items: OrderItemDto[];
 }
@@ -256,7 +275,8 @@ export interface SubOrderDto {
 export interface OrderDto {
   id: string;
   status: OrderStatus;
-  totalCents: number;
+  totalCents: number; // productos + envío
+  shippingCents: number;
   currency: Currency;
   shippingAddress: ShippingAddress;
   paymentStatus: PaymentStatus | null;

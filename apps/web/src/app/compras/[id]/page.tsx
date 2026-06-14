@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import type { OrderDto } from '@marketplace/shared';
+import { SHIPPING_METHOD_LABELS, type OrderDto } from '@marketplace/shared';
 import { ConfirmForm } from '@/components/confirm-form';
 import { OrderTimeline } from '@/components/order-timeline';
 import { ReviewForm } from '@/components/review-form';
@@ -158,12 +158,22 @@ export default async function OrderDetailPage({
                   <OrderTimeline status={subOrder.status} />
                 </div>
               )}
-              <p className="border-t border-zinc-100 px-5 py-3 text-right text-sm">
-                Subtotal:{' '}
-                <strong>
-                  {formatPrice(subOrder.subtotalCents, order.currency)}
-                </strong>
-              </p>
+              <div className="flex items-center justify-between border-t border-zinc-100 px-5 py-3 text-sm text-zinc-500">
+                <span>
+                  {SHIPPING_METHOD_LABELS[subOrder.shippingMethod]}
+                  {subOrder.shippingCents > 0 &&
+                    ` · ${formatPrice(subOrder.shippingCents, order.currency)}`}
+                </span>
+                <span>
+                  Subtotal:{' '}
+                  <strong className="text-zinc-800">
+                    {formatPrice(
+                      subOrder.subtotalCents + subOrder.shippingCents,
+                      order.currency,
+                    )}
+                  </strong>
+                </span>
+              </div>
             </section>
           );
         })}
@@ -180,7 +190,24 @@ export default async function OrderDetailPage({
         </div>
         <div className="surface-card p-5">
           <h2 className="text-sm font-bold tracking-tight">Total</h2>
-          <p className="mt-2 text-2xl font-extrabold tracking-tight">
+          {order.shippingCents > 0 && (
+            <dl className="mt-2 space-y-1 text-sm text-zinc-500">
+              <div className="flex justify-between">
+                <dt>Productos</dt>
+                <dd>
+                  {formatPrice(
+                    order.totalCents - order.shippingCents,
+                    order.currency,
+                  )}
+                </dd>
+              </div>
+              <div className="flex justify-between">
+                <dt>Envío</dt>
+                <dd>{formatPrice(order.shippingCents, order.currency)}</dd>
+              </div>
+            </dl>
+          )}
+          <p className="mt-1 text-2xl font-extrabold tracking-tight">
             {formatPrice(order.totalCents, order.currency)}
           </p>
         </div>
