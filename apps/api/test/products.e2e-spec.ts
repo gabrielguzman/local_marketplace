@@ -317,6 +317,16 @@ describe('Products (e2e)', () => {
     ).toBe(true);
   });
 
+  it('by-slugs devuelve productos activos en el orden pedido', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/search/by-slugs')
+      .query({ slugs: `${productSlug},no-existe-xyz` })
+      .expect(200);
+    const items = res.body as ProductSummaryDto[];
+    expect(items).toHaveLength(1);
+    expect(items[0].id).toBe(productId);
+  });
+
   it('otro usuario no puede editar mi producto', async () => {
     const other = await request(app.getHttpServer())
       .post('/auth/register')

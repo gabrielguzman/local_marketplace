@@ -20,7 +20,7 @@ estando logueado (rota las sesiones).
 **Hecho:** GET/PATCH /me (nombre, teléfono, avatar por URL), página /cuenta con
 edición de perfil, CRUD de direcciones guardadas (con principal automática, editables
 inline) y selección de dirección guardada en el checkout, baja de cuenta con
-anonimización (Ley 25.326).
+anonimización (Ley 25.326), sección **"Mi actividad"** (mis reseñas y mis preguntas).
 
 - 🟢 Avatar con upload real (depende de Cloudinary).
 
@@ -124,7 +124,7 @@ una reseña.
 **Hecho:** loading skeleton, error boundary y 404 globales; robots.txt, sitemap.xml,
 Open Graph y JSON-LD (`schema.org/Product`) en productos; feedback de éxito en
 formularios (FormFeedback) y confirmación reusable (ConfirmForm); skip-link de
-accesibilidad.
+accesibilidad; **home con "más vendido" y "vistos recientemente"** (localStorage).
 
 - 🟢 `next/image` con remotePatterns (cuando las imágenes vengan de Cloudinary).
 - 🟢 Auditoría de accesibilidad completa (foco, contraste, lectores de pantalla).

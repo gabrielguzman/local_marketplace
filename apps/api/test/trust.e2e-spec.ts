@@ -367,6 +367,24 @@ describe('Trust: verificación, reseñas, denuncias y admin (e2e)', () => {
     expect((after.body as { count: number }).count).toBe(0);
   });
 
+  it('el comprador ve su actividad: mis reseñas y mis preguntas', async () => {
+    const reviews = await request(app.getHttpServer())
+      .get('/me/reviews')
+      .set('Authorization', `Bearer ${buyerToken}`)
+      .expect(200);
+    const mine = reviews.body as { productSlug: string; rating: number }[];
+    expect(mine).toHaveLength(1);
+    expect(mine[0].productSlug).toContain('pava-electrica');
+
+    const questions = await request(app.getHttpServer())
+      .get('/me/questions')
+      .set('Authorization', `Bearer ${buyerToken}`)
+      .expect(200);
+    const myQ = questions.body as { answer: string | null }[];
+    expect(myQ).toHaveLength(1);
+    expect(myQ[0].answer).toContain('garantía');
+  });
+
   it('reportar una reseña: el autor no puede denunciar la propia', async () => {
     // el vendedor denuncia la reseña del comprador
     await request(app.getHttpServer())

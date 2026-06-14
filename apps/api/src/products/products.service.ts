@@ -268,6 +268,45 @@ export class ProductsService {
     return products;
   }
 
+  // Más vendidos: por unidades vendidas en órdenes pagadas
+  async bestSellers(limit = 8): Promise<ProductSummaryDto[]> {
+    const rows = await this.prisma.$queryRaw<{ id: string }[]>`
+      SELECT v."productId" AS id
+      FROM order_items oi
+      JOIN product_variants v ON v.id = oi."variantId"
+      JOIN sub_orders so ON so.id = oi."subOrderId"
+      JOIN orders o ON o.id = so."orderId"
+      JOIN products p ON p.id = v."productId"
+      WHERE o.status = 'PAID' AND p.status = 'ACTIVE'
+      GROUP BY v."productId"
+      ORDER BY SUM(oi.quantity) DESC
+      LIMIT ${limit}
+    `;
+    return this.summariesInOrder(rows.map((r) => r.id));
+  }
+
+  // Productos por slug (para "vistos recientemente"), preservando el orden
+  async bySlugs(slugs: string[]): Promise<ProductSummaryDto[]> {
+    const clean = slugs.filter(Boolean).slice(0, 12);
+    if (clean.length === 0) return [];
+    const products = await this.prisma.product.findMany({
+      where: { slug: { in: clean }, status: 'ACTIVE' },
+      include: SUMMARY_INCLUDE,
+    });
+    const bySlug = new Map(products.map((p) => [p.slug, p]));
+    return this.toSummaries(clean.flatMap((s) => bySlug.get(s) ?? []));
+  }
+
+  private async summariesInOrder(ids: string[]): Promise<ProductSummaryDto[]> {
+    if (ids.length === 0) return [];
+    const products = await this.prisma.product.findMany({
+      where: { id: { in: ids } },
+      include: SUMMARY_INCLUDE,
+    });
+    const byId = new Map(products.map((p) => [p.id, p]));
+    return this.toSummaries(ids.flatMap((id) => byId.get(id) ?? []));
+  }
+
   // Marcas disponibles (faceta del buscador), opcionalmente por categoría
   async brands(categorySlug?: string): Promise<string[]> {
     const where: Prisma.ProductWhereInput = {

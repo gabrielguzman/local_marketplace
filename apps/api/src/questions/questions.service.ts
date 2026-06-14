@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import type { QuestionDto } from '@marketplace/shared';
+import type { MyQuestionDto, QuestionDto } from '@marketplace/shared';
 import type { Prisma } from '@prisma/client';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -35,6 +35,24 @@ export class QuestionsService {
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
   ) {}
+
+  // Las preguntas que hizo el usuario, con el producto al que apuntan
+  async listMine(userId: string): Promise<MyQuestionDto[]> {
+    const rows = await this.prisma.question.findMany({
+      where: { authorId: userId },
+      include: { product: { select: { title: true, slug: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+    return rows.map((q) => ({
+      id: q.id,
+      body: q.body,
+      answer: q.answer,
+      createdAt: q.createdAt.toISOString(),
+      productTitle: q.product.title,
+      productSlug: q.product.slug,
+    }));
+  }
 
   async list(productId: string): Promise<QuestionDto[]> {
     const questions = await this.prisma.question.findMany({

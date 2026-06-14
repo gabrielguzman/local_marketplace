@@ -5,6 +5,7 @@ import type {
   ProductSummaryDto,
 } from '@marketplace/shared';
 import { ProductCard } from '@/components/product-card';
+import { RecentlyViewed } from '@/components/recently-viewed';
 import { apiFetch } from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
@@ -18,12 +19,15 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 export default async function Home() {
-  const [categories, recent] = await Promise.all([
+  const [categories, recent, bestSellers] = await Promise.all([
     apiFetch<CategoryDto[]>('/categories').catch(() => []),
     apiFetch<Paginated<ProductSummaryDto>>('/search?limit=12').catch(() => ({
       items: [],
       nextCursor: null,
     })),
+    apiFetch<ProductSummaryDto[]>('/search/best-sellers').catch(
+      () => [] as ProductSummaryDto[],
+    ),
   ]);
 
   return (
@@ -103,6 +107,23 @@ export default async function Home() {
           </div>
         </section>
       )}
+
+      {/* Más vendidos */}
+      {bestSellers.length > 0 && (
+        <section>
+          <h2 className="mb-4 text-lg font-bold tracking-tight">
+            🔥 Lo más vendido
+          </h2>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {bestSellers.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Vistos recientemente (cliente, localStorage) */}
+      <RecentlyViewed />
 
       {/* Recientes */}
       <section>

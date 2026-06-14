@@ -17,6 +17,7 @@ import { RatingBars } from '@/components/rating-bars';
 import { ReportButton } from '@/components/report-button';
 import { ReviewItem } from '@/components/review-item';
 import { Stars } from '@/components/stars';
+import { TrackView } from '@/components/track-view';
 import { apiFetch, authFetch } from '@/lib/api';
 import { getFavoriteIds } from '@/lib/favorites';
 import { getAccessToken, getCurrentUser } from '@/lib/session';
@@ -126,6 +127,7 @@ export default async function ProductPage({
 
   return (
     <div className="space-y-6">
+      <TrackView slug={product.slug} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

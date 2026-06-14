@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import type { ReviewDto } from '@marketplace/shared';
+import type { MyReviewDto, ReviewDto } from '@marketplace/shared';
 import type { Prisma } from '@prisma/client';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -99,6 +99,25 @@ export class ReviewsService {
       include: REVIEW_INCLUDE,
     });
     return toReviewDto(review);
+  }
+
+  // Las reseñas que escribió el usuario, con el producto al que apuntan
+  async listMine(userId: string): Promise<MyReviewDto[]> {
+    const rows = await this.prisma.review.findMany({
+      where: { authorId: userId },
+      include: { product: { select: { title: true, slug: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+    return rows.map((r) => ({
+      id: r.id,
+      rating: r.rating,
+      comment: r.comment,
+      createdAt: r.createdAt.toISOString(),
+      sellerResponse: r.sellerResponse,
+      productTitle: r.product.title,
+      productSlug: r.product.slug,
+    }));
   }
 
   async listForProduct(productId: string): Promise<ReviewDto[]> {

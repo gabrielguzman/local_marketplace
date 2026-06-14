@@ -324,6 +324,26 @@ export interface QuestionDto {
   createdAt: string;
 }
 
+// Mi actividad (reseñas y preguntas que hice), con el producto al que apuntan
+export interface MyReviewDto {
+  id: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  sellerResponse: string | null;
+  productTitle: string;
+  productSlug: string;
+}
+
+export interface MyQuestionDto {
+  id: string;
+  body: string;
+  answer: string | null;
+  createdAt: string;
+  productTitle: string;
+  productSlug: string;
+}
+
 export const REPORT_REASONS = [
   'SPAM',
   'PROHIBITED',

@@ -27,4 +27,14 @@ export class SearchController {
   brands(@Query('category') category?: string): Promise<string[]> {
     return this.products.brands(category);
   }
+
+  @Get('best-sellers')
+  bestSellers(): Promise<ProductSummaryDto[]> {
+    return this.products.bestSellers(8);
+  }
+
+  @Get('by-slugs')
+  bySlugs(@Query('slugs') slugs?: string): Promise<ProductSummaryDto[]> {
+    return this.products.bySlugs((slugs ?? '').split(',').filter(Boolean));
+  }
 }
