@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import type { BusinessDto, ProductDetailDto } from '@marketplace/shared';
 import { DeleteProductButton } from '@/components/delete-product-button';
+import { Pagination } from '@/components/pagination';
 import { authFetch } from '@/lib/api';
 import { formatPrice } from '@/lib/format';
 import { setProductStatusAction } from '@/lib/seller-actions';
@@ -10,6 +11,8 @@ import { getAccessToken } from '@/lib/session';
 
 export const metadata: Metadata = { title: 'Mis productos' };
 export const dynamic = 'force-dynamic';
+
+const PAGE_SIZE = 20;
 
 const STATUS_BADGE: Record<
   ProductDetailDto['status'],
@@ -21,7 +24,11 @@ const STATUS_BADGE: Record<
   DELETED: { label: 'Eliminado', className: 'bg-red-50 text-red-600' },
 };
 
-export default async function SellerProductsPage() {
+export default async function SellerProductsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
   const token = await getAccessToken();
   if (!token) redirect('/login');
 
@@ -34,6 +41,13 @@ export default async function SellerProductsPage() {
     token,
     '/products/mine',
   ).catch(() => []);
+
+  const { page } = await searchParams;
+  const current = Math.max(1, Number(page) || 1);
+  const pageProducts = products.slice(
+    (current - 1) * PAGE_SIZE,
+    current * PAGE_SIZE,
+  );
 
   return (
     <div className="space-y-6">
@@ -73,7 +87,7 @@ export default async function SellerProductsPage() {
               </tr>
             </thead>
             <tbody>
-              {products.map((product) => {
+              {pageProducts.map((product) => {
                 const variant =
                   product.variants.find((v) => v.isDefault) ??
                   product.variants[0];
@@ -149,6 +163,15 @@ export default async function SellerProductsPage() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {products.length > PAGE_SIZE && (
+        <Pagination
+          basePath="/vender/productos"
+          page={current}
+          pageSize={PAGE_SIZE}
+          total={products.length}
+        />
       )}
     </div>
   );

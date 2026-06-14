@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import type {
@@ -31,15 +32,20 @@ export async function generateMetadata({
 
 export default async function BusinessPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ cursor?: string }>;
 }) {
   const { slug } = await params;
+  const { cursor } = await searchParams;
   const business = await getBusiness(slug);
   if (!business) notFound();
 
+  const query = new URLSearchParams({ business: business.slug, limit: '24' });
+  if (cursor) query.set('cursor', cursor);
   const products = await apiFetch<Paginated<ProductSummaryDto>>(
-    `/search?business=${business.slug}&limit=24`,
+    `/search?${query}`,
   ).catch(() => ({ items: [], nextCursor: null }));
 
   return (
@@ -104,6 +110,16 @@ export default async function BusinessPage({
               {products.items.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
+            </div>
+          )}
+          {products.nextCursor && (
+            <div className="mt-8 flex justify-center">
+              <Link
+                href={`/tienda/${business.slug}?cursor=${products.nextCursor}`}
+                className="rounded-lg border border-zinc-200 px-5 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50"
+              >
+                Ver más productos
+              </Link>
             </div>
           )}
         </section>

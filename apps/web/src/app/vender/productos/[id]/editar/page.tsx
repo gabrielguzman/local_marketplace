@@ -38,7 +38,7 @@ export default async function EditProductPage({
   );
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8 py-4">
+    <div className="mx-auto max-w-3xl space-y-8 py-4">
       <nav className="text-xs text-zinc-400">
         <Link href="/vender/productos" className="hover:text-brand-600">
           Mis productos

@@ -19,7 +19,7 @@ export default async function EditBusinessPage() {
   if (!business) redirect('/vender');
 
   return (
-    <div className="mx-auto max-w-lg py-8">
+    <div className="mx-auto max-w-2xl py-8">
       <nav className="mb-4 text-xs text-zinc-400">
         <Link href="/vender" className="hover:text-brand-600">
           Panel de vendedor

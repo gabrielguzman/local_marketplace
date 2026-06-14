@@ -30,7 +30,7 @@ export default async function NewProductPage() {
   );
 
   return (
-    <div className="mx-auto max-w-lg py-8">
+    <div className="mx-auto max-w-3xl py-8">
       <div className="surface-card p-8">
         <h1 className="text-xl font-bold tracking-tight">
           Publicar un producto
