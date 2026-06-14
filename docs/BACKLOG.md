@@ -36,18 +36,19 @@ página pública con reputación, suspensión por admin.
 
 ## 4. Catálogo y productos
 
-**Hecho:** CRUD completo, variantes con alta/edición/baja protegida, hasta 8 imágenes
-por URL, pausar/soft-delete, panel con alertas de stock, selector de variante y
-cantidad en la página pública.
+**Hecho:** CRUD completo, **ficha rica** (marca, condición nuevo/usado, especificaciones
+clave/valor), creación con **múltiples variantes** de una, imágenes con preview y
+reorden, variantes con alta/edición/baja protegida, pausar/soft-delete, panel con
+alertas de stock, selector de variante y cantidad en la página pública.
 
-- 🟠 **Subida real de imágenes (Cloudinary)** — pegar URLs a mano es inviable para un vendedor real. El mayor irritante de UX actual.
+- 🟠 **Subida real de imágenes (Cloudinary)** — pegar URLs a mano es inviable para un vendedor real. El upload real (hoy es URL con preview).
 
 ## 5. Búsqueda
 
 **Hecho:** full-text en español con índice GIN, filtros por categoría (incluye hijas),
-precio, negocio y calificación, paginación por cursor, ordenamiento por recientes /
-precio asc-desc / relevancia (`ts_rank`), autocompletado en el buscador, indexado de
-atributos de variantes (el tsvector combina título + descripción + valores de atributos).
+precio, negocio, calificación y condición (nuevo/usado), paginación por cursor,
+ordenamiento por recientes / precio asc-desc / relevancia (`ts_rank`), autocompletado,
+indexado de marca + atributos de variantes + ficha técnica en el full-text.
 
 - 🟢 Tolerancia a typos y sinónimos (la puerta a Meilisearch si el negocio lo pide).
 

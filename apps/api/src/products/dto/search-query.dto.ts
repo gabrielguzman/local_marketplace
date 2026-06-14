@@ -30,6 +30,10 @@ export class SearchQueryDto {
   business?: string;
 
   @IsOptional()
+  @IsIn(['NEW', 'USED'])
+  condition?: 'NEW' | 'USED';
+
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(0)

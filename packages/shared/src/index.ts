@@ -18,6 +18,20 @@ export type BusinessStatus = (typeof BUSINESS_STATUSES)[number];
 export const PRODUCT_STATUSES = ['DRAFT', 'ACTIVE', 'PAUSED', 'DELETED'] as const;
 export type ProductStatus = (typeof PRODUCT_STATUSES)[number];
 
+export const PRODUCT_CONDITIONS = ['NEW', 'USED'] as const;
+export type ProductCondition = (typeof PRODUCT_CONDITIONS)[number];
+
+export const PRODUCT_CONDITION_LABELS: Record<ProductCondition, string> = {
+  NEW: 'Nuevo',
+  USED: 'Usado',
+};
+
+// Una fila de la ficha técnica
+export interface ProductSpec {
+  key: string;
+  value: string;
+}
+
 export const ORDER_STATUSES = [
   'PENDING_PAYMENT',
   'PAID',
@@ -133,6 +147,9 @@ export interface ProductDetailDto {
   title: string;
   slug: string;
   description: string;
+  brand: string | null;
+  condition: ProductCondition;
+  specs: ProductSpec[];
   status: ProductStatus;
   category: { id: string; name: string; slug: string };
   business: { id: string; name: string; slug: string; logoUrl: string | null };
@@ -149,6 +166,7 @@ export interface ProductSummaryDto {
   slug: string;
   priceCents: number;
   currency: Currency;
+  condition: ProductCondition;
   imageUrl: string | null;
   businessName: string;
   businessSlug: string;

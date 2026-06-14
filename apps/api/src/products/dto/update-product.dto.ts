@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
@@ -12,7 +13,9 @@ import {
   MaxLength,
   Min,
   MinLength,
+  ValidateNested,
 } from 'class-validator';
+import { SpecDto } from './create-product.dto';
 
 export class UpdateVariantDto {
   @IsOptional()
@@ -49,6 +52,22 @@ export class UpdateProductDto {
   @IsString()
   @MaxLength(8000)
   description?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  brand?: string;
+
+  @IsOptional()
+  @IsIn(['NEW', 'USED'])
+  condition?: 'NEW' | 'USED';
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(30)
+  @ValidateNested({ each: true })
+  @Type(() => SpecDto)
+  specs?: SpecDto[];
 
   @IsOptional()
   @IsUUID()

@@ -74,7 +74,7 @@ describe('Products (e2e)', () => {
     await app.close();
   });
 
-  it('crea un producto con variantes e imágenes', async () => {
+  it('crea un producto con ficha completa: variantes, marca, condición y specs', async () => {
     const res = await request(app.getHttpServer())
       .post('/products')
       .set('Authorization', `Bearer ${accessToken}`)
@@ -82,6 +82,12 @@ describe('Products (e2e)', () => {
         title: `Taladro Percutor Inalámbrico ${stamp}`,
         description: 'Taladro de 20V con dos baterías de litio',
         categoryId,
+        brand: 'Bauker',
+        condition: 'USED',
+        specs: [
+          { key: 'Voltaje', value: '20V' },
+          { key: 'Garantía', value: '6 meses' },
+        ],
         images: ['https://example.com/taladro-1.jpg'],
         variants: [
           { attributes: { voltaje: '20V' }, priceCents: 8500000, stock: 10 },
@@ -94,8 +100,48 @@ describe('Products (e2e)', () => {
     expect(product.variants).toHaveLength(2);
     expect(product.variants[0].isDefault).toBe(true);
     expect(product.images).toHaveLength(1);
+    expect(product.brand).toBe('Bauker');
+    expect(product.condition).toBe('USED');
+    expect(product.specs).toEqual([
+      { key: 'Voltaje', value: '20V' },
+      { key: 'Garantía', value: '6 meses' },
+    ]);
     productId = product.id;
     productSlug = product.slug;
+  });
+
+  it('busca por marca y filtra por condición', async () => {
+    // la marca está en el índice full-text aunque no esté en el título
+    const byBrand = await request(app.getHttpServer())
+      .get('/search')
+      .query({ q: `Bauker ${stamp}` })
+      .expect(200);
+    expect(
+      (byBrand.body as Paginated<ProductSummaryDto>).items.some(
+        (p) => p.id === productId,
+      ),
+    ).toBe(true);
+
+    // filtro condición=USED lo incluye; NEW lo excluye
+    const used = await request(app.getHttpServer())
+      .get('/search')
+      .query({ category: categorySlug, condition: 'USED' })
+      .expect(200);
+    expect(
+      (used.body as Paginated<ProductSummaryDto>).items.some(
+        (p) => p.id === productId,
+      ),
+    ).toBe(true);
+
+    const isNew = await request(app.getHttpServer())
+      .get('/search')
+      .query({ category: categorySlug, condition: 'NEW' })
+      .expect(200);
+    expect(
+      (isNew.body as Paginated<ProductSummaryDto>).items.some(
+        (p) => p.id === productId,
+      ),
+    ).toBe(false);
   });
 
   it('la página pública del producto funciona sin auth', async () => {

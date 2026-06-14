@@ -60,6 +60,30 @@ export async function updateBusinessAction(
   redirect('/vender');
 }
 
+function parseJson<T>(raw: unknown, fallback: T): T {
+  try {
+    return JSON.parse(String(raw ?? '')) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+// Campos comunes de la ficha (marca, condición, specs, imágenes)
+function productFields(formData: FormData) {
+  return {
+    title: String(formData.get('title') ?? ''),
+    description: String(formData.get('description') ?? '') || undefined,
+    categoryId: String(formData.get('categoryId') ?? ''),
+    brand: String(formData.get('brand') ?? '').trim() || undefined,
+    condition: formData.get('condition') === 'USED' ? 'USED' : 'NEW',
+    specs: parseJson<{ key: string; value: string }[]>(
+      formData.get('specs'),
+      [],
+    ),
+    images: parseJson<string[]>(formData.get('images'), []),
+  };
+}
+
 export async function createProductAction(
   _prev: ActionState,
   formData: FormData,
@@ -67,15 +91,29 @@ export async function createProductAction(
   const token = await getAccessToken();
   if (!token) redirect('/login');
 
-  // El form pide el precio en pesos; la API trabaja en centavos
-  const priceCents = Math.round(
-    Number(String(formData.get('price') ?? '').replace(',', '.')) * 100,
-  );
-  if (!Number.isInteger(priceCents) || priceCents <= 0) {
-    return { error: 'El precio tiene que ser un número mayor a cero' };
+  // El form manda cada variante con precio en pesos → la API usa centavos
+  const rawVariants = parseJson<
+    { attrs: string; price: string; stock: string }[]
+  >(formData.get('variants'), []);
+  const variants = [];
+  for (const r of rawVariants) {
+    const priceCents = Math.round(
+      Number(String(r.price).replace(',', '.')) * 100,
+    );
+    if (!Number.isInteger(priceCents) || priceCents <= 0) {
+      return { error: 'Cada variante necesita un precio mayor a cero' };
+    }
+    variants.push({
+      attributes: parseAttributes(r.attrs ?? ''),
+      priceCents,
+      stock: Number(r.stock) || 0,
+    });
+  }
+  if (variants.length === 0) {
+    return { error: 'Agregá al menos un precio y stock' };
   }
 
-  const images = parseImageList(String(formData.get('images') ?? ''));
+  const fields = productFields(formData);
   const status = formData.get('status') === 'DRAFT' ? 'DRAFT' : 'ACTIVE';
 
   try {
@@ -83,32 +121,16 @@ export async function createProductAction(
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        title: String(formData.get('title') ?? ''),
-        description: String(formData.get('description') ?? '') || undefined,
-        categoryId: String(formData.get('categoryId') ?? ''),
+        ...fields,
         status,
-        images: images.length > 0 ? images : undefined,
-        variants: [
-          {
-            priceCents,
-            stock: Number(formData.get('stock') ?? 0),
-          },
-        ],
+        images: fields.images.length > 0 ? fields.images : undefined,
+        variants,
       }),
     });
   } catch (err) {
     return toActionError(err);
   }
   redirect('/vender/productos');
-}
-
-// una URL por línea, máximo 8
-function parseImageList(input: string): string[] {
-  return input
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .slice(0, 8);
 }
 
 export async function updateProductAction(
@@ -119,33 +141,12 @@ export async function updateProductAction(
   if (!token) redirect('/login');
 
   const productId = String(formData.get('productId') ?? '');
-  const variantId = String(formData.get('variantId') ?? '');
-
-  const priceCents = Math.round(
-    Number(String(formData.get('price') ?? '').replace(',', '.')) * 100,
-  );
-  if (!Number.isInteger(priceCents) || priceCents <= 0) {
-    return { error: 'El precio tiene que ser un número mayor a cero' };
-  }
-
+  // Las variantes se editan aparte (VariantManager). Acá sólo la ficha.
   try {
     await authFetch(token, `/products/${productId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: String(formData.get('title') ?? ''),
-        description: String(formData.get('description') ?? ''),
-        categoryId: String(formData.get('categoryId') ?? ''),
-        images: parseImageList(String(formData.get('images') ?? '')),
-      }),
-    });
-    await authFetch(token, `/products/${productId}/variants/${variantId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        priceCents,
-        stock: Number(formData.get('stock') ?? 0),
-      }),
+      body: JSON.stringify(productFields(formData)),
     });
   } catch (err) {
     return toActionError(err);

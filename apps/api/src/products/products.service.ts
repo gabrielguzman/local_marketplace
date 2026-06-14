@@ -58,6 +58,9 @@ export class ProductsService {
         categoryId: dto.categoryId,
         title: dto.title,
         description: dto.description ?? '',
+        brand: dto.brand?.trim() || null,
+        condition: dto.condition ?? 'NEW',
+        specs: (dto.specs ?? []) as unknown as Prisma.InputJsonValue,
         slug: await this.uniqueSlug(dto.title),
         status: dto.status ?? 'ACTIVE',
         variants: {
@@ -112,11 +115,13 @@ export class ProductsService {
     if (dto.categoryId) {
       await this.categories.ensureExists(dto.categoryId);
     }
-    const { images, ...fields } = dto;
+    const { images, specs, brand, ...fields } = dto;
     return this.prisma.product.update({
       where: { id: productId },
       data: {
         ...fields,
+        ...(brand !== undefined && { brand: brand.trim() || null }),
+        ...(specs && { specs: specs as unknown as Prisma.InputJsonValue }),
         ...(images && {
           images: {
             deleteMany: {},
@@ -286,20 +291,30 @@ export class ProductsService {
           CROSS JOIN LATERAL jsonb_each_text(v.attributes::jsonb) AS av(key, value)
           WHERE v."productId" = p.id
         ) a ON true
+        LEFT JOIN LATERAL (
+          SELECT string_agg(spec->>'value', ' ') AS specs
+          FROM jsonb_array_elements(p.specs::jsonb) AS spec
+        ) s ON true
         WHERE p.status = 'ACTIVE'
           AND to_tsvector('spanish',
                 COALESCE(p.title, '') || ' ' || COALESCE(p.description, '') ||
-                ' ' || COALESCE(a.attrs, ''))
+                ' ' || COALESCE(p.brand, '') || ' ' || COALESCE(a.attrs, '') ||
+                ' ' || COALESCE(s.specs, ''))
               @@ websearch_to_tsquery('spanish', ${query.q})
         ORDER BY ts_rank(
                 to_tsvector('spanish',
                   COALESCE(p.title, '') || ' ' || COALESCE(p.description, '') ||
-                  ' ' || COALESCE(a.attrs, '')),
+                  ' ' || COALESCE(p.brand, '') || ' ' || COALESCE(a.attrs, '') ||
+                  ' ' || COALESCE(s.specs, '')),
                 websearch_to_tsquery('spanish', ${query.q})) DESC,
           p.id DESC
       `;
       rankedIds = matches.map((m) => m.id);
       where.id = { in: rankedIds };
+    }
+
+    if (query.condition) {
+      where.condition = query.condition;
     }
 
     // filtro por calificación: productos cuyo promedio de reseñas ≥ minRating

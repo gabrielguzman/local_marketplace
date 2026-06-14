@@ -27,9 +27,6 @@ export default async function EditProductPage({
   const product = mine.find((p) => p.id === id);
   if (!product) notFound();
 
-  const variant =
-    product.variants.find((v) => v.isDefault) ?? product.variants[0];
-
   const tree = await apiFetch<CategoryDto[]>('/categories').catch(() => []);
   const categories: CategoryOption[] = tree.flatMap((parent) =>
     parent.children.length > 0
@@ -53,18 +50,20 @@ export default async function EditProductPage({
         <h1 className="text-xl font-bold tracking-tight">Editar producto</h1>
         <p className="mb-6 mt-1 text-sm text-zinc-500">{product.title}</p>
         <ProductForm
+          mode="edit"
           categories={categories}
           action={updateProductAction}
           submitLabel="Guardar cambios"
           pendingLabel="Guardando…"
-          hidden={{ productId: product.id, variantId: variant.id }}
+          hidden={{ productId: product.id }}
           initial={{
             title: product.title,
             categoryId: product.category.id,
-            price: String(variant.priceCents / 100),
-            stock: variant.stock,
             description: product.description,
-            images: product.images.map((image) => image.url).join('\n'),
+            brand: product.brand ?? '',
+            condition: product.condition,
+            images: product.images.map((image) => image.url),
+            specs: product.specs,
           }}
         />
       </div>

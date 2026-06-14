@@ -1,6 +1,7 @@
 import type {
   Currency,
   ProductDetailDto,
+  ProductSpec,
   ProductSummaryDto,
   RatingSummary,
 } from '@marketplace/shared';
@@ -33,6 +34,9 @@ export function toProductDetailDto(
     title: p.title,
     slug: p.slug,
     description: p.description,
+    brand: p.brand,
+    condition: p.condition,
+    specs: Array.isArray(p.specs) ? (p.specs as unknown as ProductSpec[]) : [],
     status: p.status,
     category: p.category,
     business: p.business,
@@ -66,6 +70,7 @@ export function toProductSummaryDto(
     slug: p.slug,
     priceCents: variant?.priceCents ?? 0,
     currency: (variant?.currency ?? 'ARS') as Currency,
+    condition: p.condition,
     imageUrl: image?.url ?? null,
     businessName: p.business.name,
     businessSlug: p.business.slug,

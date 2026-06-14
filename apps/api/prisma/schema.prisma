@@ -218,16 +218,26 @@ enum ProductStatus {
   DELETED // soft delete: las órdenes históricas lo referencian vía snapshot
 }
 
+enum ProductCondition {
+  NEW
+  USED
+}
+
 model Product {
-  id          String        @id @default(uuid())
+  id          String           @id @default(uuid())
   businessId  String
   categoryId  String
   title       String
-  slug        String        @unique
-  description String        @default("")
-  status      ProductStatus @default(DRAFT)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  slug        String           @unique
+  description String           @default("")
+  brand       String?
+  condition   ProductCondition @default(NEW)
+  // Ficha técnica: [{"key":"Material","value":"Aluminio"}, ...] (array para
+  // conservar el orden; jsonb no preserva el orden de las claves de un objeto)
+  specs       Json             @default("[]")
+  status      ProductStatus    @default(DRAFT)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 
   // Columna generada por migración SQL manual:
   // GENERATED ALWAYS AS (to_tsvector('spanish', title || ' ' || description)) STORED

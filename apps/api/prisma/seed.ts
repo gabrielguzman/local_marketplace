@@ -12,6 +12,9 @@ const CATEGORIES: Record<string, string[]> = {
   Deportes: ['Fitness', 'Ciclismo', 'Camping'],
 };
 
+type Spec = { key: string; value: string };
+type Variant = { attributes?: Record<string, string>; stock: number };
+
 // Datos de demo (solo si no hay ningún producto cargado)
 const DEMO_PRODUCTS: {
   title: string;
@@ -19,6 +22,10 @@ const DEMO_PRODUCTS: {
   categorySlug: string;
   priceCents: number;
   stock: number;
+  brand?: string;
+  condition?: 'NEW' | 'USED';
+  specs?: Spec[];
+  variants?: Variant[]; // si viene, reemplaza la variante única
 }[] = [
   {
     title: 'Celular X20 128GB Negro',
@@ -26,6 +33,17 @@ const DEMO_PRODUCTS: {
     categorySlug: 'tecnologia-celulares',
     priceCents: 45000000,
     stock: 15,
+    brand: 'Samsung',
+    specs: [
+      { key: 'Pantalla', value: '6,5" AMOLED' },
+      { key: 'Memoria', value: '128 GB' },
+      { key: 'RAM', value: '8 GB' },
+      { key: 'Cámara', value: 'Triple 50 MP' },
+    ],
+    variants: [
+      { attributes: { color: 'Negro' }, stock: 15 },
+      { attributes: { color: 'Azul' }, stock: 8 },
+    ],
   },
   {
     title: 'Notebook 14" Ryzen 5 16GB',
@@ -33,6 +51,13 @@ const DEMO_PRODUCTS: {
     categorySlug: 'tecnologia-computacion',
     priceCents: 89999900,
     stock: 7,
+    brand: 'Lenovo',
+    specs: [
+      { key: 'Procesador', value: 'AMD Ryzen 5' },
+      { key: 'RAM', value: '16 GB' },
+      { key: 'Almacenamiento', value: 'SSD 512 GB' },
+      { key: 'Garantía', value: '12 meses' },
+    ],
   },
   {
     title: 'Auriculares Bluetooth con cancelación de ruido',
@@ -40,6 +65,11 @@ const DEMO_PRODUCTS: {
     categorySlug: 'tecnologia-audio-y-tv',
     priceCents: 7850000,
     stock: 32,
+    brand: 'JBL',
+    specs: [
+      { key: 'Batería', value: '30 horas' },
+      { key: 'Conectividad', value: 'Bluetooth 5.3' },
+    ],
   },
   {
     title: 'Mesa ratona de madera maciza',
@@ -47,6 +77,10 @@ const DEMO_PRODUCTS: {
     categorySlug: 'hogar-muebles',
     priceCents: 12500000,
     stock: 4,
+    specs: [
+      { key: 'Material', value: 'Madera de paraíso' },
+      { key: 'Medidas', value: '90 x 50 cm' },
+    ],
   },
   {
     title: 'Cafetera express 19 bares',
@@ -54,13 +88,25 @@ const DEMO_PRODUCTS: {
     categorySlug: 'hogar-cocina',
     priceCents: 18999000,
     stock: 11,
+    brand: 'Philips',
+    specs: [
+      { key: 'Presión', value: '19 bares' },
+      { key: 'Potencia', value: '1450 W' },
+    ],
   },
   {
     title: 'Bicicleta rodado 28 21 cambios',
-    description: 'Cuadro de aluminio, frenos a disco. Lista para usar.',
+    description: 'Cuadro de aluminio, frenos a disco. Usada, en muy buen estado.',
     categorySlug: 'deportes-ciclismo',
     priceCents: 35000000,
-    stock: 6,
+    stock: 1,
+    brand: 'Vairo',
+    condition: 'USED',
+    specs: [
+      { key: 'Rodado', value: '28' },
+      { key: 'Cambios', value: '21' },
+      { key: 'Cuadro', value: 'Aluminio' },
+    ],
   },
   {
     title: 'Zapatillas running ultralivianas',
@@ -68,6 +114,13 @@ const DEMO_PRODUCTS: {
     categorySlug: 'deportes-fitness',
     priceCents: 9899900,
     stock: 25,
+    brand: 'Nike',
+    specs: [{ key: 'Drop', value: '8 mm' }],
+    variants: [
+      { attributes: { talle: '40' }, stock: 10 },
+      { attributes: { talle: '42' }, stock: 9 },
+      { attributes: { talle: '44' }, stock: 6 },
+    ],
   },
   {
     title: 'Yerba mate orgánica 1kg',
@@ -75,6 +128,10 @@ const DEMO_PRODUCTS: {
     categorySlug: 'alimentos-almacen',
     priceCents: 850000,
     stock: 120,
+    specs: [
+      { key: 'Estacionamiento', value: '24 meses' },
+      { key: 'Tipo', value: 'Orgánica, sin polvo' },
+    ],
   },
 ];
 
@@ -120,11 +177,6 @@ async function seedDemoData() {
     },
   });
 
-  if ((await prisma.product.count()) > 0) {
-    console.log('Ya hay productos, salteo los datos de demo.');
-    return;
-  }
-
   const business = await prisma.business.upsert({
     where: { ownerId: owner.id },
     update: {},
@@ -144,29 +196,61 @@ async function seedDemoData() {
     if (!category) continue;
 
     const slug = slugOf(demo.title);
-    await prisma.product.create({
-      data: {
+    const variants = demo.variants ?? [{ stock: demo.stock }];
+
+    // upsert idempotente: enriquece la ficha aunque el producto ya exista
+    const product = await prisma.product.upsert({
+      where: { slug },
+      update: {
+        description: demo.description,
+        brand: demo.brand ?? null,
+        condition: demo.condition ?? 'NEW',
+        specs: demo.specs ?? [],
+      },
+      create: {
         businessId: business.id,
         categoryId: category.id,
         title: demo.title,
         slug,
         description: demo.description,
+        brand: demo.brand ?? null,
+        condition: demo.condition ?? 'NEW',
+        specs: demo.specs ?? [],
         status: 'ACTIVE',
         variants: {
-          create: [
-            { priceCents: demo.priceCents, stock: demo.stock, isDefault: true },
-          ],
+          create: variants.map((v, i) => ({
+            priceCents: demo.priceCents,
+            stock: v.stock,
+            attributes: v.attributes ?? {},
+            isDefault: i === 0,
+          })),
         },
         images: {
           create: [
-            {
-              url: `https://picsum.photos/seed/${slug}/600/450`,
-              position: 0,
-            },
+            { url: `https://picsum.photos/seed/${slug}/600/450`, position: 0 },
           ],
         },
       },
     });
+
+    // si el producto ya existía con una sola variante, sumamos las extra
+    if (variants.length > 1) {
+      const count = await prisma.productVariant.count({
+        where: { productId: product.id },
+      });
+      if (count <= 1) {
+        for (const v of variants.slice(1)) {
+          await prisma.productVariant.create({
+            data: {
+              productId: product.id,
+              priceCents: demo.priceCents,
+              stock: v.stock,
+              attributes: v.attributes ?? {},
+            },
+          });
+        }
+      }
+    }
   }
   console.log(`Datos de demo sembrados (${DEMO_PRODUCTS.length} productos).`);
 }

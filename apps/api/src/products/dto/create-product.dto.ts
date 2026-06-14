@@ -39,6 +39,18 @@ export class CreateVariantDto {
   stock!: number;
 }
 
+export class SpecDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(40)
+  key!: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(200)
+  value!: string;
+}
+
 export class CreateProductDto {
   @IsString()
   @MinLength(3)
@@ -49,6 +61,22 @@ export class CreateProductDto {
   @IsString()
   @MaxLength(8000)
   description?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  brand?: string;
+
+  @IsOptional()
+  @IsIn(['NEW', 'USED'])
+  condition?: 'NEW' | 'USED';
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(30)
+  @ValidateNested({ each: true })
+  @Type(() => SpecDto)
+  specs?: SpecDto[];
 
   @IsUUID()
   categoryId!: string;

@@ -9,6 +9,11 @@ export function ProductCard({ product }: { product: ProductSummaryDto }) {
       className="group surface-card overflow-hidden transition duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-card-hover)]"
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100">
+        {product.condition === 'USED' && (
+          <span className="absolute left-2 top-2 z-10 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+            Usado
+          </span>
+        )}
         {product.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- dominio de imagen arbitrario en MVP
           <img

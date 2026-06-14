@@ -15,6 +15,7 @@ interface SearchParams {
   min?: string; // pesos
   max?: string;
   rating?: string; // 1..5
+  condition?: string; // NEW | USED
   sort?: string;
   cursor?: string;
 }
@@ -27,6 +28,7 @@ function buildQuery(params: SearchParams, overrides: Partial<SearchParams> = {})
   if (merged.min) query.set('min', merged.min);
   if (merged.max) query.set('max', merged.max);
   if (merged.rating) query.set('rating', merged.rating);
+  if (merged.condition) query.set('condition', merged.condition);
   if (merged.sort) query.set('sort', merged.sort);
   if (merged.cursor) query.set('cursor', merged.cursor);
   return query.toString();
@@ -49,6 +51,7 @@ export default async function SearchPage({
     apiQuery.set('maxPriceCents', String(Math.round(Number(params.max) * 100)));
   }
   if (params.rating) apiQuery.set('minRating', params.rating);
+  if (params.condition) apiQuery.set('condition', params.condition);
   if (params.sort) apiQuery.set('sort', params.sort);
   if (params.cursor) apiQuery.set('cursor', params.cursor);
 
@@ -62,7 +65,12 @@ export default async function SearchPage({
 
   const activeCategory = categories.find((c) => c.slug === params.category);
   const hasFilters = Boolean(
-    params.q || params.category || params.min || params.max || params.rating,
+    params.q ||
+      params.category ||
+      params.min ||
+      params.max ||
+      params.rating ||
+      params.condition,
   );
 
   return (
@@ -114,6 +122,9 @@ export default async function SearchPage({
             {params.rating && (
               <input type="hidden" name="rating" value={params.rating} />
             )}
+            {params.condition && (
+              <input type="hidden" name="condition" value={params.condition} />
+            )}
             <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
               Precio
             </h2>
@@ -138,6 +149,37 @@ export default async function SearchPage({
               Aplicar
             </button>
           </form>
+
+          <div>
+            <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-400">
+              Condición
+            </h2>
+            <ul className="space-y-0.5 text-sm">
+              {[
+                { value: 'NEW', label: 'Nuevo' },
+                { value: 'USED', label: 'Usado' },
+              ].map((c) => {
+                const active = params.condition === c.value;
+                return (
+                  <li key={c.value}>
+                    <Link
+                      href={`/buscar?${buildQuery(params, {
+                        condition: active ? undefined : c.value,
+                        cursor: undefined,
+                      })}`}
+                      className={`block rounded-md px-2.5 py-1.5 transition ${
+                        active
+                          ? 'bg-brand-50 font-semibold text-brand-700'
+                          : 'text-zinc-600 hover:bg-zinc-50'
+                      }`}
+                    >
+                      {c.label}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
 
           <div>
             <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-400">

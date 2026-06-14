@@ -184,6 +184,30 @@ export default async function ProductPage({
             )}
           </div>
 
+          {/* Ficha técnica */}
+          {product.specs.length > 0 && (
+            <section className="surface-card p-6">
+              <h2 className="mb-3 text-base font-bold tracking-tight">
+                Ficha técnica
+              </h2>
+              <table className="w-full text-sm">
+                <tbody>
+                  {product.specs.map((spec, i) => (
+                    <tr
+                      key={i}
+                      className="border-b border-zinc-50 last:border-0"
+                    >
+                      <td className="py-2 pr-4 text-zinc-400">{spec.key}</td>
+                      <td className="py-2 font-medium text-zinc-700">
+                        {spec.value}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          )}
+
           {/* Descripción */}
           {product.description && (
             <section className="surface-card p-6">
@@ -236,12 +260,28 @@ export default async function ProductPage({
         {/* Caja de compra */}
         <aside className="space-y-4">
           <div className="surface-card p-6 lg:sticky lg:top-32">
-            <p className="text-xs font-medium uppercase tracking-wider text-zinc-400">
-              {product.category.name}
-            </p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-medium uppercase tracking-wider text-zinc-400">
+                {product.category.name}
+              </p>
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                  product.condition === 'USED'
+                    ? 'bg-amber-50 text-amber-700'
+                    : 'bg-green-50 text-green-700'
+                }`}
+              >
+                {product.condition === 'USED' ? 'Usado' : 'Nuevo'}
+              </span>
+            </div>
             <h1 className="mt-1 text-xl font-bold leading-snug tracking-tight">
               {product.title}
             </h1>
+            {product.brand && (
+              <p className="mt-0.5 text-sm text-zinc-500">
+                Marca: <span className="font-medium text-zinc-700">{product.brand}</span>
+              </p>
+            )}
             <div className="mt-1.5">
               <Stars rating={product.rating} />
             </div>
