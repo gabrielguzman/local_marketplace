@@ -46,11 +46,10 @@ cantidad en la página pública.
 
 **Hecho:** full-text en español con índice GIN, filtros por categoría (incluye hijas),
 precio, negocio y calificación, paginación por cursor, ordenamiento por recientes /
-precio asc-desc / relevancia (`ts_rank`).
+precio asc-desc / relevancia (`ts_rank`), autocompletado en el buscador, indexado de
+atributos de variantes (el tsvector combina título + descripción + valores de atributos).
 
-- 🟢 Autocompletado / sugerencias en el buscador.
 - 🟢 Tolerancia a typos y sinónimos (la puerta a Meilisearch si el negocio lo pide).
-- 🟢 Indexar atributos de variantes (buscar "remera roja" no matchea el atributo color).
 
 ## 6. Carrito
 

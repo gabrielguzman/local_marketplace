@@ -216,6 +216,44 @@ describe('Products (e2e)', () => {
     expect(after.body as ProductSummaryDto[]).toHaveLength(0);
   });
 
+  it('autocompletado y búsqueda por atributo de variante', async () => {
+    // producto cuyo color sólo vive en el atributo de la variante
+    await request(app.getHttpServer())
+      .post('/products')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        title: `Remera lisa ${stamp}`,
+        description: 'De algodón',
+        categoryId,
+        variants: [
+          { attributes: { color: 'violeta' }, priceCents: 500000, stock: 5 },
+        ],
+      })
+      .expect(201);
+
+    // autocompletado por título (substring del título)
+    const suggest = await request(app.getHttpServer())
+      .get('/search/suggest')
+      .query({ q: `lisa ${stamp}` })
+      .expect(200);
+    expect(
+      (suggest.body as { title: string }[]).some((s) =>
+        s.title.includes('Remera lisa'),
+      ),
+    ).toBe(true);
+
+    // "violeta" sólo está en el atributo: igual matchea
+    const res = await request(app.getHttpServer())
+      .get('/search')
+      .query({ q: `remera violeta ${stamp}` })
+      .expect(200);
+    expect(
+      (res.body as Paginated<ProductSummaryDto>).items.some((p) =>
+        p.title.includes('Remera lisa'),
+      ),
+    ).toBe(true);
+  });
+
   it('otro usuario no puede editar mi producto', async () => {
     const other = await request(app.getHttpServer())
       .post('/auth/register')

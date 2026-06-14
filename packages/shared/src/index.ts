@@ -155,6 +155,12 @@ export interface ProductSummaryDto {
   rating: RatingSummary;
 }
 
+// Sugerencia de autocompletado del buscador
+export interface SearchSuggestion {
+  title: string;
+  slug: string;
+}
+
 // Ordenamientos de /search ('relevance' requiere `q`)
 export const SEARCH_SORTS = [
   'recent',

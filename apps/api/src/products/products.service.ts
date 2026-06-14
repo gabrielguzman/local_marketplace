@@ -8,6 +8,7 @@ import type {
   Paginated,
   ProductSummaryDto,
   RatingSummary,
+  SearchSuggestion,
 } from '@marketplace/shared';
 import type { Prisma } from '@prisma/client';
 import { BusinessesService } from '../businesses/businesses.service';
@@ -246,6 +247,22 @@ export class ProductsService {
     };
   }
 
+  // Sugerencias para el autocompletado: títulos que contienen el texto
+  async suggest(q: string): Promise<SearchSuggestion[]> {
+    const term = q.trim();
+    if (term.length < 2) return [];
+    const products = await this.prisma.product.findMany({
+      where: {
+        status: 'ACTIVE',
+        title: { contains: term, mode: 'insensitive' },
+      },
+      select: { title: true, slug: true },
+      orderBy: { createdAt: 'desc' },
+      take: 8,
+    });
+    return products;
+  }
+
   async search(query: SearchQueryDto): Promise<Paginated<ProductSummaryDto>> {
     const limit = query.limit ?? 20;
     // 'relevance' solo tiene sentido con texto de búsqueda
@@ -255,15 +272,31 @@ export class ProductsService {
         : (query.sort ?? 'recent');
     const where: Prisma.ProductWhereInput = { status: 'ACTIVE' };
 
-    // ids ordenados por ts_rank, para cuando sort === 'relevance'
+    // ids ordenados por ts_rank, para cuando sort === 'relevance'.
+    // El tsvector se calcula combinando título + descripción + los valores
+    // de los atributos de las variantes, así "remera roja" matchea el color.
     let rankedIds: string[] = [];
     if (query.q) {
       const matches = await this.prisma.$queryRaw<{ id: string }[]>`
-        SELECT id FROM products
-        WHERE "searchVector" @@ websearch_to_tsquery('spanish', ${query.q})
-          AND status = 'ACTIVE'
-        ORDER BY ts_rank("searchVector", websearch_to_tsquery('spanish', ${query.q})) DESC,
-          id DESC
+        SELECT p.id
+        FROM products p
+        LEFT JOIN LATERAL (
+          SELECT string_agg(av.value, ' ') AS attrs
+          FROM product_variants v
+          CROSS JOIN LATERAL jsonb_each_text(v.attributes::jsonb) AS av(key, value)
+          WHERE v."productId" = p.id
+        ) a ON true
+        WHERE p.status = 'ACTIVE'
+          AND to_tsvector('spanish',
+                COALESCE(p.title, '') || ' ' || COALESCE(p.description, '') ||
+                ' ' || COALESCE(a.attrs, ''))
+              @@ websearch_to_tsquery('spanish', ${query.q})
+        ORDER BY ts_rank(
+                to_tsvector('spanish',
+                  COALESCE(p.title, '') || ' ' || COALESCE(p.description, '') ||
+                  ' ' || COALESCE(a.attrs, '')),
+                websearch_to_tsquery('spanish', ${query.q})) DESC,
+          p.id DESC
       `;
       rankedIds = matches.map((m) => m.id);
       where.id = { in: rankedIds };

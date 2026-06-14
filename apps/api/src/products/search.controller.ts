@@ -1,5 +1,9 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import type { Paginated, ProductSummaryDto } from '@marketplace/shared';
+import type {
+  Paginated,
+  ProductSummaryDto,
+  SearchSuggestion,
+} from '@marketplace/shared';
 import { SearchQueryDto } from './dto/search-query.dto';
 import { ProductsService } from './products.service';
 
@@ -12,5 +16,10 @@ export class SearchController {
     @Query() query: SearchQueryDto,
   ): Promise<Paginated<ProductSummaryDto>> {
     return this.products.search(query);
+  }
+
+  @Get('suggest')
+  suggest(@Query('q') q?: string): Promise<SearchSuggestion[]> {
+    return this.products.suggest(q ?? '');
   }
 }
