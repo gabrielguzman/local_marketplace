@@ -103,6 +103,15 @@ export interface CategoryDto {
   children: CategoryDto[];
 }
 
+// Categoría con contexto de navegación (para /c/[slug])
+export interface CategoryDetailDto {
+  id: string;
+  name: string;
+  slug: string;
+  parent: { name: string; slug: string } | null;
+  children: { id: string; name: string; slug: string }[];
+}
+
 export interface ProductVariantDto {
   id: string;
   sku: string | null;

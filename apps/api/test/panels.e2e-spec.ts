@@ -12,6 +12,8 @@ import type {
   AdminUserDto,
   AuditLogDto,
   AuthResponse,
+  CategoryDetailDto,
+  CategoryDto,
   OrderDto,
   Page,
   ProductDetailDto,
@@ -336,5 +338,59 @@ describe('Paneles admin y vendedor (e2e)', () => {
     expect(points.reduce((sum, p) => sum + p.orders, 0)).toBeGreaterThanOrEqual(
       1,
     );
+  });
+
+  it('ABM de categorías: solo admin crea, renombra y borra (con guardas)', async () => {
+    // un usuario común no puede crear
+    await request(app.getHttpServer())
+      .post('/categories')
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .send({ name: `Sin permiso ${stamp}` })
+      .expect(403);
+
+    const parent = await request(app.getHttpServer())
+      .post('/categories')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ name: `ABM Padre ${stamp}` })
+      .expect(201);
+    const parentId = (parent.body as CategoryDto).id;
+
+    // renombrar
+    const renamed = await request(app.getHttpServer())
+      .patch(`/categories/${parentId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ name: `ABM Padre Editado ${stamp}` })
+      .expect(200);
+    expect((renamed.body as CategoryDto).name).toContain('Editado');
+
+    // crear hija
+    const child = await request(app.getHttpServer())
+      .post('/categories')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ name: `ABM Hija ${stamp}`, parentId })
+      .expect(201);
+    const childId = (child.body as CategoryDto).id;
+
+    // el detalle público expone padre e hijas
+    const detail = await request(app.getHttpServer())
+      .get(`/categories/${(renamed.body as CategoryDto).slug}`)
+      .expect(200);
+    expect((detail.body as CategoryDetailDto).children).toHaveLength(1);
+
+    // no se puede borrar el padre con hijas
+    await request(app.getHttpServer())
+      .delete(`/categories/${parentId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(409);
+
+    // borrar hija y luego padre
+    await request(app.getHttpServer())
+      .delete(`/categories/${childId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(204);
+    await request(app.getHttpServer())
+      .delete(`/categories/${parentId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(204);
   });
 });

@@ -130,7 +130,7 @@ export async function Header() {
             {categories.map((cat) => (
               <Link
                 key={cat.id}
-                href={`/buscar?category=${cat.slug}`}
+                href={`/c/${cat.slug}`}
                 className="whitespace-nowrap rounded-md px-3 py-1.5 text-zinc-500 transition hover:bg-brand-50 hover:text-brand-700"
               >
                 {cat.name}

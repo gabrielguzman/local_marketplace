@@ -41,8 +41,6 @@ por URL, pausar/soft-delete, panel con alertas de stock, selector de variante y
 cantidad en la página pública.
 
 - 🟠 **Subida real de imágenes (Cloudinary)** — pegar URLs a mano es inviable para un vendedor real. El mayor irritante de UX actual.
-- 🟢 Página de categoría `/c/[slug]` con subcategorías navegables (las hijas solo filtran).
-- 🟢 ABM de categorías para el admin (hoy solo viven en el seed).
 
 ## 5. Búsqueda
 
@@ -102,9 +100,7 @@ reseña.
 negocios, productos, órdenes — todo con acciones directas, confirmación en las
 acciones destructivas, paginación real (20 por página) en los cuatro listados,
 detalle de orden con datos del comprador, log de auditoría de acciones de
-moderación, métricas con serie temporal de 14 días en el panel.
-
-- 🟢 Gestión de categorías (ver §4).
+moderación, métricas con serie temporal de 14 días en el panel, ABM de categorías.
 
 ## 12. Emails y notificaciones
 

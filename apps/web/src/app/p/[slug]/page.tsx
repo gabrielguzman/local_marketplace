@@ -97,7 +97,7 @@ export default async function ProductPage({
         </Link>
         <span>›</span>
         <Link
-          href={`/buscar?category=${product.category.slug}`}
+          href={`/c/${product.category.slug}`}
           className="hover:text-brand-600"
         >
           {product.category.name}
