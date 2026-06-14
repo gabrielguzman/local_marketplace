@@ -111,13 +111,13 @@ email de verificación.
 
 ## 13. Frontend general
 
-**Hecho:** loading skeleton, error boundary y 404 globales; robots.txt, sitemap.xml
-y Open Graph en productos; feedback de éxito en formularios (FormFeedback) y
-confirmación reusable en acciones destructivas (ConfirmForm).
+**Hecho:** loading skeleton, error boundary y 404 globales; robots.txt, sitemap.xml,
+Open Graph y JSON-LD (`schema.org/Product`) en productos; feedback de éxito en
+formularios (FormFeedback) y confirmación reusable (ConfirmForm); skip-link de
+accesibilidad.
 
-- 🟢 JSON-LD (`schema.org/Product`) en el detalle de producto.
 - 🟢 `next/image` con remotePatterns (cuando las imágenes vengan de Cloudinary).
-- 🟢 Auditoría de accesibilidad (labels, foco, contraste).
+- 🟢 Auditoría de accesibilidad completa (foco, contraste, lectores de pantalla).
 - 🟢 Pulido mobile (el responsive básico está, falta afinarlo).
 
 ## 14. Infraestructura y calidad
@@ -127,8 +127,7 @@ confirmación reusable en acciones destructivas (ConfirmForm).
 - 🟠 Observabilidad: Sentry + logs estructurados (hoy un error en prod sería invisible).
 - 🟢 Backups y plan de restore (Neon lo trae).
 - 🟢 Migración Prisma 6→7 (`package.json#prisma` → `prisma.config.ts`).
-- 🟢 Cachear el contador del carrito del header (hoy 1 fetch extra por página SSR).
-- 🟢 Revisar CSP de helmet para producción.
+- 🟢 CSP estricta con nonces en el frontend (ya hay headers de hardening: HSTS, X-Frame-Options, etc.).
 
 ## 15. Legal (módulo inexistente)
 

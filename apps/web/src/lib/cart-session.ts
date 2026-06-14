@@ -1,6 +1,7 @@
 import 'server-only';
 import { randomUUID } from 'node:crypto';
 import { cookies } from 'next/headers';
+import { cache } from 'react';
 import type { CartDto } from '@marketplace/shared';
 import { apiFetch } from './api';
 import { cookieBase } from './session-cookies';
@@ -49,11 +50,12 @@ export async function clearGuestCart(): Promise<void> {
 }
 
 // Carrito de la identidad actual (usuario o invitado), para SSR.
-export async function getCart(): Promise<CartDto> {
+// cache() lo deduplica dentro del mismo render (header + página).
+export const getCart = cache(async (): Promise<CartDto> => {
   const headers = await readHeaders();
   if (!headers) return EMPTY_CART;
   return apiFetch<CartDto>('/cart', { headers }).catch(() => EMPTY_CART);
-}
+});
 
 export async function getCartCount(): Promise<number> {
   const cart = await getCart();

@@ -96,8 +96,39 @@ export default async function ProductPage({
     }
   }
 
+  const defaultVariant =
+    product.variants.find((v) => v.isDefault) ?? product.variants[0];
+  const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.title,
+    description: product.description || product.title,
+    image: product.images.map((i) => i.url),
+    offers: {
+      '@type': 'Offer',
+      price: (defaultVariant.priceCents / 100).toFixed(2),
+      priceCurrency: defaultVariant.currency,
+      availability:
+        totalStock > 0
+          ? 'https://schema.org/InStock'
+          : 'https://schema.org/OutOfStock',
+    },
+    ...(product.rating.count > 0 && {
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: product.rating.avg,
+        reviewCount: product.rating.count,
+      },
+    }),
+  };
+
   return (
     <div className="space-y-6">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <nav className="flex items-center gap-1.5 text-xs text-zinc-400">
         <Link href="/" className="hover:text-brand-600">
           Inicio
