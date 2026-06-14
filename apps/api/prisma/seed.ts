@@ -177,15 +177,30 @@ async function seedDemoData() {
     },
   });
 
+  const businessProfile = {
+    description:
+      'Tienda de muestra del marketplace. Tecnología, hogar y más con envío a todo el país.',
+    phone: '011 4555-1234',
+    whatsapp: '+54 9 11 5555-1234',
+    email: 'hola@tiendademo.com',
+    website: 'tiendademo.com',
+    instagram: '@tiendademo',
+    address: 'Av. Corrientes 1234',
+    city: 'CABA',
+    province: 'Buenos Aires',
+    hours: 'Lun a Vie de 9 a 18 hs · Sáb de 10 a 14 hs',
+    policies:
+      'Cambios y devoluciones dentro de los 30 días con el comprobante. Envíos a todo el país en 3 a 5 días hábiles.',
+  };
   const business = await prisma.business.upsert({
     where: { ownerId: owner.id },
-    update: {},
+    update: businessProfile,
     create: {
       ownerId: owner.id,
       name: 'Tienda Demo',
       slug: 'tienda-demo',
-      description: 'Productos de muestra para el desarrollo del marketplace.',
       status: 'ACTIVE',
+      ...businessProfile,
     },
   });
 

@@ -5,6 +5,7 @@ import type {
   Paginated,
   ProductSummaryDto,
 } from '@marketplace/shared';
+import { BusinessInfo } from '@/components/business-info';
 import { ProductCard } from '@/components/product-card';
 import { apiFetch } from '@/lib/api';
 
@@ -85,26 +86,32 @@ export default async function BusinessPage({
         </div>
       </section>
 
-      <section>
-        <h2 className="mb-4 text-lg font-bold tracking-tight">
-          Productos{' '}
-          <span className="text-sm font-normal text-zinc-400">
-            ({products.items.length}
-            {products.nextCursor ? '+' : ''})
-          </span>
-        </h2>
-        {products.items.length === 0 ? (
-          <div className="surface-card border-dashed p-12 text-center text-zinc-500">
-            Esta tienda todavía no tiene publicaciones.
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            {products.items.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        )}
-      </section>
+      <div className="grid gap-8 lg:grid-cols-[1fr_300px]">
+        <section>
+          <h2 className="mb-4 text-lg font-bold tracking-tight">
+            Productos{' '}
+            <span className="text-sm font-normal text-zinc-400">
+              ({products.items.length}
+              {products.nextCursor ? '+' : ''})
+            </span>
+          </h2>
+          {products.items.length === 0 ? (
+            <div className="surface-card border-dashed p-12 text-center text-zinc-500">
+              Esta tienda todavía no tiene publicaciones.
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+              {products.items.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )}
+        </section>
+
+        <aside className="lg:order-last">
+          <BusinessInfo business={business} />
+        </aside>
+      </div>
     </div>
   );
 }

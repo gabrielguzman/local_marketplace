@@ -91,13 +91,33 @@ describe('Businesses (e2e)', () => {
     expect((res.body as BusinessDto).slug).toBe('almacen-dona-rosa');
   });
 
-  it('PATCH /businesses/me actualiza el perfil del negocio', async () => {
+  it('PATCH /businesses/me actualiza el perfil completo del negocio', async () => {
     const res = await request(app.getHttpServer())
       .patch('/businesses/me')
       .set('Authorization', `Bearer ${accessToken}`)
-      .send({ description: 'Abierto de 8 a 20' })
+      .send({
+        description: 'Abierto de 8 a 20',
+        phone: '011 4123-4567',
+        whatsapp: '+54 9 11 1234-5678',
+        email: 'rosa@almacen.com',
+        instagram: '@donarosa',
+        city: 'Lanús',
+        province: 'Buenos Aires',
+        hours: 'Lun a Sáb de 8 a 20 hs',
+        policies: 'Cambios dentro de las 48 hs con ticket.',
+      })
       .expect(200);
-    expect((res.body as BusinessDto).description).toBe('Abierto de 8 a 20');
+    const biz = res.body as BusinessDto;
+    expect(biz.phone).toBe('011 4123-4567');
+    expect(biz.city).toBe('Lanús');
+    expect(biz.policies).toContain('Cambios');
+
+    // y aparece en la página pública
+    const pub = await request(app.getHttpServer())
+      .get('/businesses/almacen-dona-rosa')
+      .expect(200);
+    expect((pub.body as BusinessDto).hours).toBe('Lun a Sáb de 8 a 20 hs');
+    expect((pub.body as BusinessDto).instagram).toBe('@donarosa');
   });
 
   it('slug inexistente devuelve 404', async () => {

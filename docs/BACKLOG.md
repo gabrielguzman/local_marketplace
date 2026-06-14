@@ -26,11 +26,11 @@ anonimización (Ley 25.326).
 
 ## 3. Negocios
 
-**Hecho:** crear (1 por usuario, requiere email verificado), editar perfil completo,
-página pública con reputación, suspensión por admin.
+**Hecho:** crear (1 por usuario, requiere email verificado), perfil completo
+(contacto: teléfono/WhatsApp/email/web/Instagram; ubicación; horarios; políticas),
+página pública de la tienda con esa info + reputación, suspensión por admin.
 
 - 🔴 **KYC del vendedor** — para pagarle de verdad a un vendedor vas a necesitar identidad/CUIT/CBU. Requisito de MercadoPago marketplace y de cualquier liquidación.
-- 🟠 Datos de contacto/ubicación/horarios del negocio (campos + UI).
 - 🟢 Flujo de aprobación: el estado `PENDING` existe pero no se usa (nacen ACTIVE). Decidir si se quiere moderación previa.
 - 🟢 Varios negocios por usuario (el modelo lo permite cambiando un unique).
 

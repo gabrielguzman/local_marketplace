@@ -40,18 +40,29 @@ export async function updateBusinessAction(
   const token = await getAccessToken();
   if (!token) redirect('/login');
 
-  const logoUrl = String(formData.get('logoUrl') ?? '').trim();
-  const bannerUrl = String(formData.get('bannerUrl') ?? '').trim();
+  const str = (k: string) => String(formData.get(k) ?? '').trim();
+  const logoUrl = str('logoUrl');
+  const bannerUrl = str('bannerUrl');
 
   try {
     await authFetch(token, '/businesses/me', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name: String(formData.get('name') ?? ''),
-        description: String(formData.get('description') ?? ''),
+        name: str('name'),
+        description: str('description'),
         ...(logoUrl && { logoUrl }),
         ...(bannerUrl && { bannerUrl }),
+        phone: str('phone'),
+        whatsapp: str('whatsapp'),
+        email: str('email'),
+        website: str('website'),
+        instagram: str('instagram'),
+        address: str('address'),
+        city: str('city'),
+        province: str('province'),
+        hours: str('hours'),
+        policies: str('policies'),
       }),
     });
   } catch (err) {

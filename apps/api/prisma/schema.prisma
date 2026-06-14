@@ -165,6 +165,19 @@ model Business {
   description String         @default("")
   logoUrl     String?
   bannerUrl   String?
+  // Contacto
+  phone     String?
+  whatsapp  String?
+  email     String?
+  website   String?
+  instagram String?
+  // Ubicación
+  address  String?
+  city     String?
+  province String?
+  // Operación
+  hours    String? // horarios, texto libre
+  policies String? // políticas de la tienda, texto libre
   status      BusinessStatus @default(PENDING)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt

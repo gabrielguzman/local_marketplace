@@ -25,4 +25,57 @@ export class UpdateBusinessDto {
   @IsOptional()
   @IsUrl()
   bannerUrl?: string;
+
+  // ── Contacto ──
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  whatsapp?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  website?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  instagram?: string;
+
+  // ── Ubicación ──
+  @IsOptional()
+  @IsString()
+  @MaxLength(160)
+  address?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  city?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  province?: string;
+
+  // ── Operación ──
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  hours?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  policies?: string;
 }

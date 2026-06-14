@@ -103,6 +103,16 @@ export interface BusinessDto {
   description: string;
   logoUrl: string | null;
   bannerUrl: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  email: string | null;
+  website: string | null;
+  instagram: string | null;
+  address: string | null;
+  city: string | null;
+  province: string | null;
+  hours: string | null;
+  policies: string | null;
   status: BusinessStatus;
   rating: RatingSummary;
   createdAt: string;
