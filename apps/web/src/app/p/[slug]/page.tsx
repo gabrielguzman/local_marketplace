@@ -12,6 +12,7 @@ import type {
 import { BuyBox } from '@/components/add-to-cart';
 import { FavoriteButton } from '@/components/favorite-button';
 import { ProductCard } from '@/components/product-card';
+import { ProductGallery } from '@/components/product-gallery';
 import { QuestionsSection } from '@/components/questions-section';
 import { RatingBars } from '@/components/rating-bars';
 import { ReportButton } from '@/components/report-button';
@@ -150,42 +151,7 @@ export default async function ProductPage({
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
         <div className="space-y-6">
           {/* Galería */}
-          <div className="surface-card overflow-hidden">
-            <div className="flex aspect-[4/3] items-center justify-center bg-white">
-              {product.images.length > 0 ? (
-                // eslint-disable-next-line @next/next/no-img-element -- dominio de imagen arbitrario en MVP
-                <img
-                  src={product.images[0].url}
-                  alt={product.title}
-                  className="h-full w-full object-contain"
-                />
-              ) : (
-                <svg
-                  className="h-20 w-20 text-zinc-200"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  aria-hidden="true"
-                >
-                  <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.5" />
-                  <circle cx="9" cy="9" r="2" stroke="currentColor" strokeWidth="1.5" />
-                  <path d="m4 17 5-5 4 4 3-3 4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              )}
-            </div>
-            {product.images.length > 1 && (
-              <div className="flex gap-2 border-t border-zinc-100 p-3">
-                {product.images.map((image) => (
-                  // eslint-disable-next-line @next/next/no-img-element -- dominio de imagen arbitrario en MVP
-                  <img
-                    key={image.id}
-                    src={image.url}
-                    alt=""
-                    className="h-16 w-16 rounded-lg border border-zinc-200 object-cover"
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+          <ProductGallery images={product.images} title={product.title} />
 
           {/* Ficha técnica */}
           {product.specs.length > 0 && (

@@ -165,6 +165,8 @@ describe('Products (e2e)', () => {
     type Facets = {
       brands: string[];
       categories: { slug: string; count: number }[];
+      conditions: { value: string; count: number }[];
+      ratings: { min: number; count: number }[];
     };
     // con el texto único del stamp, solo matchea este producto
     const res = await request(app.getHttpServer())
@@ -178,6 +180,8 @@ describe('Products (e2e)', () => {
       slug: categorySlug,
       count: 1,
     });
+    // el producto es USED → la faceta de condición lo refleja
+    expect(facets.conditions).toEqual([{ value: 'USED', count: 1 }]);
 
     // una búsqueda que no matchea nada no ofrece facetas
     const empty = await request(app.getHttpServer())

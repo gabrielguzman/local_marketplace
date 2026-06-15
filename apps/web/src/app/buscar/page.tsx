@@ -66,10 +66,14 @@ export default async function SearchPage({
       nextCursor: null,
     })),
     // facetas dinámicas: marcas y categorías presentes en este resultado
-    apiFetch<SearchFacets>(`/search/facets?${apiQuery}`).catch(() => ({
-      brands: [],
-      categories: [],
-    })),
+    apiFetch<SearchFacets>(`/search/facets?${apiQuery}`).catch(
+      (): SearchFacets => ({
+        brands: [],
+        categories: [],
+        conditions: [],
+        ratings: [],
+      }),
+    ),
   ]);
   const brands = facets.brands;
 
@@ -91,6 +95,24 @@ export default async function SearchPage({
       params.condition ||
       params.brand,
   );
+
+  // Opciones de condición/calificación según las facetas, asegurando que la
+  // opción activa siga visible aunque su conteo combinado sea 0 (para poder
+  // deseleccionarla).
+  const conditionOptions = [...facets.conditions];
+  if (
+    params.condition &&
+    !conditionOptions.some((c) => c.value === params.condition)
+  ) {
+    conditionOptions.push({
+      value: params.condition as 'NEW' | 'USED',
+      count: 0,
+    });
+  }
+  const ratingOptions = [...facets.ratings];
+  if (params.rating && !ratingOptions.some((r) => String(r.min) === params.rating)) {
+    ratingOptions.push({ min: Number(params.rating), count: 0 });
+  }
 
   return (
     <div className="flex flex-col gap-8 md:flex-row">
@@ -208,70 +230,75 @@ export default async function SearchPage({
             </div>
           )}
 
-          <div>
-            <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-400">
-              Condición
-            </h2>
-            <ul className="space-y-0.5 text-sm">
-              {[
-                { value: 'NEW', label: 'Nuevo' },
-                { value: 'USED', label: 'Usado' },
-              ].map((c) => {
-                const active = params.condition === c.value;
-                return (
-                  <li key={c.value}>
-                    <Link
-                      href={`/buscar?${buildQuery(params, {
-                        condition: active ? undefined : c.value,
-                        cursor: undefined,
-                      })}`}
-                      className={`block rounded-md px-2.5 py-1.5 transition ${
-                        active
-                          ? 'bg-brand-50 font-semibold text-brand-700'
-                          : 'text-zinc-600 hover:bg-zinc-50'
-                      }`}
-                    >
-                      {c.label}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
+          {conditionOptions.length > 0 && (
+            <div>
+              <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-400">
+                Condición
+              </h2>
+              <ul className="space-y-0.5 text-sm">
+                {conditionOptions.map((c) => {
+                  const active = params.condition === c.value;
+                  return (
+                    <li key={c.value}>
+                      <Link
+                        href={`/buscar?${buildQuery(params, {
+                          condition: active ? undefined : c.value,
+                          cursor: undefined,
+                        })}`}
+                        className={`flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5 transition ${
+                          active
+                            ? 'bg-brand-50 font-semibold text-brand-700'
+                            : 'text-zinc-600 hover:bg-zinc-50'
+                        }`}
+                      >
+                        <span>{c.value === 'USED' ? 'Usado' : 'Nuevo'}</span>
+                        <span className="text-xs text-zinc-400">{c.count}</span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
 
-          <div>
-            <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-400">
-              Calificación
-            </h2>
-            <ul className="space-y-0.5 text-sm">
-              {[4, 3, 2].map((stars) => {
-                const active = params.rating === String(stars);
-                return (
-                  <li key={stars}>
-                    <Link
-                      href={`/buscar?${buildQuery(params, {
-                        rating: active ? undefined : String(stars),
-                        cursor: undefined,
-                      })}`}
-                      className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 transition ${
-                        active
-                          ? 'bg-brand-50 font-semibold text-brand-700'
-                          : 'text-zinc-600 hover:bg-zinc-50'
-                      }`}
-                    >
-                      <span aria-hidden="true" className="text-amber-500">
-                        {'★'.repeat(stars)}
-                        <span className="text-zinc-300">
-                          {'★'.repeat(5 - stars)}
+          {ratingOptions.length > 0 && (
+            <div>
+              <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-400">
+                Calificación
+              </h2>
+              <ul className="space-y-0.5 text-sm">
+                {ratingOptions.map(({ min: stars, count }) => {
+                  const active = params.rating === String(stars);
+                  return (
+                    <li key={stars}>
+                      <Link
+                        href={`/buscar?${buildQuery(params, {
+                          rating: active ? undefined : String(stars),
+                          cursor: undefined,
+                        })}`}
+                        className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 transition ${
+                          active
+                            ? 'bg-brand-50 font-semibold text-brand-700'
+                            : 'text-zinc-600 hover:bg-zinc-50'
+                        }`}
+                      >
+                        <span aria-hidden="true" className="text-amber-500">
+                          {'★'.repeat(stars)}
+                          <span className="text-zinc-300">
+                            {'★'.repeat(5 - stars)}
+                          </span>
                         </span>
-                      </span>
-                      <span className="text-xs text-zinc-400">y más</span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
+                        <span className="text-xs text-zinc-400">y más</span>
+                        <span className="ml-auto text-xs text-zinc-400">
+                          {count}
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
         </div>
       </aside>
 

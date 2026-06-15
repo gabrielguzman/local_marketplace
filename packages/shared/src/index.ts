@@ -207,11 +207,14 @@ export interface SearchSuggestion {
   slug: string;
 }
 
-// Facetas dinámicas: marcas y categorías presentes en los resultados
-// de la búsqueda actual (cada faceta ignora su propio filtro activo).
+// Facetas dinámicas: marcas, categorías, condición y calificación presentes
+// en los resultados de la búsqueda actual (cada faceta ignora su propio
+// filtro activo, para poder cambiar de opción sin perder el resto).
 export interface SearchFacets {
   brands: string[];
   categories: { id: string; name: string; slug: string; count: number }[];
+  conditions: { value: ProductCondition; count: number }[];
+  ratings: { min: number; count: number }[];
 }
 
 // Ordenamientos de /search ('relevance' requiere `q`)

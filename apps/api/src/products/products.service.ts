@@ -416,14 +416,15 @@ export class ProductsService {
   // alternativas). Devuelve null si la categoría pedida no existe.
   private async facetWhere(
     query: SearchQueryDto,
-    ignore: 'brand' | 'category' | null,
+    ignore: 'brand' | 'category' | 'condition' | 'rating' | null,
+    textIds: string[] | null,
   ): Promise<Prisma.ProductWhereInput | null> {
     const where: Prisma.ProductWhereInput = { status: 'ACTIVE' };
 
-    if (query.q) {
-      where.id = { in: await this.textMatchIds(query.q) };
+    if (textIds) where.id = { in: textIds };
+    if (query.condition && ignore !== 'condition') {
+      where.condition = query.condition;
     }
-    if (query.condition) where.condition = query.condition;
     if (query.brand && ignore !== 'brand') where.brand = query.brand;
     if (query.business) where.business = { slug: query.business };
 
@@ -456,7 +457,7 @@ export class ProductsService {
       };
     }
 
-    if (query.minRating) {
+    if (query.minRating && ignore !== 'rating') {
       const rated = await this.prisma.review.groupBy({
         by: ['productId'],
         _avg: { rating: true },
@@ -477,12 +478,17 @@ export class ProductsService {
     return where;
   }
 
-  // Facetas dinámicas para la búsqueda actual: marcas y categorías presentes
-  // en los resultados (cada una calculada ignorando su propio filtro).
+  // Facetas dinámicas para la búsqueda actual: marcas, categorías, condición
+  // y calificación presentes en los resultados (cada una ignora su filtro).
   async facets(query: SearchQueryDto): Promise<SearchFacets> {
-    const [brandWhere, catWhere] = await Promise.all([
-      this.facetWhere(query, 'brand'),
-      this.facetWhere(query, 'category'),
+    // el match por texto se calcula una vez y se reusa en cada faceta
+    const textIds = query.q ? await this.textMatchIds(query.q) : null;
+
+    const [brandWhere, catWhere, condWhere, ratingWhere] = await Promise.all([
+      this.facetWhere(query, 'brand', textIds),
+      this.facetWhere(query, 'category', textIds),
+      this.facetWhere(query, 'condition', textIds),
+      this.facetWhere(query, 'rating', textIds),
     ]);
 
     const brands = brandWhere
@@ -528,7 +534,41 @@ export class ProductsService {
       }
     }
 
-    return { brands, categories };
+    let conditions: SearchFacets['conditions'] = [];
+    if (condWhere) {
+      const grouped = await this.prisma.product.groupBy({
+        by: ['condition'],
+        where: condWhere,
+        _count: true,
+      });
+      conditions = grouped
+        .map((g) => ({ value: g.condition, count: g._count }))
+        .sort((a, b) => b.count - a.count);
+    }
+
+    // calificación: cuántos productos del set tienen promedio ≥ 4 / 3 / 2
+    let ratings: SearchFacets['ratings'] = [];
+    if (ratingWhere) {
+      const matched = await this.prisma.product.findMany({
+        where: ratingWhere,
+        select: { id: true },
+      });
+      if (matched.length > 0) {
+        const avgs = await this.prisma.review.groupBy({
+          by: ['productId'],
+          where: { productId: { in: matched.map((m) => m.id) } },
+          _avg: { rating: true },
+        });
+        ratings = [4, 3, 2]
+          .map((min) => ({
+            min,
+            count: avgs.filter((a) => (a._avg.rating ?? 0) >= min).length,
+          }))
+          .filter((r) => r.count > 0);
+      }
+    }
+
+    return { brands, categories, conditions, ratings };
   }
 
   async search(query: SearchQueryDto): Promise<Paginated<ProductSummaryDto>> {
