@@ -1,7 +1,11 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import type { BusinessDto, SellerDashboard } from '@marketplace/shared';
+import {
+  PLATFORM_FEE_PERCENT,
+  type BusinessDto,
+  type SellerDashboard,
+} from '@marketplace/shared';
 import { BusinessForm } from '@/components/business-form';
 import { authFetch } from '@/lib/api';
 import { formatPrice } from '@/lib/format';
@@ -67,11 +71,15 @@ export default async function SellerPage() {
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <div className="surface-card p-5">
               <p className="text-2xl font-extrabold tracking-tight">
-                {formatPrice(dashboard.revenueCents)}
+                {formatPrice(dashboard.netCents)}
               </p>
               <p className="mt-0.5 text-sm text-zinc-500">
-                Facturado ({dashboard.salesCount}{' '}
+                Neto a cobrar ({dashboard.salesCount}{' '}
                 {dashboard.salesCount === 1 ? 'venta' : 'ventas'})
+              </p>
+              <p className="mt-2 border-t border-zinc-100 pt-2 text-xs text-zinc-400">
+                Facturado {formatPrice(dashboard.revenueCents)} · comisión{' '}
+                {PLATFORM_FEE_PERCENT}% −{formatPrice(dashboard.feesCents)}
               </p>
             </div>
             <Link href="/vender/ventas" className="surface-card p-5 transition hover:border-brand-300">

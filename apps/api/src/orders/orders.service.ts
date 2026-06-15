@@ -5,11 +5,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import type {
-  OrderDto,
-  SellerDashboard,
-  SellerSubOrderDto,
-  ShippingMethod,
+import {
+  type OrderDto,
+  type SellerDashboard,
+  type SellerSubOrderDto,
+  type ShippingMethod,
+  platformFeeCents,
 } from '@marketplace/shared';
 import type { SubOrderStatus } from '@prisma/client';
 import { BusinessesService } from '../businesses/businesses.service';
@@ -169,6 +170,7 @@ export class OrdersService {
               subtotalCents: s.subtotalCents,
               shippingMethod: s.method,
               shippingCents: s.shippingCents,
+              feeCents: platformFeeCents(s.subtotalCents),
               items: {
                 create: s.items.map((item) => ({
                   variantId: item.variantId,
@@ -353,7 +355,7 @@ export class OrdersService {
     ] = await this.prisma.$transaction([
       this.prisma.subOrder.aggregate({
         where: { ...paidSales, status: { not: 'CANCELLED' } },
-        _sum: { subtotalCents: true },
+        _sum: { subtotalCents: true, feeCents: true },
         _count: true,
       }),
       this.prisma.subOrder.count({
@@ -376,8 +378,12 @@ export class OrdersService {
       }),
     ]);
 
+    const grossCents = revenue._sum.subtotalCents ?? 0;
+    const feesCents = revenue._sum.feeCents ?? 0;
     return {
-      revenueCents: revenue._sum.subtotalCents ?? 0,
+      revenueCents: grossCents,
+      feesCents,
+      netCents: grossCents - feesCents,
       salesCount: revenue._count,
       pendingSalesCount,
       activeProducts,

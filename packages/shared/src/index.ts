@@ -66,6 +66,15 @@ export const PAYMENT_STATUSES = [
 ] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 
+// Comisión de la plataforma: % sobre el subtotal de productos de cada
+// sub-orden (el envío lo cobra entero el vendedor). Fuente única de verdad
+// para el cálculo (API) y para mostrarla (web).
+export const PLATFORM_FEE_PERCENT = 10;
+
+export function platformFeeCents(subtotalCents: number): number {
+  return Math.round((subtotalCents * PLATFORM_FEE_PERCENT) / 100);
+}
+
 // ── Auth y usuarios ──────────────────────────────────────
 
 export const USER_ROLES = ['USER', 'ADMIN'] as const;
@@ -285,6 +294,7 @@ export interface SubOrderDto {
   subtotalCents: number; // sólo productos
   shippingMethod: ShippingMethod;
   shippingCents: number;
+  feeCents: number; // comisión de la plataforma sobre el subtotal
   trackingCode: string | null;
   cancelReason: string | null;
   business: { id: string; name: string; slug: string };
@@ -409,6 +419,7 @@ export interface AdminStats {
   paidOrders: number;
   pendingReports: number;
   gmvCents: number; // facturación total de órdenes pagadas
+  feesCents: number; // comisión total cobrada por la plataforma
 }
 
 export interface AdminUserDto {
@@ -491,7 +502,9 @@ export interface AdminMetricPoint {
 // ── Dashboard del vendedor ───────────────────────────────
 
 export interface SellerDashboard {
-  revenueCents: number; // suma de sub-órdenes de órdenes pagadas
+  revenueCents: number; // suma de sub-órdenes de órdenes pagadas (bruto)
+  feesCents: number; // comisión de la plataforma sobre esas ventas
+  netCents: number; // lo que recibe el vendedor (bruto − comisión)
   salesCount: number;
   pendingSalesCount: number; // ventas esperando confirmación/envío
   activeProducts: number;

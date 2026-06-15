@@ -89,13 +89,26 @@ export default async function SalesPage() {
                 </ul>
 
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-100 px-5 py-3.5">
-                  <p className="text-sm text-zinc-500">
-                    Enviar a: {sale.shippingAddress.street}{' '}
-                    {sale.shippingAddress.number}, {sale.shippingAddress.city} ·{' '}
-                    <strong className="text-zinc-800">
-                      {formatPrice(sale.subtotalCents, 'ARS')}
-                    </strong>
-                  </p>
+                  <div className="text-sm text-zinc-500">
+                    <p>
+                      Enviar a: {sale.shippingAddress.street}{' '}
+                      {sale.shippingAddress.number}, {sale.shippingAddress.city}
+                    </p>
+                    <p className="mt-1 text-xs">
+                      Subtotal {formatPrice(sale.subtotalCents, 'ARS')}
+                      {sale.shippingCents > 0 && (
+                        <> · Envío {formatPrice(sale.shippingCents, 'ARS')}</>
+                      )}{' '}
+                      · Comisión −{formatPrice(sale.feeCents, 'ARS')} ·{' '}
+                      <strong className="text-zinc-800">
+                        Recibís{' '}
+                        {formatPrice(
+                          sale.subtotalCents - sale.feeCents + sale.shippingCents,
+                          'ARS',
+                        )}
+                      </strong>
+                    </p>
+                  </div>
                   <SaleStatusActions
                     subOrderId={sale.id}
                     actions={SELLER_NEXT_ACTIONS[sale.status]}

@@ -57,16 +57,26 @@ export default async function AdminPage({
       </h1>
 
       {stats && (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-7">
           {[
             { label: 'Facturación (GMV)', value: formatPrice(stats.gmvCents) },
+            {
+              label: 'Comisión cobrada',
+              value: formatPrice(stats.feesCents),
+              highlight: true,
+            },
             { label: 'Órdenes pagadas', value: stats.paidOrders },
             { label: 'Usuarios', value: stats.users },
             { label: 'Negocios', value: stats.businesses },
             { label: 'Productos activos', value: stats.activeProducts },
             { label: 'Denuncias pendientes', value: stats.pendingReports },
           ].map((stat) => (
-            <div key={stat.label} className="surface-card p-4">
+            <div
+              key={stat.label}
+              className={`surface-card p-4 ${
+                stat.highlight ? 'border-brand-300 bg-brand-50/50' : ''
+              }`}
+            >
               <p className="truncate text-xl font-extrabold tracking-tight">
                 {stat.value}
               </p>

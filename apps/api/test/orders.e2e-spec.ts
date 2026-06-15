@@ -180,6 +180,13 @@ describe('Cart & Orders (e2e)', () => {
     expect(order.totalCents).toBe(7200000);
     expect(order.paymentStatus).toBe('PENDING');
 
+    // comisión de plataforma: 10% del subtotal de cada sub-orden
+    for (const sub of order.subOrders) {
+      expect(sub.feeCents).toBe(Math.round(sub.subtotalCents * 0.1));
+    }
+    const feesTotal = order.subOrders.reduce((s, o) => s + o.feeCents, 0);
+    expect(feesTotal).toBe(720000); // 10% de 7.200.000
+
     const cart = await request(app.getHttpServer())
       .get('/cart')
       .set('Authorization', `Bearer ${buyerToken}`)

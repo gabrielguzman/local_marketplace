@@ -90,18 +90,30 @@ export class AdminService {
   }
 
   async stats(): Promise<AdminStats> {
-    const [users, businesses, activeProducts, paidOrders, pendingReports, gmv] =
-      await this.prisma.$transaction([
-        this.prisma.user.count(),
-        this.prisma.business.count(),
-        this.prisma.product.count({ where: { status: 'ACTIVE' } }),
-        this.prisma.order.count({ where: { status: 'PAID' } }),
-        this.prisma.report.count({ where: { status: 'PENDING' } }),
-        this.prisma.order.aggregate({
-          where: { status: 'PAID' },
-          _sum: { totalCents: true },
-        }),
-      ]);
+    const [
+      users,
+      businesses,
+      activeProducts,
+      paidOrders,
+      pendingReports,
+      gmv,
+      fees,
+    ] = await this.prisma.$transaction([
+      this.prisma.user.count(),
+      this.prisma.business.count(),
+      this.prisma.product.count({ where: { status: 'ACTIVE' } }),
+      this.prisma.order.count({ where: { status: 'PAID' } }),
+      this.prisma.report.count({ where: { status: 'PENDING' } }),
+      this.prisma.order.aggregate({
+        where: { status: 'PAID' },
+        _sum: { totalCents: true },
+      }),
+      // comisión cobrada: suma de feeCents de sub-órdenes de órdenes pagadas
+      this.prisma.subOrder.aggregate({
+        where: { order: { status: 'PAID' }, status: { not: 'CANCELLED' } },
+        _sum: { feeCents: true },
+      }),
+    ]);
     return {
       users,
       businesses,
@@ -109,6 +121,7 @@ export class AdminService {
       paidOrders,
       pendingReports,
       gmvCents: gmv._sum.totalCents ?? 0,
+      feesCents: fees._sum.feeCents ?? 0,
     };
   }
 

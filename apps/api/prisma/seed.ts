@@ -1,4 +1,5 @@
 import { PrismaClient, Prisma } from '@prisma/client';
+import { platformFeeCents } from '@marketplace/shared';
 import * as argon2 from 'argon2';
 
 const prisma = new PrismaClient();
@@ -567,6 +568,7 @@ async function createOrder(
       subtotalCents: subtotal,
       shippingMethod: 'SHIPPING',
       shippingCents: shipping,
+      feeCents: platformFeeCents(subtotal),
       trackingCode: opts.trackingCode ?? null,
       cancelReason: opts.cancelReason ?? null,
       items: {

@@ -420,6 +420,7 @@ model SubOrder {
   subtotalCents  Int // sólo productos (sin envío)
   shippingMethod ShippingMethod @default(TO_AGREE)
   shippingCents  Int            @default(0)
+  feeCents       Int            @default(0) // comisión de la plataforma
   trackingCode   String? // número de seguimiento (al marcar enviada)
   cancelReason   String? // motivo si el vendedor la cancela
 
