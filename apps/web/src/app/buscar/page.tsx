@@ -3,6 +3,7 @@ import type {
   CategoryDto,
   Paginated,
   ProductSummaryDto,
+  SearchFacets,
 } from '@marketplace/shared';
 import { ProductCard } from '@/components/product-card';
 import { apiFetch } from '@/lib/api';
@@ -58,17 +59,19 @@ export default async function SearchPage({
   if (params.sort) apiQuery.set('sort', params.sort);
   if (params.cursor) apiQuery.set('cursor', params.cursor);
 
-  const brandsQuery = params.category
-    ? `?category=${encodeURIComponent(params.category)}`
-    : '';
-  const [categories, results, brands] = await Promise.all([
+  const [categories, results, facets] = await Promise.all([
     apiFetch<CategoryDto[]>('/categories').catch(() => []),
     apiFetch<Paginated<ProductSummaryDto>>(`/search?${apiQuery}`).catch(() => ({
       items: [],
       nextCursor: null,
     })),
-    apiFetch<string[]>(`/search/brands${brandsQuery}`).catch(() => []),
+    // facetas dinámicas: marcas y categorías presentes en este resultado
+    apiFetch<SearchFacets>(`/search/facets?${apiQuery}`).catch(() => ({
+      brands: [],
+      categories: [],
+    })),
   ]);
+  const brands = facets.brands;
 
   // Si no hay resultados, ofrecemos lo más vendido para no dejar la página vacía.
   const suggestions =
@@ -110,20 +113,26 @@ export default async function SearchPage({
                   Todas
                 </Link>
               </li>
-              {categories.map((cat) => (
+              {facets.categories.map((cat) => (
                 <li key={cat.id}>
                   <Link
                     href={`/buscar?${buildQuery(params, { category: cat.slug, cursor: undefined })}`}
-                    className={`block rounded-md px-2.5 py-1.5 transition ${
+                    className={`flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5 transition ${
                       params.category === cat.slug
                         ? 'bg-brand-50 font-semibold text-brand-700'
                         : 'text-zinc-600 hover:bg-zinc-50'
                     }`}
                   >
-                    {cat.name}
+                    <span>{cat.name}</span>
+                    <span className="text-xs text-zinc-400">{cat.count}</span>
                   </Link>
                 </li>
               ))}
+              {facets.categories.length === 0 && (
+                <li className="px-2.5 py-1.5 text-xs text-zinc-400">
+                  Sin categorías para esta búsqueda
+                </li>
+              )}
             </ul>
           </div>
 

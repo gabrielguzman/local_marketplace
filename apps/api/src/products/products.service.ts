@@ -8,6 +8,7 @@ import type {
   Paginated,
   ProductSummaryDto,
   RatingSummary,
+  SearchFacets,
   SearchSuggestion,
 } from '@marketplace/shared';
 import type { Prisma } from '@prisma/client';
@@ -377,6 +378,159 @@ export class ProductsService {
     return rows.map((r) => r.brand).filter((b): b is string => Boolean(b));
   }
 
+  // ids que matchean el texto, ya ordenados por ts_rank (más relevante primero).
+  // Combina título + descripción + marca + atributos de variantes + ficha técnica.
+  private async textMatchIds(q: string): Promise<string[]> {
+    const matches = await this.prisma.$queryRaw<{ id: string }[]>`
+      SELECT p.id
+      FROM products p
+      LEFT JOIN LATERAL (
+        SELECT string_agg(av.value, ' ') AS attrs
+        FROM product_variants v
+        CROSS JOIN LATERAL jsonb_each_text(v.attributes::jsonb) AS av(key, value)
+        WHERE v."productId" = p.id
+      ) a ON true
+      LEFT JOIN LATERAL (
+        SELECT string_agg(spec->>'value', ' ') AS specs
+        FROM jsonb_array_elements(p.specs::jsonb) AS spec
+      ) s ON true
+      WHERE p.status = 'ACTIVE'
+        AND to_tsvector('spanish',
+              COALESCE(p.title, '') || ' ' || COALESCE(p.description, '') ||
+              ' ' || COALESCE(p.brand, '') || ' ' || COALESCE(a.attrs, '') ||
+              ' ' || COALESCE(s.specs, ''))
+            @@ websearch_to_tsquery('spanish', ${q})
+      ORDER BY ts_rank(
+              to_tsvector('spanish',
+                COALESCE(p.title, '') || ' ' || COALESCE(p.description, '') ||
+                ' ' || COALESCE(p.brand, '') || ' ' || COALESCE(a.attrs, '') ||
+                ' ' || COALESCE(s.specs, '')),
+              websearch_to_tsquery('spanish', ${q})) DESC,
+        p.id DESC
+    `;
+    return matches.map((m) => m.id);
+  }
+
+  // Where del conjunto que matchea la búsqueda, aplicando todos los filtros
+  // activos MENOS el indicado en `ignore` (así esa faceta puede ofrecer
+  // alternativas). Devuelve null si la categoría pedida no existe.
+  private async facetWhere(
+    query: SearchQueryDto,
+    ignore: 'brand' | 'category' | null,
+  ): Promise<Prisma.ProductWhereInput | null> {
+    const where: Prisma.ProductWhereInput = { status: 'ACTIVE' };
+
+    if (query.q) {
+      where.id = { in: await this.textMatchIds(query.q) };
+    }
+    if (query.condition) where.condition = query.condition;
+    if (query.brand && ignore !== 'brand') where.brand = query.brand;
+    if (query.business) where.business = { slug: query.business };
+
+    if (query.category && ignore !== 'category') {
+      const category = await this.prisma.category.findUnique({
+        where: { slug: query.category },
+        include: { children: { select: { id: true } } },
+      });
+      if (!category) return null;
+      where.categoryId = {
+        in: [category.id, ...category.children.map((c) => c.id)],
+      };
+    }
+
+    if (
+      query.minPriceCents !== undefined ||
+      query.maxPriceCents !== undefined
+    ) {
+      where.variants = {
+        some: {
+          priceCents: {
+            ...(query.minPriceCents !== undefined && {
+              gte: query.minPriceCents,
+            }),
+            ...(query.maxPriceCents !== undefined && {
+              lte: query.maxPriceCents,
+            }),
+          },
+        },
+      };
+    }
+
+    if (query.minRating) {
+      const rated = await this.prisma.review.groupBy({
+        by: ['productId'],
+        _avg: { rating: true },
+        having: { rating: { _avg: { gte: query.minRating } } },
+      });
+      const ratedIds = new Set(rated.map((r) => r.productId));
+      const existing =
+        where.id && typeof where.id === 'object' && 'in' in where.id
+          ? (where.id.in as string[])
+          : null;
+      where.id = {
+        in: existing
+          ? existing.filter((id) => ratedIds.has(id))
+          : [...ratedIds],
+      };
+    }
+
+    return where;
+  }
+
+  // Facetas dinámicas para la búsqueda actual: marcas y categorías presentes
+  // en los resultados (cada una calculada ignorando su propio filtro).
+  async facets(query: SearchQueryDto): Promise<SearchFacets> {
+    const [brandWhere, catWhere] = await Promise.all([
+      this.facetWhere(query, 'brand'),
+      this.facetWhere(query, 'category'),
+    ]);
+
+    const brands = brandWhere
+      ? (
+          await this.prisma.product.findMany({
+            where: { ...brandWhere, brand: { not: null } },
+            select: { brand: true },
+            distinct: ['brand'],
+            orderBy: { brand: 'asc' },
+            take: 40,
+          })
+        )
+          .map((r) => r.brand)
+          .filter((b): b is string => Boolean(b))
+      : [];
+
+    let categories: SearchFacets['categories'] = [];
+    if (catWhere) {
+      const grouped = await this.prisma.product.groupBy({
+        by: ['categoryId'],
+        where: catWhere,
+        _count: true,
+      });
+      if (grouped.length > 0) {
+        const all = await this.prisma.category.findMany({
+          select: { id: true, name: true, slug: true, parentId: true },
+        });
+        const byId = new Map(all.map((c) => [c.id, c]));
+        // sumar al nivel del padre (el sidebar lista categorías raíz)
+        const counts = new Map<string, number>();
+        for (const g of grouped) {
+          const cat = byId.get(g.categoryId);
+          if (!cat) continue;
+          const root = cat.parentId ? (byId.get(cat.parentId) ?? cat) : cat;
+          counts.set(root.id, (counts.get(root.id) ?? 0) + g._count);
+        }
+        categories = [...counts.entries()]
+          .map(([id, count]) => {
+            const cat = byId.get(id)!;
+            return { id, name: cat.name, slug: cat.slug, count };
+          })
+          .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+      }
+    }
+
+    return { brands, categories };
+  }
+
   async search(query: SearchQueryDto): Promise<Paginated<ProductSummaryDto>> {
     const limit = query.limit ?? 20;
     // 'relevance' solo tiene sentido con texto de búsqueda
@@ -391,34 +545,7 @@ export class ProductsService {
     // de los atributos de las variantes, así "remera roja" matchea el color.
     let rankedIds: string[] = [];
     if (query.q) {
-      const matches = await this.prisma.$queryRaw<{ id: string }[]>`
-        SELECT p.id
-        FROM products p
-        LEFT JOIN LATERAL (
-          SELECT string_agg(av.value, ' ') AS attrs
-          FROM product_variants v
-          CROSS JOIN LATERAL jsonb_each_text(v.attributes::jsonb) AS av(key, value)
-          WHERE v."productId" = p.id
-        ) a ON true
-        LEFT JOIN LATERAL (
-          SELECT string_agg(spec->>'value', ' ') AS specs
-          FROM jsonb_array_elements(p.specs::jsonb) AS spec
-        ) s ON true
-        WHERE p.status = 'ACTIVE'
-          AND to_tsvector('spanish',
-                COALESCE(p.title, '') || ' ' || COALESCE(p.description, '') ||
-                ' ' || COALESCE(p.brand, '') || ' ' || COALESCE(a.attrs, '') ||
-                ' ' || COALESCE(s.specs, ''))
-              @@ websearch_to_tsquery('spanish', ${query.q})
-        ORDER BY ts_rank(
-                to_tsvector('spanish',
-                  COALESCE(p.title, '') || ' ' || COALESCE(p.description, '') ||
-                  ' ' || COALESCE(p.brand, '') || ' ' || COALESCE(a.attrs, '') ||
-                  ' ' || COALESCE(s.specs, '')),
-                websearch_to_tsquery('spanish', ${query.q})) DESC,
-          p.id DESC
-      `;
-      rankedIds = matches.map((m) => m.id);
+      rankedIds = await this.textMatchIds(query.q);
       where.id = { in: rankedIds };
     }
 

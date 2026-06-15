@@ -2,6 +2,7 @@ import { Controller, Get, Query } from '@nestjs/common';
 import type {
   Paginated,
   ProductSummaryDto,
+  SearchFacets,
   SearchSuggestion,
 } from '@marketplace/shared';
 import { SearchQueryDto } from './dto/search-query.dto';
@@ -26,6 +27,12 @@ export class SearchController {
   @Get('brands')
   brands(@Query('category') category?: string): Promise<string[]> {
     return this.products.brands(category);
+  }
+
+  // Facetas dinámicas (marcas + categorías) del resultado actual
+  @Get('facets')
+  facets(@Query() query: SearchQueryDto): Promise<SearchFacets> {
+    return this.products.facets(query);
   }
 
   @Get('best-sellers')

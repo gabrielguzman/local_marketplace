@@ -161,6 +161,33 @@ describe('Products (e2e)', () => {
     ).toBe(true);
   });
 
+  it('las facetas son dinámicas: reflejan solo lo que matchea la búsqueda', async () => {
+    type Facets = {
+      brands: string[];
+      categories: { slug: string; count: number }[];
+    };
+    // con el texto único del stamp, solo matchea este producto
+    const res = await request(app.getHttpServer())
+      .get('/search/facets')
+      .query({ q: `taladro ${stamp}` })
+      .expect(200);
+    const facets = res.body as Facets;
+    expect(facets.brands).toEqual(['Bauker']);
+    expect(facets.categories).toHaveLength(1);
+    expect(facets.categories[0]).toMatchObject({
+      slug: categorySlug,
+      count: 1,
+    });
+
+    // una búsqueda que no matchea nada no ofrece facetas
+    const empty = await request(app.getHttpServer())
+      .get('/search/facets')
+      .query({ q: `noexiste-${stamp}` })
+      .expect(200);
+    expect((empty.body as Facets).brands).toEqual([]);
+    expect((empty.body as Facets).categories).toEqual([]);
+  });
+
   it('la página pública del producto funciona sin auth', async () => {
     const res = await request(app.getHttpServer())
       .get(`/products/${productSlug}`)
