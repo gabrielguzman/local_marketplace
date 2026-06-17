@@ -69,19 +69,22 @@ export default async function SellerPage() {
       {dashboard && (
         <>
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <div className="surface-card p-5">
+            <Link
+              href="/vender/cobros"
+              className="surface-card p-5 transition hover:border-brand-300"
+            >
               <p className="text-2xl font-extrabold tracking-tight">
                 {formatPrice(dashboard.netCents)}
               </p>
               <p className="mt-0.5 text-sm text-zinc-500">
                 Neto a cobrar ({dashboard.salesCount}{' '}
-                {dashboard.salesCount === 1 ? 'venta' : 'ventas'})
+                {dashboard.salesCount === 1 ? 'venta' : 'ventas'}) →
               </p>
               <p className="mt-2 border-t border-zinc-100 pt-2 text-xs text-zinc-400">
                 Facturado {formatPrice(dashboard.revenueCents)} · comisión{' '}
                 {PLATFORM_FEE_PERCENT}% −{formatPrice(dashboard.feesCents)}
               </p>
-            </div>
+            </Link>
             <Link href="/vender/ventas" className="surface-card p-5 transition hover:border-brand-300">
               <p className="text-2xl font-extrabold tracking-tight">
                 {dashboard.pendingSalesCount}

@@ -61,6 +61,7 @@ enum NotificationType {
   QUESTION // al vendedor: te hicieron una pregunta
   QUESTION_ANSWERED // al comprador: respondieron tu pregunta
   REVIEW_REPLY // al comprador: el vendedor respondió tu reseña
+  PAYOUT // al vendedor: se acreditó una liquidación
 }
 
 // Notificación in-app para un usuario.
@@ -216,6 +217,7 @@ model Business {
   products  Product[]
   subOrders SubOrder[]
   reviews   Review[]
+  payouts   Payout[]
 
   @@map("businesses")
 }
@@ -423,14 +425,34 @@ model SubOrder {
   feeCents       Int            @default(0) // comisión de la plataforma
   trackingCode   String? // número de seguimiento (al marcar enviada)
   cancelReason   String? // motivo si el vendedor la cancela
+  payoutId       String? // liquidación que incluyó esta venta (null = sin liquidar)
 
   order    Order       @relation(fields: [orderId], references: [id])
   business Business    @relation(fields: [businessId], references: [id])
   items    OrderItem[]
+  payout   Payout?     @relation(fields: [payoutId], references: [id])
 
   @@index([orderId])
   @@index([businessId])
+  @@index([payoutId])
   @@map("sub_orders")
+}
+
+// Liquidación: registro de un pago al vendedor por sus ventas entregadas
+// (neto = subtotal − comisión + envío). El pago real es manual (transferencia);
+// acá queda el comprobante y las sub-órdenes que cubrió.
+model Payout {
+  id          String   @id @default(uuid())
+  businessId  String
+  amountCents Int // neto liquidado al vendedor
+  note        String? // referencia de la transferencia
+  createdAt   DateTime @default(now())
+
+  business  Business   @relation(fields: [businessId], references: [id])
+  subOrders SubOrder[]
+
+  @@index([businessId])
+  @@map("payouts")
 }
 
 model OrderItem {

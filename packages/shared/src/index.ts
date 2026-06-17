@@ -501,6 +501,38 @@ export interface AdminMetricPoint {
 
 // ── Dashboard del vendedor ───────────────────────────────
 
+// ── Liquidaciones (payouts) ──────────────────────────────
+
+export interface PayoutDto {
+  id: string;
+  amountCents: number;
+  note: string | null;
+  createdAt: string;
+  salesCount: number; // sub-órdenes que cubrió
+}
+
+// Resumen de cobros del vendedor
+export interface SellerPayoutSummary {
+  availableCents: number; // ventas entregadas sin liquidar (listas para cobrar)
+  pendingCents: number; // pagas pero todavía no entregadas
+  paidCents: number; // ya liquidado históricamente
+  payouts: PayoutDto[]; // historial de liquidaciones recibidas
+}
+
+// Fila del panel admin: saldo a pagar por negocio
+export interface AdminPayoutRow {
+  businessId: string;
+  businessName: string;
+  businessSlug: string;
+  availableCents: number;
+  salesCount: number; // ventas entregadas sin liquidar
+}
+
+export interface AdminPayoutsView {
+  rows: AdminPayoutRow[];
+  recent: (PayoutDto & { businessName: string })[];
+}
+
 export interface SellerDashboard {
   revenueCents: number; // suma de sub-órdenes de órdenes pagadas (bruto)
   feesCents: number; // comisión de la plataforma sobre esas ventas
@@ -520,6 +552,7 @@ export const NOTIFICATION_TYPES = [
   'QUESTION',
   'QUESTION_ANSWERED',
   'REVIEW_REPLY',
+  'PAYOUT',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

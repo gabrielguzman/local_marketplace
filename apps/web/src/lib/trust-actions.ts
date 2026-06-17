@@ -257,6 +257,23 @@ export async function adminUserRoleAction(formData: FormData): Promise<void> {
   revalidatePath('/admin/usuarios');
 }
 
+export async function adminCreatePayoutAction(
+  formData: FormData,
+): Promise<void> {
+  const token = await getAccessToken();
+  if (!token) redirect('/login');
+
+  await authFetch(token, '/admin/payouts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      businessId: String(formData.get('businessId')),
+      note: String(formData.get('note') ?? '') || undefined,
+    }),
+  }).catch(() => undefined);
+  revalidatePath('/admin/liquidaciones');
+}
+
 export async function adminBusinessStatusAction(
   formData: FormData,
 ): Promise<void> {

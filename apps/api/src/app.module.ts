@@ -13,6 +13,7 @@ import { FavoritesModule } from './favorites/favorites.module';
 import { HealthModule } from './health/health.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { OrdersModule } from './orders/orders.module';
+import { PayoutsModule } from './payouts/payouts.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProductsModule } from './products/products.module';
 import { QuestionsModule } from './questions/questions.module';
@@ -39,6 +40,7 @@ import { UsersModule } from './users/users.module';
     ProductsModule,
     CartModule,
     OrdersModule,
+    PayoutsModule,
     ReviewsModule,
     QuestionsModule,
     FavoritesModule,

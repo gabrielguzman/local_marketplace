@@ -29,10 +29,12 @@ describe('Cart & Orders (e2e)', () => {
   const buyerEmail = `e2e-buyer-${stamp}@test.com`;
   const seller1Email = `e2e-seller1-${stamp}@test.com`;
   const seller2Email = `e2e-seller2-${stamp}@test.com`;
-  const allEmails = [buyerEmail, seller1Email, seller2Email];
+  const adminEmail = `e2e-admin-${stamp}@test.com`;
+  const allEmails = [buyerEmail, seller1Email, seller2Email, adminEmail];
 
   let buyerToken: string;
   let seller1Token: string;
+  let adminToken: string;
   let categoryId: string;
   let variant1Id: string; // del negocio 1, stock 5
   let variant2Id: string; // del negocio 2, stock 3
@@ -99,6 +101,17 @@ describe('Cart & Orders (e2e)', () => {
     buyerToken = await register(buyerEmail);
     seller1Token = await register(seller1Email);
     const seller2Token = await register(seller2Email);
+    await register(adminEmail);
+    await prisma.user.update({
+      where: { email: adminEmail },
+      data: { role: 'ADMIN' },
+    });
+    // el rol viaja en el JWT: re-login para obtener un token con rol ADMIN
+    const adminLogin = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: adminEmail, password: 'super-secreta-123' })
+      .expect(200);
+    adminToken = (adminLogin.body as AuthResponse).accessToken;
 
     variant1Id = await createSellerWithProduct(
       seller1Token,
@@ -128,6 +141,9 @@ describe('Cart & Orders (e2e)', () => {
     });
     await prisma.order.deleteMany({
       where: { buyer: { email: buyerEmail } },
+    });
+    await prisma.payout.deleteMany({
+      where: { business: { owner: { email: { in: allEmails } } } },
     });
     await prisma.product.deleteMany({
       where: { business: { owner: { email: { in: allEmails } } } },
@@ -273,6 +289,68 @@ describe('Cart & Orders (e2e)', () => {
       (detail.body as OrderDto).subOrders.find((s) => s.id === subOrderId)
         ?.trackingCode,
     ).toBe('CA123456789AR');
+  });
+
+  it('liquidación: la venta entregada queda disponible y el admin la paga', async () => {
+    type SellerSummary = {
+      availableCents: number;
+      pendingCents: number;
+      paidCents: number;
+      payouts: { amountCents: number; salesCount: number }[];
+    };
+    type AdminView = {
+      rows: { businessId: string; availableCents: number }[];
+      recent: { amountCents: number }[];
+    };
+
+    // neto del vendedor 1: subtotal 3.000.000 − 10% comisión = 2.700.000
+    const NET = 2700000;
+
+    // el vendedor ve la venta entregada como disponible
+    const before = await request(app.getHttpServer())
+      .get('/businesses/me/payouts')
+      .set('Authorization', `Bearer ${seller1Token}`)
+      .expect(200);
+    expect((before.body as SellerSummary).availableCents).toBe(NET);
+    expect((before.body as SellerSummary).paidCents).toBe(0);
+
+    // el admin ve el saldo a pagar de ese negocio
+    const adminView = await request(app.getHttpServer())
+      .get('/admin/payouts')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+    const row = (adminView.body as AdminView).rows.find(
+      (r) => r.availableCents === NET,
+    );
+    expect(row).toBeDefined();
+
+    // registra el pago
+    await request(app.getHttpServer())
+      .post('/admin/payouts')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ businessId: row!.businessId, note: 'Transferencia test' })
+      .expect(201);
+
+    // ahora el vendedor no tiene disponible y sí historial
+    const after = await request(app.getHttpServer())
+      .get('/businesses/me/payouts')
+      .set('Authorization', `Bearer ${seller1Token}`)
+      .expect(200);
+    const summary = after.body as SellerSummary;
+    expect(summary.availableCents).toBe(0);
+    expect(summary.paidCents).toBe(NET);
+    expect(summary.payouts).toHaveLength(1);
+    expect(summary.payouts[0]).toMatchObject({
+      amountCents: NET,
+      salesCount: 1,
+    });
+
+    // pagar de nuevo no tiene nada para liquidar
+    await request(app.getHttpServer())
+      .post('/admin/payouts')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ businessId: row!.businessId })
+      .expect(409);
   });
 
   it('el comprador ve su orden con los snapshots', async () => {

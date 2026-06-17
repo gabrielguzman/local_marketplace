@@ -22,6 +22,7 @@ export default async function AdminLayout({
           { href: '/admin/categorias', label: 'Categorías' },
           { href: '/admin/resenas', label: 'Reseñas' },
           { href: '/admin/ordenes', label: 'Órdenes' },
+          { href: '/admin/liquidaciones', label: 'Liquidaciones' },
           { href: '/admin/auditoria', label: 'Auditoría' },
         ]}
       />
