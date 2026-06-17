@@ -11,6 +11,7 @@ import { CategoriesModule } from './categories/categories.module';
 import { EmailModule } from './email/email.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { HealthModule } from './health/health.module';
+import { MessagesModule } from './messages/messages.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { OrdersModule } from './orders/orders.module';
 import { PayoutsModule } from './payouts/payouts.module';
@@ -41,6 +42,7 @@ import { UsersModule } from './users/users.module';
     CartModule,
     OrdersModule,
     PayoutsModule,
+    MessagesModule,
     ReviewsModule,
     QuestionsModule,
     FavoritesModule,

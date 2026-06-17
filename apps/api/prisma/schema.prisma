@@ -51,6 +51,7 @@ model User {
   reviewReports      ReviewReport[]
   reviewVotes        ReviewVote[]
   notifications      Notification[]
+  messages           Message[]
 
   @@map("users")
 }
@@ -62,6 +63,7 @@ enum NotificationType {
   QUESTION_ANSWERED // al comprador: respondieron tu pregunta
   REVIEW_REPLY // al comprador: el vendedor respondió tu reseña
   PAYOUT // al vendedor: se acreditó una liquidación
+  MESSAGE // mensaje privado sobre una orden
 }
 
 // Notificación in-app para un usuario.
@@ -431,11 +433,29 @@ model SubOrder {
   business Business    @relation(fields: [businessId], references: [id])
   items    OrderItem[]
   payout   Payout?     @relation(fields: [payoutId], references: [id])
+  messages Message[]
 
   @@index([orderId])
   @@index([businessId])
   @@index([payoutId])
   @@map("sub_orders")
+}
+
+// Mensaje privado entre el comprador y el vendedor sobre una venta (sub-orden).
+// readAt = cuándo lo leyó el destinatario (el otro participante del hilo).
+model Message {
+  id         String   @id @default(uuid())
+  subOrderId String
+  senderId   String
+  body       String
+  readAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  subOrder SubOrder @relation(fields: [subOrderId], references: [id], onDelete: Cascade)
+  sender   User     @relation(fields: [senderId], references: [id])
+
+  @@index([subOrderId, createdAt])
+  @@map("messages")
 }
 
 // Liquidación: registro de un pago al vendedor por sus ventas entregadas

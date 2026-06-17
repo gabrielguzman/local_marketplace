@@ -16,6 +16,7 @@ const ICON: Record<NotificationType, string> = {
   QUESTION_ANSWERED: '💬',
   REVIEW_REPLY: '⭐',
   PAYOUT: '🏦',
+  MESSAGE: '💬',
 };
 
 export default async function NotificationsPage() {

@@ -353,6 +353,62 @@ describe('Cart & Orders (e2e)', () => {
       .expect(409);
   });
 
+  it('mensajería: comprador y vendedor conversan sobre la venta', async () => {
+    type Thread = {
+      counterpartyName: string;
+      messages: { body: string; mine: boolean }[];
+    };
+
+    // el vendedor obtiene el id de su venta
+    const sales = await request(app.getHttpServer())
+      .get('/businesses/me/suborders')
+      .set('Authorization', `Bearer ${seller1Token}`)
+      .expect(200);
+    const subId = (sales.body as SellerSubOrderDto[])[0].id;
+
+    // el comprador escribe
+    await request(app.getHttpServer())
+      .post(`/suborders/${subId}/messages`)
+      .set('Authorization', `Bearer ${buyerToken}`)
+      .send({ body: '¿Cuándo lo despachás?' })
+      .expect(201);
+
+    // el vendedor lee el hilo (su contraparte es el comprador)
+    const sellerView = await request(app.getHttpServer())
+      .get(`/suborders/${subId}/messages`)
+      .set('Authorization', `Bearer ${seller1Token}`)
+      .expect(200);
+    const t1 = sellerView.body as Thread;
+    expect(t1.messages).toHaveLength(1);
+    expect(t1.messages[0]).toMatchObject({
+      body: '¿Cuándo lo despachás?',
+      mine: false,
+    });
+
+    // el vendedor responde
+    await request(app.getHttpServer())
+      .post(`/suborders/${subId}/messages`)
+      .set('Authorization', `Bearer ${seller1Token}`)
+      .send({ body: 'Mañana sale' })
+      .expect(201);
+
+    // el comprador ve los dos mensajes, el último ajeno
+    const buyerView = await request(app.getHttpServer())
+      .get(`/suborders/${subId}/messages`)
+      .set('Authorization', `Bearer ${buyerToken}`)
+      .expect(200);
+    const t2 = buyerView.body as Thread;
+    expect(t2.messages).toHaveLength(2);
+    expect(t2.messages[0].mine).toBe(true);
+    expect(t2.messages[1]).toMatchObject({ body: 'Mañana sale', mine: false });
+
+    // un tercero no puede leer la conversación
+    await request(app.getHttpServer())
+      .get(`/suborders/${subId}/messages`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(403);
+  });
+
   it('el comprador ve su orden con los snapshots', async () => {
     const res = await request(app.getHttpServer())
       .get(`/orders/${orderId}`)

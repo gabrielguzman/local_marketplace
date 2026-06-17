@@ -544,6 +544,22 @@ export interface SellerDashboard {
   recentSales: SellerSubOrderDto[];
 }
 
+// ── Mensajería privada (sobre una orden) ─────────────────
+
+export interface MessageDto {
+  id: string;
+  body: string;
+  mine: boolean; // ¿lo envió el usuario actual?
+  senderName: string;
+  createdAt: string;
+}
+
+export interface MessageThread {
+  subOrderId: string;
+  counterpartyName: string; // con quién estás conversando
+  messages: MessageDto[];
+}
+
 // ── Notificaciones ───────────────────────────────────────
 
 export const NOTIFICATION_TYPES = [
@@ -553,6 +569,7 @@ export const NOTIFICATION_TYPES = [
   'QUESTION_ANSWERED',
   'REVIEW_REPLY',
   'PAYOUT',
+  'MESSAGE',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

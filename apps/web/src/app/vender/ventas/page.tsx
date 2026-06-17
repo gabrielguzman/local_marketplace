@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import type { BusinessDto, SellerSubOrderDto } from '@marketplace/shared';
+import { OrderChat } from '@/components/order-chat';
 import { SaleStatusActions } from '@/components/sale-status-actions';
 import { authFetch } from '@/lib/api';
 import { formatPrice } from '@/lib/format';
@@ -114,6 +115,7 @@ export default async function SalesPage() {
                     actions={SELLER_NEXT_ACTIONS[sale.status]}
                   />
                 </div>
+                <OrderChat subOrderId={sale.id} counterparty={sale.buyerName} />
               </li>
             );
           })}

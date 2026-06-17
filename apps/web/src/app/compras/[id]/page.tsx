@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { SHIPPING_METHOD_LABELS, type OrderDto } from '@marketplace/shared';
 import { ConfirmForm } from '@/components/confirm-form';
+import { OrderChat } from '@/components/order-chat';
 import { OrderTimeline } from '@/components/order-timeline';
 import { ReviewForm } from '@/components/review-form';
 import { authFetch } from '@/lib/api';
@@ -185,6 +186,10 @@ export default async function OrderDetailPage({
                   </strong>
                 </span>
               </div>
+              <OrderChat
+                subOrderId={subOrder.id}
+                counterparty={subOrder.business.name}
+              />
             </section>
           );
         })}
