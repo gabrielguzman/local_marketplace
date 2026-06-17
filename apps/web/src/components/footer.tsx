@@ -81,11 +81,13 @@ export function Footer() {
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 py-5 text-xs text-zinc-400 sm:flex-row">
           <p>© {new Date().getFullYear()} Mercato. Todos los derechos reservados.</p>
           <p className="flex items-center gap-3">
-            <span className="text-zinc-300">Términos</span>
+            <Link href="/terminos" className="hover:text-brand-700">
+              Términos
+            </Link>
             <span className="text-zinc-200">·</span>
-            <span className="text-zinc-300">Privacidad</span>
-            <span className="text-zinc-200">·</span>
-            <span>Próximamente</span>
+            <Link href="/privacidad" className="hover:text-brand-700">
+              Privacidad
+            </Link>
           </p>
         </div>
       </div>

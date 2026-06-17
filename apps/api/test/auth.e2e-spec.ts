@@ -5,6 +5,7 @@ import { App } from 'supertest/types';
 import cookieParser from 'cookie-parser';
 import type { AuthResponse, UserDto } from '@marketplace/shared';
 import { AppModule } from './../src/app.module';
+import { EmailService } from './../src/email/email.service';
 import { PrismaService } from './../src/prisma/prisma.service';
 
 describe('Auth (e2e)', () => {
@@ -162,5 +163,56 @@ describe('Auth (e2e)', () => {
       .post('/auth/refresh')
       .set('Cookie', cookie)
       .expect(401);
+  });
+
+  it('reset de contraseña: pide enlace, lo usa y cambia la clave', async () => {
+    const newPassword = 'nueva-clave-456';
+    const spy = jest.spyOn(app.get(EmailService), 'sendPasswordReset');
+
+    // email inexistente: responde 202 igual (no filtra) y no manda nada
+    await request(app.getHttpServer())
+      .post('/auth/forgot-password')
+      .send({ email: `nadie-${Date.now()}@test.com` })
+      .expect(202);
+    expect(spy).not.toHaveBeenCalled();
+
+    // email real: 202 y se "envía" el enlace con el token
+    await request(app.getHttpServer())
+      .post('/auth/forgot-password')
+      .send({ email })
+      .expect(202);
+    expect(spy).toHaveBeenCalledTimes(1);
+    const token = spy.mock.calls[0][1];
+    expect(token).toBeTruthy();
+
+    // token inválido: 400
+    await request(app.getHttpServer())
+      .post('/auth/reset-password')
+      .send({ token: 'no-sirve', password: newPassword })
+      .expect(400);
+
+    // token válido: 200
+    await request(app.getHttpServer())
+      .post('/auth/reset-password')
+      .send({ token, password: newPassword })
+      .expect(200);
+
+    // la clave vieja ya no sirve, la nueva sí
+    await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email, password })
+      .expect(401);
+    await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email, password: newPassword })
+      .expect(200);
+
+    // el token es de un solo uso: reusarlo falla
+    await request(app.getHttpServer())
+      .post('/auth/reset-password')
+      .send({ token, password: 'otra-mas-789' })
+      .expect(400);
+
+    spy.mockRestore();
   });
 });

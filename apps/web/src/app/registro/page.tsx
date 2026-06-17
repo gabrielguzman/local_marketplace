@@ -33,6 +33,20 @@ export default async function RegisterPage() {
             },
           ]}
         />
+        <p className="mt-4 text-center text-xs text-zinc-400">
+          Al crear tu cuenta aceptás los{' '}
+          <Link href="/terminos" className="hover:text-brand-600 hover:underline">
+            Términos
+          </Link>{' '}
+          y la{' '}
+          <Link
+            href="/privacidad"
+            className="hover:text-brand-600 hover:underline"
+          >
+            Política de Privacidad
+          </Link>
+          .
+        </p>
       </div>
       <p className="mt-5 text-center text-sm text-zinc-500">
         ¿Ya tenés cuenta?{' '}

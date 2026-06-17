@@ -12,7 +12,7 @@ import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
 import type { AuthResponse } from '@marketplace/shared';
 import type { User } from '@prisma/client';
-import { IsString, MaxLength } from 'class-validator';
+import { IsEmail, IsString, MaxLength, MinLength } from 'class-validator';
 import type { Request, Response } from 'express';
 import { AuthService, REFRESH_TTL_DAYS } from './auth.service';
 import type { AccessTokenPayload } from './auth.types';
@@ -28,6 +28,22 @@ class VerifyEmailDto {
   @IsString()
   @MaxLength(128)
   token!: string;
+}
+
+class ForgotPasswordDto {
+  @IsEmail()
+  email!: string;
+}
+
+class ResetPasswordDto {
+  @IsString()
+  @MaxLength(128)
+  token!: string;
+
+  @IsString()
+  @MinLength(8)
+  @MaxLength(72)
+  password!: string;
 }
 
 // Endpoints sensibles: máximo 10 requests por minuto por IP
@@ -102,6 +118,20 @@ export class AuthController {
     @CurrentUser() user: AccessTokenPayload,
   ): Promise<{ ok: true }> {
     await this.auth.resendVerification(user.sub);
+    return { ok: true };
+  }
+
+  @Post('forgot-password')
+  @HttpCode(202)
+  async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<{ ok: true }> {
+    await this.auth.forgotPassword(dto.email);
+    return { ok: true };
+  }
+
+  @Post('reset-password')
+  @HttpCode(200)
+  async resetPassword(@Body() dto: ResetPasswordDto): Promise<{ ok: true }> {
+    await this.auth.resetPassword(dto.token, dto.password);
     return { ok: true };
   }
 

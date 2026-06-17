@@ -22,6 +22,16 @@ export class EmailService {
     );
   }
 
+  async sendPasswordReset(to: string, token: string): Promise<void> {
+    const link = `${this.webUrl}/restablecer?token=${token}`;
+    await this.deliver(
+      to,
+      'Restablecé tu contraseña',
+      `Cambiá tu contraseña entrando a: ${link} (el enlace vence en 1 hora). ` +
+        `Si no lo pediste, ignorá este mensaje.`,
+    );
+  }
+
   private async deliver(
     to: string,
     subject: string,

@@ -16,6 +16,7 @@ import { RegisterDto } from './dto/register.dto';
 
 export const REFRESH_TTL_DAYS = 30;
 const EMAIL_VERIFY_TTL_HOURS = 48;
+const PASSWORD_RESET_TTL_MINUTES = 60;
 
 export interface TokenPair {
   accessToken: string;
@@ -105,6 +106,61 @@ export class AuthService {
       },
     });
     await this.email.sendEmailVerification(user.email, token);
+  }
+
+  // Inicia el reset: si el email existe, manda el enlace. Responde igual exista
+  // o no (no filtramos qué emails están registrados).
+  async forgotPassword(email: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user || user.status === 'SUSPENDED') return;
+
+    const token = randomBytes(32).toString('base64url');
+    // un reset activo a la vez: descartamos los anteriores
+    await this.prisma.verificationToken.deleteMany({
+      where: { userId: user.id, type: 'PASSWORD_RESET' },
+    });
+    await this.prisma.verificationToken.create({
+      data: {
+        userId: user.id,
+        type: 'PASSWORD_RESET',
+        tokenHash: this.hashToken(token),
+        expiresAt: new Date(
+          Date.now() + PASSWORD_RESET_TTL_MINUTES * 60 * 1000,
+        ),
+      },
+    });
+    await this.email.sendPasswordReset(user.email, token);
+  }
+
+  async resetPassword(token: string, password: string): Promise<void> {
+    const stored = await this.prisma.verificationToken.findUnique({
+      where: { tokenHash: this.hashToken(token) },
+    });
+    if (
+      !stored ||
+      stored.type !== 'PASSWORD_RESET' ||
+      stored.expiresAt < new Date()
+    ) {
+      throw new BadRequestException({
+        code: 'INVALID_RESET_TOKEN',
+        message:
+          'El enlace para restablecer la contraseña es inválido o venció',
+      });
+    }
+    const passwordHash = await argon2.hash(password);
+    // cambia la clave, consume el token y cierra todas las sesiones abiertas
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: stored.userId },
+        data: { passwordHash },
+      }),
+      this.prisma.verificationToken.deleteMany({
+        where: { userId: stored.userId, type: 'PASSWORD_RESET' },
+      }),
+      this.prisma.refreshToken.deleteMany({
+        where: { userId: stored.userId },
+      }),
+    ]);
   }
 
   async login(dto: LoginDto): Promise<{ user: User } & TokenPair> {
