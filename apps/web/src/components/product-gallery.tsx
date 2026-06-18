@@ -12,6 +12,23 @@ export function ProductGallery({
 }) {
   const [active, setActive] = useState(0);
   const [zoom, setZoom] = useState(false);
+  // magnifier al pasar el mouse (solo en dispositivos con hover real)
+  const [lens, setLens] = useState(false);
+  const [origin, setOrigin] = useState({ x: 50, y: 50 });
+
+  function onMove(e: React.MouseEvent<HTMLDivElement>) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setOrigin({
+      x: Math.min(100, Math.max(0, x)),
+      y: Math.min(100, Math.max(0, y)),
+    });
+  }
+
+  function onEnter() {
+    if (window.matchMedia('(hover: hover)').matches) setLens(true);
+  }
 
   // en el lightbox: Escape cierra, flechas navegan, y se bloquea el scroll
   useEffect(() => {
@@ -70,7 +87,12 @@ export function ProductGallery({
 
   return (
     <div className="surface-card overflow-hidden">
-      <div className="group relative flex aspect-[4/3] items-center justify-center bg-white">
+      <div
+        className="group relative flex aspect-[4/3] items-center justify-center overflow-hidden bg-white"
+        onMouseEnter={onEnter}
+        onMouseMove={(e) => lens && onMove(e)}
+        onMouseLeave={() => setLens(false)}
+      >
         <button
           type="button"
           onClick={() => setZoom(true)}
@@ -81,7 +103,11 @@ export function ProductGallery({
           <img
             src={images[current].url}
             alt={title}
-            className="h-full w-full object-contain"
+            className="h-full w-full object-contain transition-transform duration-100 ease-out"
+            style={{
+              transformOrigin: `${origin.x}% ${origin.y}%`,
+              transform: lens ? 'scale(2.4)' : 'scale(1)',
+            }}
           />
         </button>
 
