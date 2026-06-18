@@ -6,6 +6,7 @@ import { getUnreadCount } from '@/lib/notifications';
 import { getCurrentUser } from '@/lib/session';
 import { AccountMenu } from './account-menu';
 import { Logo } from './logo';
+import { MobileMenu } from './mobile-menu';
 import { SearchBar } from './search-bar';
 
 const ICON_BTN =
@@ -51,6 +52,14 @@ export async function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/90 shadow-[0_1px_2px_0_rgb(24_24_27/0.04)] backdrop-blur">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-5 gap-y-3 px-4 py-3">
+        <MobileMenu
+          categories={categories.map((c) => ({
+            id: c.id,
+            name: c.name,
+            slug: c.slug,
+          }))}
+          isAuthenticated={Boolean(user)}
+        />
         <Logo />
 
         <div className="order-last w-full md:order-none md:w-auto md:flex-1">
@@ -129,11 +138,14 @@ export async function Header() {
               {cartLink}
               <Link
                 href="/login"
-                className="rounded-lg px-3 py-2 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
+                className="hidden rounded-lg px-3 py-2 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900 sm:inline-flex"
               >
                 Ingresar
               </Link>
-              <Link href="/registro" className="btn-primary ml-1 !px-4 !py-2">
+              <Link
+                href="/registro"
+                className="ml-1 hidden !px-4 !py-2 sm:inline-flex btn-primary"
+              >
                 Crear cuenta
               </Link>
             </>

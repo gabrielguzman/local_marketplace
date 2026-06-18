@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ProductImageDto } from '@marketplace/shared';
 
 export function ProductGallery({
@@ -11,6 +11,25 @@ export function ProductGallery({
   title: string;
 }) {
   const [active, setActive] = useState(0);
+  const [zoom, setZoom] = useState(false);
+
+  // en el lightbox: Escape cierra, flechas navegan, y se bloquea el scroll
+  useEffect(() => {
+    if (!zoom) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setZoom(false);
+      else if (e.key === 'ArrowLeft')
+        setActive((i) => (i - 1 + images.length) % images.length);
+      else if (e.key === 'ArrowRight')
+        setActive((i) => (i + 1) % images.length);
+    }
+    document.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = '';
+    };
+  }, [zoom, images.length]);
 
   if (images.length === 0) {
     return (
@@ -52,12 +71,19 @@ export function ProductGallery({
   return (
     <div className="surface-card overflow-hidden">
       <div className="group relative flex aspect-[4/3] items-center justify-center bg-white">
-        {/* eslint-disable-next-line @next/next/no-img-element -- dominio de imagen arbitrario en MVP */}
-        <img
-          src={images[current].url}
-          alt={title}
-          className="h-full w-full object-contain"
-        />
+        <button
+          type="button"
+          onClick={() => setZoom(true)}
+          aria-label="Ampliar imagen"
+          className="flex h-full w-full cursor-zoom-in items-center justify-center"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element -- dominio de imagen arbitrario en MVP */}
+          <img
+            src={images[current].url}
+            alt={title}
+            className="h-full w-full object-contain"
+          />
+        </button>
 
         {images.length > 1 && (
           <>
@@ -133,6 +159,67 @@ export function ProductGallery({
               />
             </button>
           ))}
+        </div>
+      )}
+
+      {zoom && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/90 p-4"
+          onClick={() => setZoom(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Imagen ampliada"
+        >
+          <button
+            type="button"
+            onClick={() => setZoom(false)}
+            aria-label="Cerrar"
+            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-2xl text-white transition hover:bg-white/20"
+          >
+            ✕
+          </button>
+
+          {/* eslint-disable-next-line @next/next/no-img-element -- dominio de imagen arbitrario en MVP */}
+          <img
+            src={images[current].url}
+            alt={title}
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-[90vh] max-w-[92vw] object-contain"
+          />
+
+          {images.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  go(-1);
+                }}
+                aria-label="Imagen anterior"
+                className="absolute left-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
+              >
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="m15 18-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  go(1);
+                }}
+                aria-label="Imagen siguiente"
+                className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
+              >
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="m9 18 6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <span className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-white/10 px-3 py-1 text-sm text-white">
+                {current + 1} / {images.length}
+              </span>
+            </>
+          )}
         </div>
       )}
     </div>

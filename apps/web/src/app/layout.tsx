@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Suspense } from "react";
+import { BackToTop } from "@/components/back-to-top";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { NavProgress } from "@/components/nav-progress";
@@ -64,6 +65,7 @@ export default function RootLayout({
           <div className="print:hidden">
             <Footer />
           </div>
+          <BackToTop />
         </ToastProvider>
       </body>
     </html>
