@@ -92,9 +92,13 @@ export class BusinessesService {
 
   // Tiendas activas para el home / directorio, ordenadas por catálogo y
   // reputación. Si viene limit, devuelve solo las primeras (destacadas).
-  async listPublic(limit?: number): Promise<BusinessCardDto[]> {
+  async listPublic(limit?: number, q?: string): Promise<BusinessCardDto[]> {
+    const term = q?.trim();
     const businesses = await this.prisma.business.findMany({
-      where: { status: 'ACTIVE' },
+      where: {
+        status: 'ACTIVE',
+        ...(term && { name: { contains: term, mode: 'insensitive' } }),
+      },
       select: {
         id: true,
         name: true,

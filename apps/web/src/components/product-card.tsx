@@ -1,19 +1,35 @@
 import Link from 'next/link';
 import type { ProductSummaryDto } from '@marketplace/shared';
+import { FavoriteButton } from '@/components/favorite-button';
 import { formatPrice } from '@/lib/format';
 
-export function ProductCard({ product }: { product: ProductSummaryDto }) {
+export function ProductCard({
+  product,
+  favorited,
+}: {
+  product: ProductSummaryDto;
+  // si viene definido se muestra el corazón rápido; undefined = sin corazón
+  favorited?: boolean;
+}) {
   return (
-    <Link
-      href={`/p/${product.slug}`}
-      className="group surface-card overflow-hidden transition duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-card-hover)]"
-    >
-      <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100">
-        {product.condition === 'USED' && (
-          <span className="absolute left-2 top-2 z-10 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
-            Usado
-          </span>
-        )}
+    <div className="group surface-card relative overflow-hidden transition duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-card-hover)]">
+      {favorited !== undefined && (
+        <div className="absolute right-2 top-2 z-20">
+          <FavoriteButton
+            productId={product.id}
+            slug={product.slug}
+            favorited={favorited}
+            variant="icon"
+          />
+        </div>
+      )}
+      <Link href={`/p/${product.slug}`} className="block">
+        <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100">
+          {product.condition === 'USED' && (
+            <span className="absolute left-2 top-2 z-10 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+              Usado
+            </span>
+          )}
         {product.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- dominio de imagen arbitrario en MVP
           <img
@@ -76,7 +92,8 @@ export function ProductCard({ product }: { product: ProductSummaryDto }) {
           </svg>
           {product.businessName}
         </p>
-      </div>
-    </Link>
+        </div>
+      </Link>
+    </div>
   );
 }

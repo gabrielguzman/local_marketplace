@@ -9,7 +9,14 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Max, Min } from 'class-validator';
+import {
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import type { BusinessCardDto, BusinessDto } from '@marketplace/shared';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -26,6 +33,11 @@ class ListBusinessesQuery {
   @Min(1)
   @Max(50)
   limit?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  q?: string;
 }
 
 @Controller('businesses')
@@ -35,7 +47,7 @@ export class BusinessesController {
   // Directorio público de tiendas (y destacadas con ?limit=)
   @Get()
   list(@Query() query: ListBusinessesQuery): Promise<BusinessCardDto[]> {
-    return this.businesses.listPublic(query.limit);
+    return this.businesses.listPublic(query.limit, query.q);
   }
 
   @Post()

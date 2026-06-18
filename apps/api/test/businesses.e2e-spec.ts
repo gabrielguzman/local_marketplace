@@ -93,6 +93,28 @@ describe('Businesses (e2e)', () => {
     expect(typeof mine!.productCount).toBe('number');
   });
 
+  it('el directorio filtra tiendas por nombre con ?q', async () => {
+    const match = await request(app.getHttpServer())
+      .get('/businesses')
+      .query({ q: 'doña' })
+      .expect(200);
+    expect(
+      (match.body as { slug: string }[]).some(
+        (b) => b.slug === 'almacen-dona-rosa',
+      ),
+    ).toBe(true);
+
+    const noMatch = await request(app.getHttpServer())
+      .get('/businesses')
+      .query({ q: 'zzzzz-no-existe' })
+      .expect(200);
+    expect(
+      (noMatch.body as { slug: string }[]).some(
+        (b) => b.slug === 'almacen-dona-rosa',
+      ),
+    ).toBe(false);
+  });
+
   it('GET /businesses/me devuelve el propio', async () => {
     const res = await request(app.getHttpServer())
       .get('/businesses/me')

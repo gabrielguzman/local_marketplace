@@ -7,6 +7,7 @@ import type {
 } from '@marketplace/shared';
 import { ProductCard } from '@/components/product-card';
 import { apiFetch } from '@/lib/api';
+import { getFavoriteIds } from '@/lib/favorites';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,6 +77,7 @@ export default async function SearchPage({
     ),
   ]);
   const brands = facets.brands;
+  const favoriteIds = await getFavoriteIds();
 
   // Si no hay resultados, ofrecemos lo más vendido para no dejar la página vacía.
   const suggestions =
@@ -363,7 +365,11 @@ export default async function SearchPage({
                 </h2>
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                   {suggestions.map((product) => (
-                    <ProductCard key={product.id} product={product} />
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      favorited={favoriteIds.has(product.id)}
+                    />
                   ))}
                 </div>
               </div>
@@ -373,7 +379,11 @@ export default async function SearchPage({
           <>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
               {results.items.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  favorited={favoriteIds.has(product.id)}
+                />
               ))}
             </div>
             {results.nextCursor && (

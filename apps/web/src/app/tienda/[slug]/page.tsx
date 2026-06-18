@@ -9,6 +9,7 @@ import type {
 import { BusinessInfo } from '@/components/business-info';
 import { ProductCard } from '@/components/product-card';
 import { apiFetch } from '@/lib/api';
+import { getFavoriteIds } from '@/lib/favorites';
 import { storeGradient } from '@/lib/store-style';
 
 export const dynamic = 'force-dynamic';
@@ -78,6 +79,7 @@ export default async function BusinessPage({
   const products = await apiFetch<Paginated<ProductSummaryDto>>(
     `/search?${query}`,
   ).catch(() => ({ items: [], nextCursor: null }));
+  const favoriteIds = await getFavoriteIds();
 
   const initial = business.name.charAt(0).toUpperCase();
 
@@ -278,7 +280,11 @@ export default async function BusinessPage({
           ) : (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
               {products.items.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  favorited={favoriteIds.has(product.id)}
+                />
               ))}
             </div>
           )}
