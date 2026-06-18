@@ -7,9 +7,11 @@ import type {
   ProductSummaryDto,
 } from '@marketplace/shared';
 import { BusinessInfo } from '@/components/business-info';
+import { FollowButton } from '@/components/follow-button';
 import { ProductCard } from '@/components/product-card';
 import { apiFetch } from '@/lib/api';
 import { getFavoriteIds } from '@/lib/favorites';
+import { getFollowingIds } from '@/lib/follows';
 import { storeGradient } from '@/lib/store-style';
 
 export const dynamic = 'force-dynamic';
@@ -79,7 +81,10 @@ export default async function BusinessPage({
   const products = await apiFetch<Paginated<ProductSummaryDto>>(
     `/search?${query}`,
   ).catch(() => ({ items: [], nextCursor: null }));
-  const favoriteIds = await getFavoriteIds();
+  const [favoriteIds, followingIds] = await Promise.all([
+    getFavoriteIds(),
+    getFollowingIds(),
+  ]);
 
   const initial = business.name.charAt(0).toUpperCase();
 
@@ -146,9 +151,18 @@ export default async function BusinessPage({
               </p>
             )}
           </div>
-          <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
-            ● Tienda activa
-          </span>
+          <div className="flex items-center gap-3 pt-1">
+            <FollowButton
+              businessId={business.id}
+              businessName={business.name}
+              slug={business.slug}
+              following={followingIds.has(business.id)}
+              followers={business.followers}
+            />
+            <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
+              ● Activa
+            </span>
+          </div>
         </div>
 
         <dl className="flex flex-wrap gap-x-8 gap-y-2 border-t border-zinc-100 px-6 py-4 text-sm">
@@ -186,6 +200,14 @@ export default async function BusinessPage({
                 </dd>
               </div>
             </>
+          )}
+          {business.followers > 0 && (
+            <div className="flex items-baseline gap-1.5">
+              <dt className="font-bold text-zinc-900">{business.followers}</dt>
+              <dd className="text-zinc-400">
+                {business.followers === 1 ? 'seguidor' : 'seguidores'}
+              </dd>
+            </div>
           )}
           <div className="flex items-baseline gap-1.5">
             <dt className="text-zinc-400">En Mercato desde</dt>

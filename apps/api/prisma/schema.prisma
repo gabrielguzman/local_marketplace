@@ -52,6 +52,7 @@ model User {
   reviewVotes        ReviewVote[]
   notifications      Notification[]
   messages           Message[]
+  following          BusinessFollow[]
 
   @@map("users")
 }
@@ -64,6 +65,7 @@ enum NotificationType {
   REVIEW_REPLY // al comprador: el vendedor respondió tu reseña
   PAYOUT // al vendedor: se acreditó una liquidación
   MESSAGE // mensaje privado sobre una orden
+  NEW_PRODUCT // una tienda que seguís publicó algo nuevo
 }
 
 // Notificación in-app para un usuario.
@@ -220,8 +222,24 @@ model Business {
   subOrders SubOrder[]
   reviews   Review[]
   payouts   Payout[]
+  followers BusinessFollow[]
 
   @@map("businesses")
+}
+
+// Un usuario sigue a una tienda (para el feed de novedades y avisos).
+model BusinessFollow {
+  id         String   @id @default(uuid())
+  userId     String
+  businessId String
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, businessId])
+  @@index([businessId])
+  @@map("business_follows")
 }
 
 model Address {

@@ -137,6 +137,7 @@ export interface BusinessDto {
   rating: RatingSummary;
   createdAt: string;
   stats?: BusinessStats;
+  followers: number; // cantidad de seguidores
 }
 
 // Métricas públicas que se muestran en el perfil de la tienda
@@ -584,6 +585,7 @@ export const NOTIFICATION_TYPES = [
   'REVIEW_REPLY',
   'PAYOUT',
   'MESSAGE',
+  'NEW_PRODUCT',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

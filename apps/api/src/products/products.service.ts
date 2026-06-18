@@ -53,7 +53,8 @@ export class ProductsService {
     const business = await this.businesses.findMine(userId);
     await this.categories.ensureExists(dto.categoryId);
 
-    return this.prisma.product.create({
+    const status = dto.status ?? 'ACTIVE';
+    const product = await this.prisma.product.create({
       data: {
         businessId: business.id,
         categoryId: dto.categoryId,
@@ -63,7 +64,7 @@ export class ProductsService {
         condition: dto.condition ?? 'NEW',
         specs: (dto.specs ?? []) as unknown as Prisma.InputJsonValue,
         slug: await this.uniqueSlug(dto.title),
-        status: dto.status ?? 'ACTIVE',
+        status,
         variants: {
           create: dto.variants.map((v, i) => ({
             sku: v.sku,
@@ -82,6 +83,48 @@ export class ProductsService {
       },
       include: DETAIL_INCLUDE,
     });
+
+    // si nace público, avisamos a quienes siguen la tienda
+    if (status === 'ACTIVE') {
+      await this.notifyFollowers(business.id, business.name, product);
+    }
+    return product;
+  }
+
+  // Notifica a los seguidores de la tienda que hay un producto nuevo
+  private async notifyFollowers(
+    businessId: string,
+    businessName: string,
+    product: { title: string; slug: string },
+  ): Promise<void> {
+    const followers = await this.prisma.businessFollow.findMany({
+      where: { businessId },
+      select: { userId: true },
+    });
+    if (followers.length === 0) return;
+    await this.prisma.notification
+      .createMany({
+        data: followers.map((f) => ({
+          userId: f.userId,
+          type: 'NEW_PRODUCT' as const,
+          title: `${businessName} publicó algo nuevo`,
+          body: product.title,
+          link: `/p/${product.slug}`,
+        })),
+      })
+      .catch(() => undefined);
+  }
+
+  // Feed de novedades: últimos productos de las tiendas que seguís
+  async feedForBusinesses(businessIds: string[]): Promise<ProductSummaryDto[]> {
+    if (businessIds.length === 0) return [];
+    const products = await this.prisma.product.findMany({
+      where: { businessId: { in: businessIds }, status: 'ACTIVE' },
+      include: SUMMARY_INCLUDE,
+      orderBy: { createdAt: 'desc' },
+      take: 24,
+    });
+    return this.toSummaries(products);
   }
 
   // Clona un producto como borrador: copia ficha, variantes (stock en 0) e

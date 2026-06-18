@@ -132,6 +132,42 @@ describe('Businesses (e2e)', () => {
     expect(list.some((b) => b.slug === 'almacen-dona-rosa')).toBe(true);
   });
 
+  it('seguir y dejar de seguir una tienda', async () => {
+    const biz = await prisma.business.findUniqueOrThrow({
+      where: { slug: 'almacen-dona-rosa' },
+      select: { id: true },
+    });
+
+    await request(app.getHttpServer())
+      .put(`/businesses/${biz.id}/follow`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(204);
+
+    const ids = await request(app.getHttpServer())
+      .get('/me/following/ids')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+    expect((ids.body as string[]).includes(biz.id)).toBe(true);
+
+    const view = await request(app.getHttpServer())
+      .get('/businesses/almacen-dona-rosa')
+      .expect(200);
+    expect((view.body as { followers: number }).followers).toBeGreaterThanOrEqual(
+      1,
+    );
+
+    await request(app.getHttpServer())
+      .delete(`/businesses/${biz.id}/follow`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(204);
+
+    const ids2 = await request(app.getHttpServer())
+      .get('/me/following/ids')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+    expect((ids2.body as string[]).includes(biz.id)).toBe(false);
+  });
+
   it('GET /businesses/me devuelve el propio', async () => {
     const res = await request(app.getHttpServer())
       .get('/businesses/me')

@@ -206,6 +206,39 @@ export class BusinessesService {
     return { productCount, salesCount };
   }
 
+  // ── Seguir tiendas ─────────────────────────────────────────
+
+  async follow(userId: string, businessId: string): Promise<void> {
+    // valida que la tienda exista (y no esté borrada)
+    await this.prisma.business.findUniqueOrThrow({
+      where: { id: businessId },
+      select: { id: true },
+    });
+    await this.prisma.businessFollow.upsert({
+      where: { userId_businessId: { userId, businessId } },
+      update: {},
+      create: { userId, businessId },
+    });
+  }
+
+  async unfollow(userId: string, businessId: string): Promise<void> {
+    await this.prisma.businessFollow.deleteMany({
+      where: { userId, businessId },
+    });
+  }
+
+  async followingIds(userId: string): Promise<string[]> {
+    const rows = await this.prisma.businessFollow.findMany({
+      where: { userId },
+      select: { businessId: true },
+    });
+    return rows.map((r) => r.businessId);
+  }
+
+  async followerCount(businessId: string): Promise<number> {
+    return this.prisma.businessFollow.count({ where: { businessId } });
+  }
+
   private async uniqueSlug(name: string): Promise<string> {
     const base = slugify(name);
     let candidate = base;

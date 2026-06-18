@@ -88,6 +88,9 @@ export function AccountMenu({ name, isAdmin }: AccountMenuProps) {
           <Link href="/favoritos" className={ITEM} onClick={() => setOpen(false)}>
             <span aria-hidden="true">❤️</span> Favoritos
           </Link>
+          <Link href="/siguiendo" className={ITEM} onClick={() => setOpen(false)}>
+            <span aria-hidden="true">🔔</span> Siguiendo
+          </Link>
           <Link href="/vender" className={ITEM} onClick={() => setOpen(false)}>
             <span aria-hidden="true">🏪</span> Mi negocio
           </Link>

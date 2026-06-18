@@ -681,6 +681,17 @@ async function seedActivity() {
     }
   }
 
+  // Tiendas seguidas (para el feed de novedades)
+  const followedSlugs = ['tienda-demo', 'natural-market'];
+  for (const slug of followedSlugs) {
+    const b = await prisma.business.findUnique({ where: { slug } });
+    if (b) {
+      await prisma.businessFollow.create({
+        data: { userId: buyer1.id, businessId: b.id },
+      });
+    }
+  }
+
   // Órdenes en distintos estados ────────────────────────────
   // A) Entregada (habilita reseñas) — buyer1
   const delivered = await createOrder(

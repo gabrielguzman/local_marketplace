@@ -99,10 +99,11 @@ export class BusinessesController {
   @Get(':slug')
   async bySlug(@Param('slug') slug: string): Promise<BusinessDto> {
     const business = await this.businesses.findBySlug(slug);
-    const [rating, stats] = await Promise.all([
+    const [rating, stats, followers] = await Promise.all([
       this.businesses.ratingFor(business.id),
       this.businesses.publicStats(business.id),
+      this.businesses.followerCount(business.id),
     ]);
-    return toBusinessDto(business, rating, stats);
+    return toBusinessDto(business, rating, stats, followers);
   }
 }
