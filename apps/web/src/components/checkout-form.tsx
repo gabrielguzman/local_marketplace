@@ -192,12 +192,16 @@ export function CheckoutForm({
           if (g.shippingCents != null) {
             options.push({
               method: 'SHIPPING',
-              label: 'Envío a domicilio',
+              label: 'Envío del local (en el día)',
               cost: g.shippingCents,
             });
           }
           if (g.pickupEnabled) {
-            options.push({ method: 'PICKUP', label: 'Retiro en persona', cost: 0 });
+            options.push({
+              method: 'PICKUP',
+              label: 'Retiro en el local (hoy)',
+              cost: 0,
+            });
           }
           return (
             <div key={g.businessId} className="surface-card p-4">

@@ -2,11 +2,28 @@ import Link from 'next/link';
 import type { BusinessCardDto } from '@marketplace/shared';
 import { storeGradient } from '@/lib/store-style';
 
-export function BusinessCard({ business }: { business: BusinessCardDto }) {
+export function BusinessCard({
+  business,
+  zone,
+}: {
+  business: BusinessCardDto;
+  zone?: { province: string; city?: string };
+}) {
   const location = [business.city, business.province]
     .filter(Boolean)
     .join(', ');
   const initial = business.name.charAt(0).toUpperCase();
+
+  // ¿está en la zona elegida por el usuario?
+  const eq = (a?: string | null, b?: string) =>
+    Boolean(a && b) && a!.trim().toLowerCase() === b!.trim().toLowerCase();
+  const sameProvince = zone ? eq(business.province, zone.province) : false;
+  const sameCity = zone?.city ? eq(business.city, zone.city) : false;
+  const nearBadge = sameCity
+    ? 'En tu ciudad'
+    : sameProvince
+      ? 'En tu provincia'
+      : null;
 
   return (
     <Link
@@ -32,6 +49,11 @@ export function BusinessCard({ business }: { business: BusinessCardDto }) {
           >
             <circle cx="50" cy="50" r="50" />
           </svg>
+        )}
+        {nearBadge && (
+          <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-semibold text-green-700 shadow-sm">
+            📍 {nearBadge}
+          </span>
         )}
       </div>
 

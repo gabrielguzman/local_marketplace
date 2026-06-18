@@ -115,6 +115,23 @@ describe('Businesses (e2e)', () => {
     ).toBe(false);
   });
 
+  it('el directorio filtra por provincia con near=1', async () => {
+    const prov = `Prov-${Date.now()}`;
+    await prisma.business.update({
+      where: { slug: 'almacen-dona-rosa' },
+      data: { province: prov, city: 'Ciudad Test' },
+    });
+
+    const res = await request(app.getHttpServer())
+      .get('/businesses')
+      .query({ province: prov, near: '1' })
+      .expect(200);
+    const list = res.body as { slug: string; province: string | null }[];
+    expect(list.length).toBeGreaterThan(0);
+    expect(list.every((b) => b.province === prov)).toBe(true);
+    expect(list.some((b) => b.slug === 'almacen-dona-rosa')).toBe(true);
+  });
+
   it('GET /businesses/me devuelve el propio', async () => {
     const res = await request(app.getHttpServer())
       .get('/businesses/me')

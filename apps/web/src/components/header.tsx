@@ -4,10 +4,12 @@ import { apiFetch } from '@/lib/api';
 import { getCartCount } from '@/lib/cart-session';
 import { getUnreadCount } from '@/lib/notifications';
 import { getCurrentUser } from '@/lib/session';
+import { getZona } from '@/lib/zona';
 import { AccountMenu } from './account-menu';
 import { Logo } from './logo';
 import { MobileMenu } from './mobile-menu';
 import { SearchBar } from './search-bar';
+import { ZoneSelector } from './zone-selector';
 
 const ICON_BTN =
   'relative flex h-10 w-10 items-center justify-center rounded-lg text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900';
@@ -25,11 +27,12 @@ function Badge({ count, tone }: { count: number; tone: 'brand' | 'red' }) {
 }
 
 export async function Header() {
-  const [user, categories, cartCount, notifCount] = await Promise.all([
+  const [user, categories, cartCount, notifCount, zona] = await Promise.all([
     getCurrentUser(),
     apiFetch<CategoryDto[]>('/categories').catch(() => [] as CategoryDto[]),
     getCartCount(),
     getUnreadCount(),
+    getZona(),
   ]);
 
   const cartLink = (
@@ -153,37 +156,27 @@ export async function Header() {
         </nav>
       </div>
 
-      {categories.length > 0 && (
-        <div className="border-t border-zinc-100 bg-white/60">
-          <nav className="mx-auto flex max-w-6xl items-center gap-1 overflow-x-auto px-4 py-1.5 text-sm">
-            <span className="mr-1 hidden shrink-0 items-center gap-1.5 pl-1 pr-2 text-xs font-semibold uppercase tracking-wider text-zinc-400 sm:flex">
-              <svg
-                className="h-4 w-4"
-                viewBox="0 0 24 24"
-                fill="none"
-                aria-hidden="true"
-              >
-                <path
-                  d="M4 6h16M4 12h16M4 18h16"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                />
-              </svg>
-              Categorías
-            </span>
-            {categories.map((cat) => (
-              <Link
-                key={cat.id}
-                href={`/c/${cat.slug}`}
-                className="whitespace-nowrap rounded-md px-3 py-1.5 font-medium text-zinc-500 transition hover:bg-brand-50 hover:text-brand-700"
-              >
-                {cat.name}
-              </Link>
-            ))}
-          </nav>
+      <div className="border-t border-zinc-100 bg-white/60">
+        <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-1.5">
+          <ZoneSelector province={zona?.province} city={zona?.city} />
+          {categories.length > 0 && (
+            <>
+              <span className="h-4 w-px shrink-0 bg-zinc-200" />
+              <nav className="flex items-center gap-1 overflow-x-auto text-sm">
+                {categories.map((cat) => (
+                  <Link
+                    key={cat.id}
+                    href={`/c/${cat.slug}`}
+                    className="whitespace-nowrap rounded-md px-3 py-1.5 font-medium text-zinc-500 transition hover:bg-brand-50 hover:text-brand-700"
+                  >
+                    {cat.name}
+                  </Link>
+                ))}
+              </nav>
+            </>
+          )}
         </div>
-      )}
+      </div>
     </header>
   );
 }

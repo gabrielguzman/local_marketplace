@@ -38,6 +38,21 @@ class ListBusinessesQuery {
   @IsString()
   @MaxLength(80)
   q?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  province?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  city?: string;
+
+  // si viene, filtra solo a la provincia de la zona ("solo mi zona")
+  @IsOptional()
+  @IsString()
+  near?: string;
 }
 
 @Controller('businesses')
@@ -47,7 +62,13 @@ export class BusinessesController {
   // Directorio público de tiendas (y destacadas con ?limit=)
   @Get()
   list(@Query() query: ListBusinessesQuery): Promise<BusinessCardDto[]> {
-    return this.businesses.listPublic(query.limit, query.q);
+    return this.businesses.listPublic({
+      limit: query.limit,
+      q: query.q,
+      province: query.province,
+      city: query.city,
+      onlyProvince: query.near === '1',
+    });
   }
 
   @Post()

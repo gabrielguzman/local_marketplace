@@ -17,6 +17,7 @@ import { SearchBar } from '@/components/search-bar';
 import { apiFetch } from '@/lib/api';
 import { getFavoriteIds } from '@/lib/favorites';
 import { SITE_URL } from '@/lib/site';
+import { getZona, zonaQuery } from '@/lib/zona';
 
 export const dynamic = 'force-dynamic';
 
@@ -97,16 +98,18 @@ async function CategoriesSection() {
 }
 
 async function FeaturedStores() {
-  const stores = await apiFetch<BusinessCardDto[]>('/businesses?limit=4').catch(
-    () => [] as BusinessCardDto[],
-  );
+  const zona = await getZona();
+  const zq = zonaQuery(zona);
+  const stores = await apiFetch<BusinessCardDto[]>(
+    `/businesses?limit=4${zq ? `&${zq}` : ''}`,
+  ).catch(() => [] as BusinessCardDto[]);
   if (stores.length === 0) return null;
 
   return (
     <section>
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-bold tracking-tight">
-          🏪 Tiendas destacadas
+          🏪 {zona ? 'Tiendas cerca tuyo' : 'Tiendas destacadas'}
         </h2>
         <Link
           href="/tiendas"
@@ -117,7 +120,11 @@ async function FeaturedStores() {
       </div>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {stores.map((business) => (
-          <BusinessCard key={business.id} business={business} />
+          <BusinessCard
+            key={business.id}
+            business={business}
+            zone={zona ?? undefined}
+          />
         ))}
       </div>
     </section>

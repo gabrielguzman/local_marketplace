@@ -92,12 +92,27 @@ export class BusinessesService {
 
   // Tiendas activas para el home / directorio, ordenadas por catálogo y
   // reputación. Si viene limit, devuelve solo las primeras (destacadas).
-  async listPublic(limit?: number, q?: string): Promise<BusinessCardDto[]> {
-    const term = q?.trim();
+  async listPublic(
+    opts: {
+      limit?: number;
+      q?: string;
+      province?: string;
+      city?: string;
+      onlyProvince?: boolean;
+    } = {},
+  ): Promise<BusinessCardDto[]> {
+    const term = opts.q?.trim();
+    const prov = opts.province?.trim().toLowerCase();
+    const city = opts.city?.trim().toLowerCase();
+
     const businesses = await this.prisma.business.findMany({
       where: {
         status: 'ACTIVE',
         ...(term && { name: { contains: term, mode: 'insensitive' } }),
+        ...(opts.onlyProvince &&
+          opts.province && {
+            province: { equals: opts.province, mode: 'insensitive' },
+          }),
       },
       select: {
         id: true,
@@ -143,15 +158,26 @@ export class BusinessesService {
       productCount: b._count.products,
     }));
 
-    // más productos primero, luego mejor reputación, luego alfabético
+    // Nivel de cercanía a la zona elegida: misma ciudad (0) > misma
+    // provincia (1) > resto (2). Sin zona, todos en el mismo nivel.
+    const tier = (b: BusinessCardDto): number => {
+      if (!prov) return 0;
+      const bp = (b.province ?? '').toLowerCase();
+      const bc = (b.city ?? '').toLowerCase();
+      if (bp !== prov) return 2;
+      return city && bc === city ? 0 : 1;
+    };
+
+    // cercanía primero, luego más productos, mejor reputación, alfabético
     cards.sort(
       (a, b) =>
+        tier(a) - tier(b) ||
         b.productCount - a.productCount ||
         b.rating.count - a.rating.count ||
         a.name.localeCompare(b.name),
     );
 
-    return limit ? cards.slice(0, limit) : cards;
+    return opts.limit ? cards.slice(0, opts.limit) : cards;
   }
 
   async ratingFor(businessId: string): Promise<RatingSummary> {
