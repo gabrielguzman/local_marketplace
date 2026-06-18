@@ -415,7 +415,10 @@ export class OrdersService {
     const business = await this.businesses.findMine(userId);
     const subOrder = await this.prisma.subOrder.findUnique({
       where: { id: subOrderId },
-      include: { order: { select: { status: true, id: true, buyerId: true } } },
+      include: {
+        order: { select: { status: true, id: true, buyerId: true } },
+        items: { select: { variantId: true, quantity: true } },
+      },
     });
     if (!subOrder || subOrder.businessId !== business.id) {
       throw new NotFoundException({
@@ -436,17 +439,36 @@ export class OrdersService {
       });
     }
 
-    const updated = await this.prisma.subOrder.update({
-      where: { id: subOrderId },
-      data: {
-        status,
-        ...(status === 'SHIPPED' &&
-          opts.trackingCode && { trackingCode: opts.trackingCode }),
-        ...(status === 'CANCELLED' &&
-          opts.cancelReason && { cancelReason: opts.cancelReason }),
-      },
-      include: SELLER_SUB_ORDER_INCLUDE,
-    });
+    const data = {
+      status,
+      ...(status === 'SHIPPED' &&
+        opts.trackingCode && { trackingCode: opts.trackingCode }),
+      ...(status === 'CANCELLED' &&
+        opts.cancelReason && { cancelReason: opts.cancelReason }),
+    };
+
+    // Al cancelar una venta pagada devolvemos el stock que se había
+    // descontado al aprobarse el pago (en una transacción, todo o nada).
+    const updated =
+      status === 'CANCELLED'
+        ? await this.prisma.$transaction(async (tx) => {
+            for (const item of subOrder.items) {
+              await tx.productVariant.updateMany({
+                where: { id: item.variantId },
+                data: { stock: { increment: item.quantity } },
+              });
+            }
+            return tx.subOrder.update({
+              where: { id: subOrderId },
+              data,
+              include: SELLER_SUB_ORDER_INCLUDE,
+            });
+          })
+        : await this.prisma.subOrder.update({
+            where: { id: subOrderId },
+            data,
+            include: SELLER_SUB_ORDER_INCLUDE,
+          });
 
     // avisar al comprador del nuevo estado (con tracking o motivo)
     const extra =

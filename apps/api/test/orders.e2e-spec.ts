@@ -34,6 +34,7 @@ describe('Cart & Orders (e2e)', () => {
 
   let buyerToken: string;
   let seller1Token: string;
+  let seller2Token: string;
   let adminToken: string;
   let categoryId: string;
   let variant1Id: string; // del negocio 1, stock 5
@@ -100,7 +101,7 @@ describe('Cart & Orders (e2e)', () => {
 
     buyerToken = await register(buyerEmail);
     seller1Token = await register(seller1Email);
-    const seller2Token = await register(seller2Email);
+    seller2Token = await register(seller2Email);
     await register(adminEmail);
     await prisma.user.update({
       where: { email: adminEmail },
@@ -238,6 +239,31 @@ describe('Cart & Orders (e2e)', () => {
       .post(`/orders/${orderId}/pay`)
       .set('Authorization', `Bearer ${buyerToken}`)
       .expect(409);
+  });
+
+  it('cancelar una venta pagada devuelve el stock', async () => {
+    // sub-orden del negocio 2 (variant2 quedó en 2 tras el pago: 3 - 1)
+    const sales = await request(app.getHttpServer())
+      .get('/businesses/me/suborders')
+      .set('Authorization', `Bearer ${seller2Token}`)
+      .expect(200);
+    const subId = (sales.body as SellerSubOrderDto[])[0].id;
+
+    const before = await prisma.productVariant.findUnique({
+      where: { id: variant2Id },
+    });
+    expect(before?.stock).toBe(2);
+
+    await request(app.getHttpServer())
+      .patch(`/suborders/${subId}/status`)
+      .set('Authorization', `Bearer ${seller2Token}`)
+      .send({ status: 'CANCELLED', cancelReason: 'Sin stock real' })
+      .expect(200);
+
+    const after = await prisma.productVariant.findUnique({
+      where: { id: variant2Id },
+    });
+    expect(after?.stock).toBe(3); // se repuso la unidad
   });
 
   it('ahora el vendedor ve su venta y avanza el estado', async () => {
