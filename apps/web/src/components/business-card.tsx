@@ -52,7 +52,7 @@ export function BusinessCard({ business }: { business: BusinessCardDto }) {
       </div>
 
       <div className="flex flex-1 flex-col px-4 pb-4">
-        <div className="-mt-7 mb-2">
+        <div className="relative z-10 -mt-7 mb-2">
           {business.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- dominio de imagen arbitrario en MVP
             <img
