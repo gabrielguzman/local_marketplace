@@ -186,6 +186,7 @@ export interface ProductVariantDto {
   currency: Currency;
   stock: number;
   isDefault: boolean;
+  imageUrl: string | null; // imagen asociada a la variante (si tiene)
 }
 
 export interface ProductImageDto {

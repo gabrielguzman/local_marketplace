@@ -11,6 +11,7 @@ import type {
 } from '@marketplace/shared';
 import { BuyBox } from '@/components/add-to-cart';
 import { FavoriteButton } from '@/components/favorite-button';
+import { GalleryProvider } from '@/components/gallery-context';
 import { ProductCard } from '@/components/product-card';
 import { ProductGallery } from '@/components/product-gallery';
 import { QuestionsSection } from '@/components/questions-section';
@@ -149,6 +150,7 @@ export default async function ProductPage({
         <span className="truncate text-zinc-500">{product.title}</span>
       </nav>
 
+      <GalleryProvider>
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
         <div className="space-y-6">
           {/* Galería */}
@@ -259,7 +261,10 @@ export default async function ProductPage({
               <Stars rating={product.rating} />
             </div>
 
-            <BuyBox variants={product.variants} />
+            <BuyBox
+              variants={product.variants}
+              imageUrls={product.images.map((i) => i.url)}
+            />
 
             <div className="mt-3">
               <FavoriteButton
@@ -310,6 +315,7 @@ export default async function ProductPage({
           <ReportButton productId={product.id} />
         </aside>
       </div>
+      </GalleryProvider>
 
       {related.length > 0 && (
         <section className="space-y-4">

@@ -234,6 +234,7 @@ export class ProductsService {
         attributes: dto.attributes ?? {},
         priceCents: dto.priceCents,
         stock: dto.stock,
+        imageUrl: dto.imageUrl?.trim() || null,
       },
     });
     return this.prisma.product.findUniqueOrThrow({
@@ -310,9 +311,14 @@ export class ProductsService {
         message: 'La variante no pertenece a este producto',
       });
     }
+    const { imageUrl, ...rest } = dto;
     await this.prisma.productVariant.update({
       where: { id: variantId },
-      data: dto,
+      data: {
+        ...rest,
+        // '' limpia la imagen; undefined la deja como está
+        ...(imageUrl !== undefined && { imageUrl: imageUrl.trim() || null }),
+      },
     });
     return this.prisma.product.findUniqueOrThrow({
       where: { id: productId },

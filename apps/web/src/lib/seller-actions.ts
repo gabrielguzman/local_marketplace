@@ -289,6 +289,7 @@ export async function updateVariantInlineAction(
         body: JSON.stringify({
           priceCents,
           stock: Number(formData.get('stock') ?? 0),
+          imageUrl: String(formData.get('imageUrl') ?? ''),
         }),
       },
     );

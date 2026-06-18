@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { ProductImageDto } from '@marketplace/shared';
+import { useGallery } from '@/components/gallery-context';
 
 export function ProductGallery({
   images,
@@ -10,7 +11,12 @@ export function ProductGallery({
   images: ProductImageDto[];
   title: string;
 }) {
-  const [active, setActive] = useState(0);
+  // si hay provider (página de producto), el índice se comparte con el
+  // selector de variante; si no, usa estado local.
+  const ctx = useGallery();
+  const [localActive, setLocalActive] = useState(0);
+  const active = ctx ? ctx.index : localActive;
+  const setActive = ctx ? ctx.setIndex : setLocalActive;
   const [zoom, setZoom] = useState(false);
   // magnifier al pasar el mouse (solo en dispositivos con hover real)
   const [lens, setLens] = useState(false);
@@ -46,7 +52,7 @@ export function ProductGallery({
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = '';
     };
-  }, [zoom, images.length]);
+  }, [zoom, images.length, setActive]);
 
   if (images.length === 0) {
     return (

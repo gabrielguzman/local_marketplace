@@ -5,6 +5,7 @@ import { useState, useTransition } from 'react';
 import type { ProductVariantDto } from '@marketplace/shared';
 import { addToCartAction } from '@/lib/cart-actions';
 import { formatPrice } from '@/lib/format';
+import { useGallery } from '@/components/gallery-context';
 import { useToast } from '@/components/toast';
 
 const MAX_PER_PURCHASE = 10;
@@ -15,9 +16,16 @@ function variantLabel(variant: ProductVariantDto) {
 
 // Caja de compra: precio + variante + cantidad + agregar al carrito.
 // El precio y el stock siguen a la variante seleccionada.
-export function BuyBox({ variants }: { variants: ProductVariantDto[] }) {
+export function BuyBox({
+  variants,
+  imageUrls = [],
+}: {
+  variants: ProductVariantDto[];
+  imageUrls?: string[];
+}) {
   const router = useRouter();
   const { show } = useToast();
+  const gallery = useGallery();
   const defaultVariant = variants.find((v) => v.isDefault) ?? variants[0];
   const [selectedId, setSelectedId] = useState(defaultVariant.id);
   const [quantity, setQuantity] = useState(1);
@@ -30,6 +38,12 @@ export function BuyBox({ variants }: { variants: ProductVariantDto[] }) {
   function selectVariant(id: string) {
     setSelectedId(id);
     setQuantity(1);
+    // si la variante tiene imagen, la galería salta a ella
+    const variant = variants.find((v) => v.id === id);
+    if (gallery && variant?.imageUrl) {
+      const idx = imageUrls.indexOf(variant.imageUrl);
+      if (idx >= 0) gallery.setIndex(idx);
+    }
   }
 
   function onSubmit(formData: FormData) {

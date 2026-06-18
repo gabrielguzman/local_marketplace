@@ -74,7 +74,11 @@ export default async function EditProductPage({
           Talles, colores u otras opciones del producto, cada una con su precio
           y stock.
         </p>
-        <VariantManager productId={product.id} variants={product.variants} />
+        <VariantManager
+          productId={product.id}
+          variants={product.variants}
+          images={product.images.map((i) => i.url)}
+        />
       </section>
     </div>
   );

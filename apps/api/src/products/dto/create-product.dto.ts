@@ -37,6 +37,11 @@ export class CreateVariantDto {
   @Min(0)
   @Max(1_000_000)
   stock!: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  imageUrl?: string;
 }
 
 export class SpecDto {

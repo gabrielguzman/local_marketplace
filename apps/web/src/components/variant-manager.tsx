@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import type { ProductVariantDto } from '@marketplace/shared';
 import type { ActionState } from '@/lib/auth-actions';
 import {
@@ -14,16 +14,19 @@ const initialState: ActionState = { error: null };
 function VariantRow({
   productId,
   variant,
+  images,
   canDelete,
 }: {
   productId: string;
   variant: ProductVariantDto;
+  images: string[];
   canDelete: boolean;
 }) {
   const [updateState, updateAction, updating] = useActionState(
     updateVariantInlineAction,
     initialState,
   );
+  const [chosenImage, setChosenImage] = useState(variant.imageUrl ?? '');
   const [deleteState, deleteAction, deleting] = useActionState(
     deleteVariantAction,
     initialState,
@@ -50,6 +53,7 @@ function VariantRow({
         <form action={updateAction} className="flex items-end gap-2">
           <input type="hidden" name="productId" value={productId} />
           <input type="hidden" name="variantId" value={variant.id} />
+          <input type="hidden" name="imageUrl" value={chosenImage} />
           <label className="block">
             <span className="mb-0.5 block text-[10px] font-medium uppercase text-zinc-400">
               Precio (ARS)
@@ -107,6 +111,43 @@ function VariantRow({
           </form>
         )}
       </div>
+
+      {images.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="mr-1 text-[10px] font-medium uppercase text-zinc-400">
+            Foto de esta variante
+          </span>
+          <button
+            type="button"
+            onClick={() => setChosenImage('')}
+            title="Sin foto propia"
+            className={`flex h-10 w-10 items-center justify-center rounded-lg border-2 text-xs text-zinc-400 ${
+              chosenImage === '' ? 'border-brand-500' : 'border-transparent hover:border-zinc-300'
+            }`}
+          >
+            —
+          </button>
+          {images.map((url) => (
+            <button
+              key={url}
+              type="button"
+              onClick={() => setChosenImage(url)}
+              className={`overflow-hidden rounded-lg border-2 transition ${
+                chosenImage === url
+                  ? 'border-brand-500'
+                  : 'border-transparent hover:border-zinc-300'
+              }`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element -- dominio arbitrario en MVP */}
+              <img src={url} alt="" className="h-10 w-10 object-cover" />
+            </button>
+          ))}
+          <span className="text-[10px] text-zinc-400">
+            (guardá para aplicar)
+          </span>
+        </div>
+      )}
+
       {(updateState.error || deleteState.error) && (
         <p className="rounded bg-red-50 px-2 py-1.5 text-xs text-red-700">
           {updateState.error ?? deleteState.error}
@@ -122,9 +163,11 @@ function VariantRow({
 export function VariantManager({
   productId,
   variants,
+  images = [],
 }: {
   productId: string;
   variants: ProductVariantDto[];
+  images?: string[];
 }) {
   const [addState, addAction, adding] = useActionState(
     addVariantAction,
@@ -139,6 +182,7 @@ export function VariantManager({
             key={variant.id}
             productId={productId}
             variant={variant}
+            images={images}
             canDelete={variants.length > 1}
           />
         ))}

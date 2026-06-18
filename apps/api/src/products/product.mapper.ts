@@ -48,6 +48,7 @@ export function toProductDetailDto(
       currency: v.currency as Currency,
       stock: v.stock,
       isDefault: v.isDefault,
+      imageUrl: v.imageUrl,
     })),
     images: [...p.images]
       .sort((a, b) => a.position - b.position)

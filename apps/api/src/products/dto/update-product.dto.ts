@@ -39,6 +39,12 @@ export class UpdateVariantDto {
   @Min(0)
   @Max(1_000_000)
   stock?: number;
+
+  // url de una imagen del producto; '' la limpia
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  imageUrl?: string;
 }
 
 export class UpdateProductDto {

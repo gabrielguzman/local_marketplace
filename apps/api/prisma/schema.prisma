@@ -334,6 +334,7 @@ model ProductVariant {
   currency   String  @default("ARS")
   stock      Int     @default(0)
   isDefault  Boolean @default(false)
+  imageUrl   String? // imagen que representa la variante (una de las del producto)
 
   product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
   cartItems  CartItem[]

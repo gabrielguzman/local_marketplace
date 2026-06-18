@@ -446,11 +446,15 @@ async function seedSellers() {
           status: demo.status ?? 'ACTIVE',
           specs: demo.specs ?? [],
           variants: {
+            // a cada variante (cuando hay más de una) le asignamos una foto
+            // distinta del producto, para que la galería cambie al elegirla
             create: variants.map((v, i) => ({
               priceCents: demo.priceCents,
               stock: v.stock,
               attributes: v.attributes ?? {},
               isDefault: i === 0,
+              imageUrl:
+                variants.length > 1 ? (imageUrls[i] ?? null) : null,
             })),
           },
           images: {
