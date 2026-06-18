@@ -8,6 +8,7 @@ import type {
 import { BusinessCard } from '@/components/business-card';
 import { ProductCard } from '@/components/product-card';
 import { RecentlyViewed } from '@/components/recently-viewed';
+import { SearchBar } from '@/components/search-bar';
 import { apiFetch } from '@/lib/api';
 import { SITE_URL } from '@/lib/site';
 
@@ -86,12 +87,15 @@ export default async function Home() {
             Comprá directo a las tiendas de tu barrio o abrí la tuya y empezá a
             vender hoy mismo.
           </p>
-          <div className="mt-6 flex flex-wrap gap-3">
+          <div className="mt-6">
+            <SearchBar />
+          </div>
+          <div className="mt-4 flex flex-wrap gap-3">
             <Link
-              href="/buscar"
+              href="/tiendas"
               className="rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50"
             >
-              Explorar productos
+              Explorar tiendas
             </Link>
             <Link
               href="/vender"

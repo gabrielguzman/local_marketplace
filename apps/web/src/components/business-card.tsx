@@ -1,22 +1,6 @@
 import Link from 'next/link';
 import type { BusinessCardDto } from '@marketplace/shared';
-
-// Paleta de degradados para el banner: cada tienda tiene su color (por slug),
-// así la fila de tiendas no se ve monótona aunque no tengan banner propio.
-const GRADIENTS = [
-  'from-indigo-500 to-violet-400',
-  'from-sky-500 to-cyan-400',
-  'from-emerald-500 to-teal-400',
-  'from-amber-500 to-orange-400',
-  'from-rose-500 to-pink-400',
-  'from-fuchsia-500 to-purple-400',
-];
-
-function gradientFor(slug: string): string {
-  let h = 0;
-  for (let i = 0; i < slug.length; i++) h = (h * 31 + slug.charCodeAt(i)) % 997;
-  return GRADIENTS[h % GRADIENTS.length];
-}
+import { storeGradient } from '@/lib/store-style';
 
 export function BusinessCard({ business }: { business: BusinessCardDto }) {
   const location = [business.city, business.province]
@@ -30,7 +14,7 @@ export function BusinessCard({ business }: { business: BusinessCardDto }) {
       className="surface-card group flex flex-col overflow-hidden transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-[var(--shadow-card-hover)]"
     >
       <div
-        className={`relative h-24 overflow-hidden bg-gradient-to-br ${gradientFor(business.slug)}`}
+        className={`relative h-24 overflow-hidden bg-gradient-to-br ${storeGradient(business.slug)}`}
       >
         {business.bannerUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- dominio de imagen arbitrario en MVP
@@ -62,7 +46,7 @@ export function BusinessCard({ business }: { business: BusinessCardDto }) {
             />
           ) : (
             <span
-              className={`flex h-14 w-14 items-center justify-center rounded-2xl border-4 border-white bg-gradient-to-br ${gradientFor(business.slug)} text-xl font-bold text-white shadow-sm`}
+              className={`flex h-14 w-14 items-center justify-center rounded-2xl border-4 border-white bg-gradient-to-br ${storeGradient(business.slug)} text-xl font-bold text-white shadow-sm`}
             >
               {initial}
             </span>
