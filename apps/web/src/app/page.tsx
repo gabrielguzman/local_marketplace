@@ -40,6 +40,15 @@ const CATEGORY_ICONS: Record<string, string> = {
   deportes: '🚴',
 };
 
+// color del ícono por rubro, para que la grilla no sea toda del mismo tono
+const CATEGORY_COLORS: Record<string, string> = {
+  tecnologia: 'bg-indigo-50 group-hover:bg-indigo-100',
+  hogar: 'bg-amber-50 group-hover:bg-amber-100',
+  indumentaria: 'bg-rose-50 group-hover:bg-rose-100',
+  alimentos: 'bg-emerald-50 group-hover:bg-emerald-100',
+  deportes: 'bg-sky-50 group-hover:bg-sky-100',
+};
+
 export default async function Home() {
   const [categories, recent, bestSellers, stores] = await Promise.all([
     apiFetch<CategoryDto[]>('/categories').catch(() => []),
@@ -122,13 +131,17 @@ export default async function Home() {
               <Link
                 key={cat.id}
                 href={`/buscar?category=${cat.slug}`}
-                className="surface-card group flex items-center gap-3 p-4 transition hover:border-brand-300 hover:shadow-[var(--shadow-card-hover)]"
+                className="surface-card group flex items-center gap-3 p-4 transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-[var(--shadow-card-hover)]"
               >
-                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-xl transition group-hover:bg-brand-100">
+                <span
+                  className={`flex h-11 w-11 items-center justify-center rounded-xl text-xl transition ${
+                    CATEGORY_COLORS[cat.slug] ?? 'bg-zinc-50 group-hover:bg-zinc-100'
+                  }`}
+                >
                   {CATEGORY_ICONS[cat.slug] ?? '🏷️'}
                 </span>
-                <div>
-                  <p className="text-sm font-semibold text-zinc-800">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-zinc-800 group-hover:text-brand-700">
                     {cat.name}
                   </p>
                   <p className="text-xs text-zinc-400">
