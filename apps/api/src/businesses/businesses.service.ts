@@ -239,6 +239,17 @@ export class BusinessesService {
     return this.prisma.businessFollow.count({ where: { businessId } });
   }
 
+  // Cuántas compras concretó este usuario en esta tienda (fidelidad)
+  async loyaltyFor(userId: string, businessId: string): Promise<number> {
+    return this.prisma.subOrder.count({
+      where: {
+        businessId,
+        status: { not: 'CANCELLED' },
+        order: { buyerId: userId, status: 'PAID' },
+      },
+    });
+  }
+
   private async uniqueSlug(name: string): Promise<string> {
     const base = slugify(name);
     let candidate = base;

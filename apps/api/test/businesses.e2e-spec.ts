@@ -152,9 +152,9 @@ describe('Businesses (e2e)', () => {
     const view = await request(app.getHttpServer())
       .get('/businesses/almacen-dona-rosa')
       .expect(200);
-    expect((view.body as { followers: number }).followers).toBeGreaterThanOrEqual(
-      1,
-    );
+    expect(
+      (view.body as { followers: number }).followers,
+    ).toBeGreaterThanOrEqual(1);
 
     await request(app.getHttpServer())
       .delete(`/businesses/${biz.id}/follow`)

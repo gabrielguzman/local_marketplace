@@ -12,6 +12,7 @@ import { ProductCard } from '@/components/product-card';
 import { apiFetch } from '@/lib/api';
 import { getFavoriteIds } from '@/lib/favorites';
 import { getFollowingIds } from '@/lib/follows';
+import { getStoreLoyalty } from '@/lib/loyalty';
 import { storeGradient } from '@/lib/store-style';
 
 export const dynamic = 'force-dynamic';
@@ -81,9 +82,10 @@ export default async function BusinessPage({
   const products = await apiFetch<Paginated<ProductSummaryDto>>(
     `/search?${query}`,
   ).catch(() => ({ items: [], nextCursor: null }));
-  const [favoriteIds, followingIds] = await Promise.all([
+  const [favoriteIds, followingIds, purchases] = await Promise.all([
     getFavoriteIds(),
     getFollowingIds(),
+    getStoreLoyalty(business.id),
   ]);
 
   const initial = business.name.charAt(0).toUpperCase();
@@ -162,6 +164,12 @@ export default async function BusinessPage({
             <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
               ● Activa
             </span>
+            {purchases > 0 && (
+              <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
+                {purchases >= 3 ? '⭐ Cliente frecuente' : 'Ya compraste acá'} ·{' '}
+                {purchases}
+              </span>
+            )}
           </div>
         </div>
 

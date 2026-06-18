@@ -47,6 +47,15 @@ export class FollowsController {
     return this.businesses.followingIds(user.sub);
   }
 
+  // mis compras en una tienda (fidelidad)
+  @Get('businesses/:id/loyalty')
+  async loyalty(
+    @CurrentUser() user: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<{ purchases: number }> {
+    return { purchases: await this.businesses.loyaltyFor(user.sub, id) };
+  }
+
   // feed de novedades: últimos productos de las tiendas que sigo
   @Get('me/following/feed')
   async feed(

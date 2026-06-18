@@ -25,15 +25,50 @@ export default async function SellerPage() {
 
   if (!business) {
     return (
-      <div className="mx-auto max-w-md py-12">
-        <div className="surface-card p-8">
+      <div className="mx-auto max-w-2xl space-y-6 py-12">
+        <div>
           <span className="text-3xl">🏪</span>
-          <h1 className="mt-3 text-xl font-bold tracking-tight">
-            Creá tu negocio
+          <h1 className="mt-3 text-2xl font-bold tracking-tight">
+            Vendé en Mercato
           </h1>
+          <p className="mt-1 text-sm leading-6 text-zinc-500">
+            El marketplace que está del lado del comercio de barrio. Gratis y
+            en un minuto.
+          </p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          {[
+            {
+              icon: '💸',
+              title: `Te quedás con el ${100 - PLATFORM_FEE_PERCENT}%`,
+              text: `Comisión transparente del ${PLATFORM_FEE_PERCENT}%, sin costos ocultos ni de alta.`,
+            },
+            {
+              icon: '⚡',
+              title: 'Cobrás rápido',
+              text: 'Te liquidamos el neto apenas la venta figura entregada.',
+            },
+            {
+              icon: '⚖️',
+              title: 'Sin pay-to-win',
+              text: 'No se compra posición: ordenan la cercanía y tu reputación real.',
+            },
+          ].map((b) => (
+            <div key={b.title} className="surface-card p-4">
+              <span className="text-xl">{b.icon}</span>
+              <h3 className="mt-1.5 text-sm font-semibold text-zinc-900">
+                {b.title}
+              </h3>
+              <p className="mt-0.5 text-xs leading-5 text-zinc-500">{b.text}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="surface-card p-8">
+          <h2 className="text-lg font-bold tracking-tight">Creá tu negocio</h2>
           <p className="mb-6 mt-1 text-sm leading-6 text-zinc-500">
-            Para publicar productos primero necesitás una tienda. Es gratis y
-            te toma un minuto.
+            Para publicar productos primero necesitás una tienda.
           </p>
           <BusinessForm />
         </div>
@@ -61,9 +96,14 @@ export default async function SellerPage() {
             Ver mi tienda pública →
           </Link>
         </div>
-        <Link href="/vender/productos/nuevo" className="btn-primary">
-          + Nuevo producto
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/vender/cartel" className="btn-secondary">
+            📲 Cartel QR
+          </Link>
+          <Link href="/vender/productos/nuevo" className="btn-primary">
+            + Nuevo producto
+          </Link>
+        </div>
       </div>
 
       {dashboard && (
