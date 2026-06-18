@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { toggleFavoriteAction } from '@/lib/favorites-actions';
+import { useToast } from '@/components/toast';
 
 function Heart({ filled }: { filled: boolean }) {
   return (
@@ -35,10 +36,19 @@ export function FavoriteButton({
 }) {
   const [optimistic, setOptimistic] = useState(favorited);
   const [pending, startTransition] = useTransition();
+  const { show } = useToast();
 
   function onSubmit(formData: FormData) {
-    setOptimistic((v) => !v);
+    const willFavorite = !optimistic;
+    setOptimistic(willFavorite);
     startTransition(() => toggleFavoriteAction(formData));
+    show({
+      message: willFavorite
+        ? 'Guardado en favoritos'
+        : 'Quitado de favoritos',
+      href: willFavorite ? '/favoritos' : undefined,
+      linkLabel: willFavorite ? 'Ver' : undefined,
+    });
   }
 
   if (variant === 'icon') {

@@ -5,6 +5,7 @@ import type {
   ProductSummaryDto,
   SearchFacets,
 } from '@marketplace/shared';
+import { FiltersDrawer } from '@/components/filters-drawer';
 import { ProductCard } from '@/components/product-card';
 import { apiFetch } from '@/lib/api';
 import { getFavoriteIds } from '@/lib/favorites';
@@ -118,7 +119,7 @@ export default async function SearchPage({
 
   return (
     <div className="flex flex-col gap-8 md:flex-row">
-      <aside className="w-full shrink-0 md:w-60">
+      <FiltersDrawer>
         <div className="surface-card space-y-6 p-5 md:sticky md:top-32">
           <div>
             <h2 className="mb-3 text-xs font-bold uppercase tracking-wider text-zinc-400">
@@ -302,7 +303,7 @@ export default async function SearchPage({
             </div>
           )}
         </div>
-      </aside>
+      </FiltersDrawer>
 
       <section className="min-w-0 flex-1">
         <div className="mb-5 flex flex-wrap items-baseline justify-between gap-2">

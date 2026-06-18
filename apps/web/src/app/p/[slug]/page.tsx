@@ -21,6 +21,7 @@ import { Stars } from '@/components/stars';
 import { TrackView } from '@/components/track-view';
 import { apiFetch, authFetch } from '@/lib/api';
 import { getFavoriteIds } from '@/lib/favorites';
+import { formatPrice } from '@/lib/format';
 import { getAccessToken, getCurrentUser } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
@@ -127,7 +128,7 @@ export default async function ProductPage({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20 md:pb-0">
       <TrackView slug={product.slug} />
       <script
         type="application/ld+json"
@@ -231,7 +232,7 @@ export default async function ProductPage({
 
         {/* Caja de compra */}
         <aside className="space-y-4">
-          <div className="surface-card p-6 lg:sticky lg:top-32">
+          <div id="comprar" className="surface-card p-6 lg:sticky lg:top-32">
             <div className="flex items-center justify-between gap-2">
               <p className="text-xs font-medium uppercase tracking-wider text-zinc-400">
                 {product.category.name}
@@ -322,6 +323,24 @@ export default async function ProductPage({
           </div>
         </section>
       )}
+
+      {/* Barra de compra fija en mobile */}
+      <div className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between gap-3 border-t border-zinc-200 bg-white/95 px-4 py-3 backdrop-blur md:hidden">
+        <div>
+          <p className="text-lg font-extrabold tracking-tight">
+            {formatPrice(defaultVariant.priceCents, defaultVariant.currency)}
+          </p>
+          {totalStock === 0 && (
+            <p className="text-xs text-red-600">Sin stock</p>
+          )}
+        </div>
+        <a
+          href="#comprar"
+          className={`btn-primary !px-6 ${totalStock === 0 ? 'pointer-events-none opacity-50' : ''}`}
+        >
+          {totalStock > 0 ? 'Comprar' : 'Sin stock'}
+        </a>
+      </div>
     </div>
   );
 }

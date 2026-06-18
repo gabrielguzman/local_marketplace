@@ -30,7 +30,9 @@ export async function addToCartAction(
   } catch (err) {
     return toActionError(err);
   }
-  redirect('/carrito');
+  // Quedamos en el producto: el feedback lo da un toast y el badge del header
+  // se refresca desde el cliente (router.refresh).
+  return { error: null, ok: true };
 }
 
 export async function updateCartItemAction(

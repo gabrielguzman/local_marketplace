@@ -1,12 +1,12 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useState, useTransition } from 'react';
 import type { ProductVariantDto } from '@marketplace/shared';
-import type { ActionState } from '@/lib/auth-actions';
 import { addToCartAction } from '@/lib/cart-actions';
 import { formatPrice } from '@/lib/format';
+import { useToast } from '@/components/toast';
 
-const initialState: ActionState = { error: null };
 const MAX_PER_PURCHASE = 10;
 
 function variantLabel(variant: ProductVariantDto) {
@@ -16,13 +16,13 @@ function variantLabel(variant: ProductVariantDto) {
 // Caja de compra: precio + variante + cantidad + agregar al carrito.
 // El precio y el stock siguen a la variante seleccionada.
 export function BuyBox({ variants }: { variants: ProductVariantDto[] }) {
+  const router = useRouter();
+  const { show } = useToast();
   const defaultVariant = variants.find((v) => v.isDefault) ?? variants[0];
   const [selectedId, setSelectedId] = useState(defaultVariant.id);
   const [quantity, setQuantity] = useState(1);
-  const [state, formAction, pending] = useActionState(
-    addToCartAction,
-    initialState,
-  );
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
 
   const selected = variants.find((v) => v.id === selectedId) ?? defaultVariant;
   const maxQuantity = Math.min(selected.stock, MAX_PER_PURCHASE);
@@ -30,6 +30,23 @@ export function BuyBox({ variants }: { variants: ProductVariantDto[] }) {
   function selectVariant(id: string) {
     setSelectedId(id);
     setQuantity(1);
+  }
+
+  function onSubmit(formData: FormData) {
+    setError(null);
+    startTransition(async () => {
+      const res = await addToCartAction({ error: null }, formData);
+      if (res.error) {
+        setError(res.error);
+        return;
+      }
+      show({
+        message: 'Agregado al carrito',
+        href: '/carrito',
+        linkLabel: 'Ir al carrito',
+      });
+      router.refresh(); // actualiza el badge del header
+    });
   }
 
   return (
@@ -93,7 +110,7 @@ export function BuyBox({ variants }: { variants: ProductVariantDto[] }) {
         </fieldset>
       )}
 
-      <form action={formAction} className="mt-6 space-y-3">
+      <form action={onSubmit} className="mt-6 space-y-3">
         <input type="hidden" name="variantId" value={selected.id} />
         {maxQuantity > 1 && (
           <label className="flex items-center gap-2 text-sm text-zinc-600">
@@ -126,9 +143,9 @@ export function BuyBox({ variants }: { variants: ProductVariantDto[] }) {
               ? 'Sin stock'
               : 'Agregar al carrito'}
         </button>
-        {state.error && (
+        {error && (
           <p className="rounded-lg bg-red-50 px-3 py-2 text-center text-xs text-red-700">
-            {state.error}
+            {error}
           </p>
         )}
       </form>

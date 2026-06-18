@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Suspense } from "react";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
+import { NavProgress } from "@/components/nav-progress";
+import { ToastProvider } from "@/components/toast";
 import { VerifyBanner } from "@/components/verify-banner";
 import "./globals.css";
 
@@ -44,19 +47,24 @@ export default function RootLayout({
         >
           Saltar al contenido
         </a>
-        <div className="print:hidden">
-          <Header />
-          <VerifyBanner />
-        </div>
-        <main
-          id="contenido"
-          className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 print:max-w-none print:px-0 print:py-0"
-        >
-          {children}
-        </main>
-        <div className="print:hidden">
-          <Footer />
-        </div>
+        <ToastProvider>
+          <Suspense fallback={null}>
+            <NavProgress />
+          </Suspense>
+          <div className="print:hidden">
+            <Header />
+            <VerifyBanner />
+          </div>
+          <main
+            id="contenido"
+            className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 print:max-w-none print:px-0 print:py-0"
+          >
+            {children}
+          </main>
+          <div className="print:hidden">
+            <Footer />
+          </div>
+        </ToastProvider>
       </body>
     </html>
   );
