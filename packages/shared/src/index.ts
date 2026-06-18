@@ -145,6 +145,20 @@ export interface BusinessStats {
   salesCount: number;
 }
 
+// Tarjeta de tienda para el home y el directorio de tiendas
+export interface BusinessCardDto {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  logoUrl: string | null;
+  bannerUrl: string | null;
+  city: string | null;
+  province: string | null;
+  rating: RatingSummary;
+  productCount: number;
+}
+
 // ── Catálogo ─────────────────────────────────────────────
 
 export interface CategoryDto {

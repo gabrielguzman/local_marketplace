@@ -4,7 +4,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import type { BusinessStats, RatingSummary } from '@marketplace/shared';
+import type {
+  BusinessCardDto,
+  BusinessStats,
+  RatingSummary,
+} from '@marketplace/shared';
 import type { Business } from '@prisma/client';
 import { slugify } from '../common/slug';
 import { PrismaService } from '../prisma/prisma.service';
@@ -84,6 +88,66 @@ export class BusinessesService {
       where: { id: business.id },
       data: dto,
     });
+  }
+
+  // Tiendas activas para el home / directorio, ordenadas por catálogo y
+  // reputación. Si viene limit, devuelve solo las primeras (destacadas).
+  async listPublic(limit?: number): Promise<BusinessCardDto[]> {
+    const businesses = await this.prisma.business.findMany({
+      where: { status: 'ACTIVE' },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        logoUrl: true,
+        bannerUrl: true,
+        city: true,
+        province: true,
+        _count: {
+          select: { products: { where: { status: 'ACTIVE' } } },
+        },
+      },
+    });
+
+    const grouped = await this.prisma.review.groupBy({
+      by: ['businessId'],
+      where: { businessId: { in: businesses.map((b) => b.id) } },
+      _avg: { rating: true },
+      _count: true,
+    });
+    const ratings = new Map<string, RatingSummary>(
+      grouped.map((g) => [
+        g.businessId,
+        {
+          avg: g._avg.rating === null ? null : Number(g._avg.rating.toFixed(1)),
+          count: g._count,
+        },
+      ]),
+    );
+
+    const cards: BusinessCardDto[] = businesses.map((b) => ({
+      id: b.id,
+      name: b.name,
+      slug: b.slug,
+      description: b.description,
+      logoUrl: b.logoUrl,
+      bannerUrl: b.bannerUrl,
+      city: b.city,
+      province: b.province,
+      rating: ratings.get(b.id) ?? { avg: null, count: 0 },
+      productCount: b._count.products,
+    }));
+
+    // más productos primero, luego mejor reputación, luego alfabético
+    cards.sort(
+      (a, b) =>
+        b.productCount - a.productCount ||
+        b.rating.count - a.rating.count ||
+        a.name.localeCompare(b.name),
+    );
+
+    return limit ? cards.slice(0, limit) : cards;
   }
 
   async ratingFor(businessId: string): Promise<RatingSummary> {

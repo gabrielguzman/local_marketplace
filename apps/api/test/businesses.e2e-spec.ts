@@ -83,6 +83,16 @@ describe('Businesses (e2e)', () => {
     expect((res.body as BusinessDto).name).toBe('Almacén Doña Rosa');
   });
 
+  it('el directorio público lista la tienda activa sin auth', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/businesses')
+      .expect(200);
+    const list = res.body as { slug: string; productCount: number }[];
+    const mine = list.find((b) => b.slug === 'almacen-dona-rosa');
+    expect(mine).toBeDefined();
+    expect(typeof mine!.productCount).toBe('number');
+  });
+
   it('GET /businesses/me devuelve el propio', async () => {
     const res = await request(app.getHttpServer())
       .get('/businesses/me')

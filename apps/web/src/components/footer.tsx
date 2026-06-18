@@ -39,7 +39,7 @@ export function Footer() {
             </p>
             <div className="flex items-center gap-2 pt-1 text-xs font-medium text-zinc-400">
               <span className="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-white px-2.5 py-1">
-                🔒 Compra protegida
+                🔒 Pago seguro
               </span>
               <span className="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-white px-2.5 py-1">
                 🇦🇷 Hecho en Argentina
@@ -51,6 +51,7 @@ export function Footer() {
             title="Comprar"
             links={[
               { href: '/buscar', label: 'Todos los productos' },
+              { href: '/tiendas', label: 'Tiendas' },
               { href: '/', label: 'Categorías' },
               { href: '/favoritos', label: 'Mis favoritos' },
               { href: '/compras', label: 'Mis compras' },

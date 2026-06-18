@@ -5,9 +5,12 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
-import type { BusinessDto } from '@marketplace/shared';
+import { Type } from 'class-transformer';
+import { IsInt, IsOptional, Max, Min } from 'class-validator';
+import type { BusinessCardDto, BusinessDto } from '@marketplace/shared';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { AccessTokenPayload } from '../auth/auth.types';
@@ -16,9 +19,24 @@ import { BusinessesService } from './businesses.service';
 import { CreateBusinessDto } from './dto/create-business.dto';
 import { UpdateBusinessDto } from './dto/update-business.dto';
 
+class ListBusinessesQuery {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  limit?: number;
+}
+
 @Controller('businesses')
 export class BusinessesController {
   constructor(private readonly businesses: BusinessesService) {}
+
+  // Directorio público de tiendas (y destacadas con ?limit=)
+  @Get()
+  list(@Query() query: ListBusinessesQuery): Promise<BusinessCardDto[]> {
+    return this.businesses.listPublic(query.limit);
+  }
 
   @Post()
   @UseGuards(JwtAuthGuard)

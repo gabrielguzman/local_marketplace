@@ -1,14 +1,36 @@
 import Link from 'next/link';
 import type {
+  BusinessCardDto,
   CategoryDto,
   Paginated,
   ProductSummaryDto,
 } from '@marketplace/shared';
+import { BusinessCard } from '@/components/business-card';
 import { ProductCard } from '@/components/product-card';
 import { RecentlyViewed } from '@/components/recently-viewed';
 import { apiFetch } from '@/lib/api';
+import { SITE_URL } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
+
+// JSON-LD: organización + buscador (sitelinks searchbox de Google)
+const ORG_JSON_LD = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Mercato',
+  url: SITE_URL,
+};
+const WEBSITE_JSON_LD = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Mercato',
+  url: SITE_URL,
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: `${SITE_URL}/buscar?q={search_term_string}`,
+    'query-input': 'required name=search_term_string',
+  },
+};
 
 const CATEGORY_ICONS: Record<string, string> = {
   tecnologia: '💻',
@@ -19,7 +41,7 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 export default async function Home() {
-  const [categories, recent, bestSellers] = await Promise.all([
+  const [categories, recent, bestSellers, stores] = await Promise.all([
     apiFetch<CategoryDto[]>('/categories').catch(() => []),
     apiFetch<Paginated<ProductSummaryDto>>('/search?limit=12').catch(() => ({
       items: [],
@@ -28,10 +50,21 @@ export default async function Home() {
     apiFetch<ProductSummaryDto[]>('/search/best-sellers').catch(
       () => [] as ProductSummaryDto[],
     ),
+    apiFetch<BusinessCardDto[]>('/businesses?limit=4').catch(
+      () => [] as BusinessCardDto[],
+    ),
   ]);
 
   return (
     <div className="space-y-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(ORG_JSON_LD) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(WEBSITE_JSON_LD) }}
+      />
       {/* Hero */}
       <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-700 via-brand-600 to-brand-500 px-8 py-14 text-white sm:px-12">
         <div className="relative z-10 max-w-xl">
@@ -108,6 +141,28 @@ export default async function Home() {
         </section>
       )}
 
+      {/* Tiendas destacadas */}
+      {stores.length > 0 && (
+        <section>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-bold tracking-tight">
+              🏪 Tiendas destacadas
+            </h2>
+            <Link
+              href="/tiendas"
+              className="text-sm font-medium text-brand-600 hover:text-brand-700 hover:underline"
+            >
+              Ver todas →
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {stores.map((business) => (
+              <BusinessCard key={business.id} business={business} />
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Más vendidos */}
       {bestSellers.length > 0 && (
         <section>
@@ -166,8 +221,8 @@ export default async function Home() {
           },
           {
             icon: '🔒',
-            title: 'Compra protegida',
-            text: 'Tu dinero está seguro hasta que recibís el producto.',
+            title: 'Pago seguro',
+            text: 'Comprá en un entorno protegido, con tus datos siempre cifrados.',
           },
           {
             icon: '🚀',
